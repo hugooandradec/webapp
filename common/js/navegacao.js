@@ -1,6 +1,18 @@
 // common/js/navegacao.js
 // utilidades globais de navegação, header e PWA
 
+// ===== raiz do site (funciona em GitHub Pages e domínio próprio) =====
+function getRootPath() {
+  const parts = location.pathname.split("/").filter(Boolean);
+  // Em GitHub Pages (project pages), a raiz é /<repo>/
+  if (location.hostname.endsWith("github.io") && parts.length > 0) {
+    return "/" + parts[0] + "/"; // ex.: /webapp/
+  }
+  // Em domínio próprio/raiz
+  return "/";
+}
+const ROOT = getRootPath();
+
 // ===== backend (com fallback) =====
 export function getURLBackend() {
   return (
@@ -32,8 +44,7 @@ function canAccess(appKey) {
 }
 function logout() {
   localStorage.removeItem("usuarioLogado");
-  // volta para login do app atual (erp) ou raiz
-  window.location.replace("./login.html");
+  window.location.replace(`${ROOT}login.html`);
 }
 
 // ===== header builder =====
@@ -41,10 +52,13 @@ function montarHeader(titulo, appKey, backHref) {
   const u = getUser();
   const onlineDotId = "online-dot";
 
-  // botão voltar
+  // botão voltar (usa ROOT para evitar 404 por caminho relativo)
   const hrefVoltar = backHref
-    ?? (appKey === "erp" ? "./app-erp/html/menu.html"
-                         : "./app-selector.html"); // default para outros apps
+    ?? (appKey === "erp"
+          ? `${ROOT}app-erp/html/menu.html`
+          : appKey === "operacao"
+            ? `${ROOT}app-operacao/html/menu.html`
+            : `${ROOT}app-selector.html`);
 
   const header = document.createElement("header");
   header.innerHTML = `
@@ -88,7 +102,7 @@ function montarHeader(titulo, appKey, backHref) {
 // ===== PWA SW (melhor esforço) =====
 function registrarServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
-  const swPath = "./sw.js"; // mantenha seu caminho se já possui um SW
+  const swPath = `${ROOT}sw.js`; // registra a partir da raiz do site
   navigator.serviceWorker.register(swPath).catch(() => {});
 }
 
@@ -103,13 +117,12 @@ export async function inicializarPagina(titulo, appKey, options = {}) {
   // guard de login
   const user = getUser();
   if (!user) {
-    window.location.replace("./login.html");
+    window.location.replace(`${ROOT}login.html`);
     return;
   }
   // guard de app
   if (!canAccess(appKey)) {
-    // se não tiver acesso, manda para o seletor
-    window.location.replace("./app-selector.html");
+    window.location.replace(`${ROOT}app-selector.html`);
     return;
   }
 
