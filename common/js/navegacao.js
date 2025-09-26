@@ -4,11 +4,9 @@
 // ===== raiz do site (funciona em GitHub Pages e domínio próprio) =====
 function getRootPath() {
   const parts = location.pathname.split("/").filter(Boolean);
-  // Em GitHub Pages (project pages), a raiz é /<repo>/
   if (location.hostname.endsWith("github.io") && parts.length > 0) {
     return "/" + parts[0] + "/"; // ex.: /webapp/
   }
-  // Em domínio próprio/raiz
   return "/";
 }
 const ROOT = getRootPath();
@@ -47,18 +45,35 @@ function logout() {
   window.location.replace(`${ROOT}login.html`);
 }
 
+// ===== detecção de "menu" por URL =====
+function isMenuURL(appKey) {
+  const p = location.pathname.toLowerCase();
+  if (appKey === "operacao")  return p.endsWith("/app-operacao/html/menu.html");
+  if (appKey === "erp")       return p.endsWith("/app-erp/html/menu.html");
+  return false;
+}
+function menuPath(appKey) {
+  if (appKey === "operacao") return `${ROOT}app-operacao/html/menu.html`;
+  if (appKey === "erp")      return `${ROOT}app-erp/html/menu.html`;
+  return `${ROOT}app-selector.html`;
+}
+
 // ===== header builder =====
-function montarHeader(titulo, appKey, backHref) {
+function montarHeader(titulo, appKey, backHref, isMenuPageFlag) {
   const u = getUser();
   const onlineDotId = "online-dot";
 
-  // botão voltar (usa ROOT para evitar 404 por caminho relativo)
-  const hrefVoltar = backHref
-    ?? (appKey === "erp"
-          ? `${ROOT}app-erp/html/menu.html`
-          : appKey === "operacao"
-            ? `${ROOT}app-operacao/html/menu.html`
-            : `${ROOT}app-selector.html`);
+  // decidir destino do "voltar":
+  // - Se estou no MENU do app → voltar para app-selector
+  // - Senão (página interna) → voltar para o MENU do app
+  let hrefVoltar;
+
+  if (typeof backHref === "string" && backHref) {
+    hrefVoltar = backHref;
+  } else {
+    const estouNoMenu = isMenuPageFlag === true ? true : isMenuURL(appKey);
+    hrefVoltar = estouNoMenu ? `${ROOT}app-selector.html` : menuPath(appKey);
+  }
 
   const header = document.createElement("header");
   header.innerHTML = `
@@ -85,13 +100,11 @@ function montarHeader(titulo, appKey, backHref) {
   `;
   document.body.prepend(header);
 
-  // wire up
   header.querySelector("#btn-logout").addEventListener("click", (e) => {
     e.preventDefault();
     logout();
   });
 
-  // status online
   (async () => {
     const ok = await isOnline();
     const dot = document.getElementById(onlineDotId);
@@ -111,27 +124,23 @@ function registrarServiceWorker() {
  * Inicializa header da página e faz guard de acesso.
  * @param {string} titulo - texto do título no header
  * @param {"erp"|"operacao"|string} appKey - qual app a página pertence
- * @param {{backHref?: string}} options - para sobrescrever o link do "voltar"
+ * @param {{backHref?: string, isMenuPage?: boolean}} options
+ *   - backHref: sobrescreve o destino do "voltar"
+ *   - isMenuPage: marca explicitamente que a página atual é um MENU (volta para o app-selector)
  */
 export async function inicializarPagina(titulo, appKey, options = {}) {
-  // guard de login
   const user = getUser();
   if (!user) {
     window.location.replace(`${ROOT}login.html`);
     return;
   }
-  // guard de app
   if (!canAccess(appKey)) {
     window.location.replace(`${ROOT}app-selector.html`);
     return;
   }
 
-  // injeta header
-  montarHeader(titulo, appKey, options.backHref);
-
-  // tenta registrar SW (silencioso)
+  montarHeader(titulo, appKey, options.backHref, options.isMenuPage);
   registrarServiceWorker();
 
-  // console visual (debug opcional)
   try { console.info("Console visual ativado."); } catch {}
 }
