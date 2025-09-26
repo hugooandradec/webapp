@@ -1,7 +1,7 @@
-// js/auth.js
+// common/js/auth.js
 const USERS = [
-  // seu usuário com tudo, agora com role 'admin'
-  { username: "vt",  password: "178590", nome: "vt",  apps: ["ajudante","erp"], role: "admin" },
+  // vt agora com acesso a ERP + Operação e role admin
+  { username: "vt",  password: "178590", nome: "vt",  apps: ["operacao","erp"], role: "admin" },
   // exemplo: usuário só-ERP, sem admin
   { username: "pipo", password: "7853",  nome: "pipo", apps: ["erp"], role: "user" }
 ];
@@ -29,7 +29,7 @@ export function requireApp(appKey) {
   const u = getCurrentUser();
   if (!u) { window.location.replace("./login.html"); return false; }
   if (!canAccess(appKey)) {
-    if (u.apps?.includes("erp")) window.location.replace("./erp/menu.html");
+    if (u.apps?.includes("erp")) window.location.replace("./app-erp/html/menu.html");
     else window.location.replace("./app-selector.html");
     return false;
   }

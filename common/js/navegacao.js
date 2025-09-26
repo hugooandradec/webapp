@@ -1,16 +1,21 @@
-// js/navegacao.js
+// common/js/navegacao.js
 // utilidades globais de navegação, header e PWA
 
-// ===== backend =====
+// ===== backend (com fallback) =====
 export function getURLBackend() {
-  // mesma regra que já usávamos (Render)
-  return "https://ajudante-api.onrender.com";
+  return (
+    localStorage.getItem("URL_BACKEND") ||
+    (window.__CONFIG && window.__CONFIG.apiBase) ||
+    "https://webapp-backend-8abe.onrender.com"
+  );
 }
 
 export async function isOnline() {
   try {
-    const resp = await fetch(`${getURLBackend()}/ping`, { method: "GET", cache: "no-store" });
-    return resp.ok;
+    const resp = await fetch(`${getURLBackend()}/health`, { method: "GET", cache: "no-store" });
+    if (!resp.ok) return false;
+    const j = await resp.json().catch(() => ({}));
+    return j?.status === "ok" || j?.mongo === "connected";
   } catch {
     return false;
   }
@@ -38,7 +43,7 @@ function montarHeader(titulo, appKey, backHref) {
 
   // botão voltar
   const hrefVoltar = backHref
-    ?? (appKey === "erp" ? "./menu.html"
+    ?? (appKey === "erp" ? "./app-erp/html/menu.html"
                          : "./app-selector.html"); // default para outros apps
 
   const header = document.createElement("header");
@@ -91,7 +96,7 @@ function registrarServiceWorker() {
 /**
  * Inicializa header da página e faz guard de acesso.
  * @param {string} titulo - texto do título no header
- * @param {"erp"|"ajudante"|string} appKey - qual app a página pertence
+ * @param {"erp"|"operacao"|string} appKey - qual app a página pertence
  * @param {{backHref?: string}} options - para sobrescrever o link do "voltar"
  */
 export async function inicializarPagina(titulo, appKey, options = {}) {
