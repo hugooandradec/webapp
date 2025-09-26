@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manutenção</title>
+  <meta name="theme-color" content="#6a1b9a" />
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <style>
+    :root{ --roxo:#6a1b9a; }
+    html,body{ margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#f8f8f8; }
+    main{ max-width: 980px; margin: 0 auto; padding: 16px; }
+    h1{ margin:8px 0 16px; color:#5e2aa0; text-align:center }
+    .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
+    @media (max-width:640px){ .row{ grid-template-columns:1fr } }
+    label{ display:block; font-weight:700; margin:6px 0 }
+    input, textarea{
+      width:100%; padding:10px 0; border:none; border-bottom:2px solid #dcdcdc; background:transparent; outline:none; resize:vertical;
+    }
+    input:focus, textarea:focus{ border-bottom-color:#6a1b9a }
+    .acoes{ display:flex; gap:10px; margin-top:14px }
+    .btn{ flex:1; padding:12px; font-weight:800; border:none; border-radius:10px; cursor:pointer }
+    .btn.roxo{ background:#6a1b9a; color:#fff }
+    .btn.cinza{ background:#aaa; color:#fff }
+    .lista{ margin-top:16px; display:grid; gap:10px }
+    .item{ background:#fff; border:1px solid #eee; border-radius:12px; padding:12px; display:grid; gap:6px }
+    .item .top{ display:flex; justify-content:space-between; font-weight:800 }
+    .item .muted{ color:#666 }
+  </style>
+</head>
+<body>
+  <div id="cabecalho"></div>
+
+  <main>
+    <h1>Manutenção</h1>
+
+    <div class="row">
+      <div>
+        <label for="selo">Selo *</label>
+        <input id="selo" type="text" placeholder="ex.: RC-123" />
+      </div>
+      <div>
+        <label for="tipo">Tipo *</label>
+        <input id="tipo" type="text" placeholder="ex.: troca de fonte" />
+      </div>
+    </div>
+
+    <label for="descricao">Descrição</label>
+    <textarea id="descricao" rows="4" placeholder="detalhes do problema/serviço"></textarea>
+
+    <div class="acoes">
+      <button id="btnSalvar" class="btn roxo"><i class="fa-solid fa-save"></i> Salvar</button>
+      <button id="btnLimpar" class="btn cinza"><i class="fa-solid fa-eraser"></i> Limpar</button>
+    </div>
+
+    <div id="lista" class="lista"></div>
+  </main>
+
+  <script type="module" src="../../common/js/navegacao.js"></script>
+  <script defer src="../../common/js/toast.js"></script>
+  <script type="module" src="../js/manutencao.js"></script>
+
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(console.error);
+  }
+  </script>
+</body>
+</html>

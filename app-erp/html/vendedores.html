@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ERP – Vendedores</title>
+
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../../common/img/favicon.ico">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    :root { --roxo:#6a1b9a; }
+    body { margin:0; font-family:Arial, Helvetica, sans-serif; background:#f6f3fa; }
+    .conteudo { padding:24px; max-width:760px; margin:0 auto; }
+    h2 { margin:0 0 12px 0; }
+    .card { background:#fff; border:1px solid #e6e0ef; border-radius:14px; padding:16px; margin:16px 0; }
+    .grid { display:grid; gap:12px; }
+    .dois { grid-template-columns: 1fr 1fr; }
+    label { font-weight:700; font-size:14px; color:#342b50; }
+    input { width:100%; padding:10px 12px; border:none; border-bottom:2px solid #e0d6f2; outline:0; background:#faf9fc; }
+    .acoes { display:flex; gap:10px; margin-top:8px; }
+    .btn { border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; }
+    .salvar { background:#6a1b9a; color:#fff; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { padding:10px; border-bottom:1px solid #eee; text-align:left; }
+    th { color:#67518d; }
+    .acoes-linha button { border:0; background:transparent; cursor:pointer; color:#6a1b9a; }
+    @media (max-width:600px){ .dois { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <!-- Header é injetado pelo navegacao.js -->
+
+  <main class="conteudo">
+    <section class="card">
+      <h2>Novo/Editar Vendedor</h2>
+      <div class="grid dois">
+        <div>
+          <label>Nome</label>
+          <input id="v-nome" placeholder="Ex.: João da Rota 1" />
+        </div>
+        <div>
+          <label>Telefone</label>
+          <input id="v-telefone" inputmode="tel" placeholder="(21) 9 9999-9999" />
+        </div>
+      </div>
+      <div class="acoes">
+        <button class="btn salvar" id="btn-salvar"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Vendedores</h2>
+      <div class="grid" style="margin-bottom:8px;">
+        <input id="busca" placeholder="Buscar por nome ou telefone..." />
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th><th>Telefone</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="lista"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+    document.addEventListener("DOMContentLoaded", () => {
+      inicializarPagina("ERP – Vendedores", "erp");
+    });
+  </script>
+  <script type="module" src="../js/vendedores.js"></script>
+</body>
+</html>

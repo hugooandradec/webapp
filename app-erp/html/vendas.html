@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ERP – Vendas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script type="module" src="../js/vendas.js"></script>
+  <style>
+    :root { --roxo:#6a1b9a; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:Arial, Helvetica, sans-serif; background:#f6f3fa; }
+    .conteudo { padding:24px; max-width:980px; margin:0 auto; }
+    h2 { margin:0 0 12px 0; }
+    .card { background:#fff; border:1px solid #e6e0ef; border-radius:14px; padding:16px; margin:16px 0; overflow:hidden; }
+    .grid { display:grid; gap:12px; min-width:0; }
+    .col-2 { grid-template-columns: 1fr 1fr; }
+    .col-3 { grid-template-columns: 1fr 1fr 1fr; }
+    label { font-weight:700; font-size:14px; color:#342b50; }
+    input, select { display:block; width:100%; padding:10px 12px; border:none; border-bottom:2px solid #e0d6f2; background:#faf9fc; outline:0; }
+    .muted { display:block; color:#6d5f8c; font-size:12px; margin-top:4px; }
+    .acoes { display:flex; gap:10px; margin-top:8px; }
+    .btn { border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; }
+    .salvar { background:#6a1b9a; color:#fff; }
+    .limpar { background:#d1c8e3; color:#2a2540; }
+
+    /* ===== Recentes enxuto ===== */
+    .linha-acoes-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:12px; }
+    .link { color:#6a1b9a; font-weight:700; text-decoration:none; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:8px 6px; border-bottom:1px solid #eee; text-align:left; font-size:14px; }
+    th { color:#67518d; font-weight:700; }
+
+    .col-data   { width:6.5rem; }
+    .col-vend   { width:9rem; }
+    .col-total  { width:7rem; text-align:right; }
+    .col-venc   { width:6.5rem; }
+    .col-status { width:6rem; }
+    .col-acao   { width:5rem; text-align:right; }
+
+    .badge { padding:2px 6px; border-radius:999px; font-size:12px; font-weight:700; }
+    .b-pago { background:#dcfce7; color:#065f46; }
+    .b-pend { background:#fee2e2; color:#7f1d1d; }
+
+    .acoes-linha button { border:0; background:transparent; cursor:pointer; color:#6a1b9a; font-size:14px; }
+  </style>
+</head>
+<body>
+  <!-- Cabeçalho vem do navegacao.js -->
+  <main class="conteudo">
+    <section class="card">
+      <h2>Nova/Editar Venda</h2>
+      <div class="grid col-3">
+        <div>
+          <label>Vendedor</label>
+          <select id="v-vendedor"></select>
+          <div class="muted" id="v-telefone"></div>
+        </div>
+        <div>
+          <label>Produto</label>
+          <select id="v-produto"></select>
+          <div class="muted">Disponível: <span id="v-disponivel">0</span></div>
+        </div>
+        <div>
+          <label>Quantidade</label>
+          <input id="v-quantidade" type="number" min="1" />
+        </div>
+      </div>
+      <div class="grid col-3">
+        <div>
+          <label>Preço de Repasse (unit.)</label>
+          <input id="v-preco" type="text" inputmode="decimal" />
+        </div>
+        <div>
+          <label>Total</label>
+          <input id="v-total" disabled />
+        </div>
+        <div>
+          <label>Data da Venda</label>
+          <input id="v-data" type="date" />
+        </div>
+      </div>
+      <div class="grid col-2">
+        <div>
+          <label>Vencimento</label>
+          <input id="v-vencimento" type="date" />
+          <div class="muted">+7 dias por padrão</div>
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="v-status">
+            <option value="PENDENTE">PENDENTE</option>
+            <option value="PAGO">PAGO</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid col-2" id="bloco-forma" style="display:none;">
+        <div>
+          <label>Forma</label>
+          <input id="v-forma" placeholder="Pix, dinheiro…" />
+        </div>
+        <div>
+          <label>Obs.</label>
+          <input id="v-obs" placeholder="Opcional" />
+        </div>
+      </div>
+      <div class="acoes">
+        <button class="btn salvar" id="btn-salvar"><i class="fa-solid fa-floppy-disk"></i> Salvar</button>
+        <button class="btn limpar" id="btn-limpar" type="button"><i class="fa-solid fa-eraser"></i> Limpar</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="linha-acoes-top">
+        <h2>Recentes</h2>
+        <a class="link" href="./vendas-registro.html"><i class="fa-solid fa-clock-rotate-left"></i> Ver todas</a>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th class="col-data">Data</th>
+            <th class="col-vend">Vendedor</th>
+            <th class="col-total">Total</th>
+            <th class="col-venc">Venc.</th>
+            <th class="col-status">Status</th>
+            <th class="col-acao">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="lista-recentes"></tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

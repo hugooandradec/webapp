@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajustar ROI — jogos</title>
+
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../../common/img/favicon.ico">
+  <meta name="theme-color" content="#6a1b9a">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin:0; padding:0; background:#000; color:#fff; font-family: system-ui, -apple-system, Arial, sans-serif; }
+    #shell { position:relative; min-height:100dvh; }
+    #topbar { position:fixed; inset:8px 8px auto 8px; z-index:20; display:flex; gap:8px; align-items:center; justify-content:space-between; }
+    #titulo { font-weight:600; margin-left:8px; text-shadow:0 1px 2px rgba(0,0,0,.5); }
+    .btn { background:#7c3aed; border:none; color:#fff; border-radius:10px; padding:10px 14px; font-size:15px; }
+    .btn-outline { background:#fff; color:#7c3aed; }
+    .btn:active { transform: translateY(1px); }
+    video { width:100%; height:auto; display:block; background:#000; }
+    #roi-layer { position:absolute; inset:0; pointer-events:none; z-index:5; }
+    .roi-box { position:absolute; border:2px solid #40e0ff; border-radius:10px; box-shadow:0 0 0 200vmax rgba(0,0,0,.25); pointer-events:auto; }
+    .handle { width:16px; height:16px; background:#40e0ff; border:2px solid #007a8f; border-radius:50%; position:absolute; pointer-events:auto; }
+    .handle.tl { left:-10px; top:-10px; } .handle.tr { right:-10px; top:-10px; }
+    .handle.bl { left:-10px; bottom:-10px; } .handle.br { right:-10px; bottom:-10px; }
+    #toolbar { position:fixed; left:0; right:0; bottom:0; z-index:20; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:12px; background:rgba(0,0,0,.35); }
+    #status { position:fixed; left:0; right:0; bottom:74px; text-align:center; font-size:14px; color:#9ae6b4; }
+  </style>
+</head>
+<body>
+  <div id="shell">
+    <div id="topbar">
+      <button id="btn-fechar" class="btn btn-outline"><i class="fa fa-arrow-left"></i> Fechar</button>
+      <div id="titulo">Ajustar ROI — <span id="jogoNome">—</span></div>
+      <span></span>
+    </div>
+
+    <video id="camera" autoplay playsinline></video>
+    <canvas id="canvas" style="display:none"></canvas>
+
+    <div id="roi-layer">
+      <div id="roi" class="roi-box" style="left:10%; top:20%; width:80%; height:22%;">
+        <div class="handle tl"></div>
+        <div class="handle tr"></div>
+        <div class="handle bl"></div>
+        <div class="handle br"></div>
+      </div>
+    </div>
+
+    <div id="toolbar">
+      <button id="btn-capturar" class="btn btn-outline"><i class="fa fa-camera"></i> Capturar</button>
+      <button id="btn-testar" class="btn"><i class="fa fa-eye"></i> Testar OCR</button>
+      <button id="btn-salvar" class="btn" style="background:#84cc16"><i class="fa fa-save"></i> Salvar ROI</button>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <script type="module" src="../../common/js/navegacao.js"></script>
+  <script type="module" src="../js/jogos-roi.js"></script>
+
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(console.error);
+  }
+  </script>
+</body>
+</html>

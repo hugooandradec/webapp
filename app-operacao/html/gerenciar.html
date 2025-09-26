@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerenciar</title>
+
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
+  <meta name="theme-color" content="#6a1b9a" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    html, body { margin:0; padding:0; overflow-x:hidden; font-family:Arial, sans-serif; background:#f8f8f8; }
+    .menu-container { margin: 30px 0; }
+    .menu-btn { display:flex; align-items:center; justify-content:flex-start; color:#333; border-radius:0; padding:16px 18px; font-size:16px; width:100%; cursor:pointer; text-decoration:none; font-weight:normal; }
+    .menu-btn:nth-child(even) { background-color:#f2e5ff; }
+    .menu-btn:nth-child(odd)  { background-color:#e8d8f5; }
+    .menu-btn:hover { background-color:#decdf4; }
+    .menu-btn i { color:#6a1b9a; margin-right:14px; font-size:20px; width:24px; text-align:center; }
+  </style>
+</head>
+<body>
+  <div id="cabecalho"></div>
+
+  <div class="menu-container">
+    <a href="gerenciarClientes.html" class="menu-btn"><i class="fas fa-users"></i> Clientes</a>
+    <a href="gerenciarMaquinas.html" class="menu-btn"><i class="fas fa-wrench"></i> Máquinas</a>
+    <a href="gerenciarJogos.html" class="menu-btn"><i class="fas fa-dice"></i> Jogos</a>
+    <a href="gerenciarColaboradores.html" class="menu-btn"><i class="fas fa-user-tie"></i> Colaboradores</a>
+    <a href="gerenciarRotas.html" class="menu-btn"><i class="fas fa-route"></i> Rotas</a>
+  </div>
+
+  <script type="module" src="../../common/js/navegacao.js"></script>
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+    document.addEventListener('DOMContentLoaded', () => {
+      inicializarPagina('Gerenciar');
+    });
+  </script>
+
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(console.error);
+  }
+  </script>
+</body>
+</html>

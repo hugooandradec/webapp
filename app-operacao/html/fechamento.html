@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fechamento</title>
+  <meta name="theme-color" content="#6a1b9a" />
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
+
+  <!-- Header / status é injetado por navegacao.js -->
+  <script type="module" src="../../common/js/navegacao.js"></script>
+  <script type="module" src="../js/fechamento.js"></script>
+
+  <style>
+    :root{ --roxo:#6a1b9a; --cinza:#eff0f6; }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#f6f7fb;font-family:system-ui, Roboto, Arial}
+    main{padding:14px}
+    h1{margin:8px 0 14px;text-align:center;color:#5e2aa0;font-weight:800}
+    .card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:14px;margin:12px 0}
+    .sec-title{font-weight:800;margin:0 0 10px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .pill{display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;border:2px solid var(--roxo);font-weight:800;cursor:pointer;user-select:none}
+    .pill.primary{background:var(--roxo);color:#fff}
+    .pill.disabled{opacity:.45;pointer-events:none}
+    .hint{margin-top:8px;color:#666;font-size:12px;text-align:center}
+    .kv{display:grid;grid-template-columns:120px 1fr;gap:6px 10px}
+    .k{color:#6b6b6b}
+    .v{font-weight:700}
+    hr.sep{border:0;border-top:1px dashed #e5e5ee;margin:10px 0}
+    .btn{width:100%;height:46px;border:none;border-radius:10px;background:var(--roxo);color:#fff;font-weight:900;cursor:pointer}
+    .btn-outline{background:#fff;color:var(--roxo);border:2px solid var(--roxo)}
+    #pickerOverlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45);z-index:9999;padding:14px}
+    #pickerOverlay.aberto{display:flex}
+    #picker{background:#fff;width:min(800px,100%);max-height:85dvh;border-radius:12px;overflow:auto}
+    #picker header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #eee}
+    #picker header h3{margin:0}
+    #picker header button{border:none;background:#eee;padding:6px 10px;border-radius:8px}
+    #picker .list{padding:8px}
+    #picker .item{padding:10px 12px;border:1px solid #eee;border-radius:10px;margin:8px 0;cursor:pointer}
+    #picker .item:hover{background:#faf8ff;border-color:#e3d4ff}
+  </style>
+</head>
+<body>
+  <div id="cabecalho" data-title="Fechamento" data-back="true" data-status="true"></div>
+
+  <main>
+    <h1>Fechamento</h1>
+
+    <section class="card">
+      <div class="sec-title">Cliente</div>
+      <div class="row2">
+        <div id="btnCliPend" class="pill primary">selecione <span id="cliPendCount" style="margin-left:6px;opacity:.7">(0)</span></div>
+        <div id="btnCliLanc" class="pill">selecione <span id="cliLancCount" style="margin-left:6px;opacity:.7">(0)</span></div>
+      </div>
+      <div class="hint">À esquerda: <b>Não lançados</b> • À direita: <b>Lançados</b></div>
+    </section>
+
+    <section class="card">
+      <div class="sec-title">Equipamento</div>
+      <div class="row2">
+        <div id="btnEqPend" class="pill">selecione <span id="eqPendCount" style="margin-left:6px;opacity:.7">(0)</span></div>
+        <div id="btnEqLanc" class="pill">selecione <span id="eqLancCount" style="margin-left:6px;opacity:.7">(0)</span></div>
+      </div>
+      <div class="hint">Habilita após escolher o cliente</div>
+    </section>
+
+    <section class="card">
+      <div class="sec-title">Resumo do cliente</div>
+      <div class="kv">
+        <div class="k">Rota</div>     <div class="v" id="r-rota">—</div>
+        <hr class="sep" style="grid-column:1/3">
+        <div class="k">Cliente</div>  <div class="v" id="r-cliente">—</div>
+        <hr class="sep" style="grid-column:1/3">
+        <div class="k">End.</div>     <div class="v" id="r-end">—</div>
+        <hr class="sep" style="grid-column:1/3">
+        <div class="k">Bairro</div>   <div class="v" id="r-bairro">—</div>
+        <hr class="sep" style="grid-column:1/3">
+        <div class="k">Data</div>     <div class="v" id="r-data">—</div>
+        <hr class="sep" style="grid-column:1/3">
+        <div class="k">Negativo Anterior (R$)</div> <div class="v" id="r-negativo">0,00</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <button id="btnSalvar" class="btn">Salvar</button>
+    </section>
+  </main>
+
+  <div id="pickerOverlay">
+    <div id="picker">
+      <header>
+        <h3 id="pickerTitle">Selecionar</h3>
+        <button id="closePicker">Fechar</button>
+      </header>
+      <div class="list" id="pickerList"></div>
+    </div>
+  </div>
+
+  <div id="launchOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999;padding:14px">
+    <div style="background:#fff;width:min(900px,100%);max-height:85dvh;border-radius:12px;overflow:auto;padding:14px">
+      <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3 style="margin:0">Cadastrar — <span id="launchTitulo"></span></h3>
+        <button id="closeLaunch" style="border:none;background:#eee;padding:6px 10px;border-radius:8px">Fechar</button>
+      </header>
+      <div id="launchConteudo" style="padding:8px 4px">
+        <p style="margin:0 0 8px;color:#666">Stub de demonstração. Quando concluirmos o cadastro real, essa tela vira o fluxo completo (relógios anteriores / atuais, foto, ROI, etc.).</p>
+        <button id="btnLaunchOk" class="btn">Concluir lançamento (demo)</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(console.error);
+  }
+  </script>
+</body>
+</html>

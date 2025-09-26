@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vales — Menu</title>
+  <meta name="theme-color" content="#6a1b9a" />
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <style>
+    :root{ --roxo:#6a1b9a; }
+    html,body{ margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#fff }
+    main{ padding:16px; }
+    .menu{ display:flex; flex-direction:column; gap:10px; margin-top:10px }
+    .menu a{
+      display:flex; align-items:center; gap:12px; padding:14px 16px; text-decoration:none; color:#3b3b3b;
+      font-weight:700; border-radius:10px; background:#efe6ff;
+    }
+    .menu a:nth-child(even){ background:#f3ecff }
+    .menu i{ color:var(--roxo); width:24px; text-align:center; font-size:20px }
+  </style>
+</head>
+<body>
+  <div id="cabecalho"></div>
+
+  <main>
+    <div class="menu">
+      <a href="vales.html?ctx=sala"><i class="fa-solid fa-building"></i> Sala (relatório completo)</a>
+      <a href="vales.html?ctx=ilha"><i class="fa-solid fa-ship"></i> Ilha (operacional)</a>
+      <a href="vales.html?ctx=zs"><i class="fa-solid fa-city"></i> ZS/Centro (operacional)</a>
+    </div>
+  </main>
+
+  <script type="module" src="../../common/js/navegacao.js"></script>
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+    document.addEventListener("DOMContentLoaded", () => {
+      inicializarPagina("Vales");
+    });
+  </script>
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(console.error);
+  }
+  </script>
+</body>
+</html>

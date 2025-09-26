@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pré-Fecho</title>
+  <meta name="theme-color" content="#6a1b9a" />
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <style>
+    :root{ --roxo:#6a1b9a; --verde:#16a34a; --vermelho:#dc2626; }
+    html,body{ margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#f8f8f8; }
+    main{ max-width: 980px; margin: 0 auto; padding: 16px; }
+    h1{ margin:8px 0 16px; color:#5e2aa0; text-align:center }
+    .linha{ display:flex; align-items:center; gap:8px; margin:10px 0 }
+    label{ font-weight:700 }
+    input[type="text"]{ flex:1; padding:10px 0; border:none; border-bottom:2px solid #dcdcdc; background:transparent; outline:none }
+    input[type="text"]:focus{ border-bottom-color:#6a1b9a }
+    .barra{ height:1px; background:#e7e7ef; margin:14px 0 }
+    .btn{ padding:12px 14px; border:none; border-radius:10px; font-weight:800; cursor:pointer }
+    .btn.roxo{ background:#6a1b9a; color:#fff }
+    .btn.cinza{ background:#aaa; color:#fff }
+    .cards{ display:grid; gap:10px }
+    .card{ background:#fff; border:1px solid #eee; border-radius:12px; padding:12px }
+    .grid{ display:grid; grid-template-columns:1fr 1px 1fr; gap:10px; align-items:center }
+    .grid .col h4{ margin:0 0 6px; text-align:center; color:#444 }
+    .grid .divv{ width:1px; height:100%; background:#e7e7ef }
+    .linha2{ display:grid; grid-template-columns:1fr 1fr; gap:8px }
+    .linha2 input{ width:100%; padding:8px 0; border:none; border-bottom:2px solid #ddd; background:transparent; outline:none; text-align:center }
+    .total{ font-weight:900; text-align:right; margin-top:10px }
+    .positivo{ color:var(--verde) } .negativo{ color:var(--vermelho) }
+
+    /* Modal relatório */
+    .modal{ position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:50; padding:12px }
+    .modal.aberta{ display:flex }
+    .modal .cx{ background:#fff; color:#222; border-radius:12px; width:min(980px,100%); max-height:85dvh; overflow:auto; padding:14px }
+    .modal header{ display:flex; justify-content:space-between; align-items:center; margin:0 0 8px }
+    .modal header h3{ margin:0 }
+    .rel{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space:pre-wrap }
+  </style>
+</head>
+<body>
+  <div id="cabecalho"></div>
+
+  <main>
+    <h1>Pré-Fecho</h1>
+
+    <div class="linha">
+      <label for="ponto">Nome do Ponto:</label>
+      <input id="ponto" type="text" placeholder="digite o nome do ponto" />
+    </div>
+
+    <div class="barra"></div>
+
+    <div class="acoes" style="display:flex; gap:10px; margin-bottom:10px">
+      <button id="btnAdicionar" class="btn roxo"><i class="fa-solid fa-plus"></i> Adicionar Máquina</button>
+      <button id="btnRelatorio" class="btn cinza"><i class="fa-solid fa-file-lines"></i> Visualizar Relatório</button>
+    </div>
+
+    <div id="listaMaquinas" class="cards"></div>
+    <div id="totalGeral" class="total">TOTAL: R$ 0,00</div>
+  </main>
+
+  <!-- Modal relatório -->
+  <div id="modalRelatorio" class="modal">
+    <div class="cx">
+      <header>
+        <h3>Relatório do Pré-Fecho</h3>
+        <button id="btnFecharModal" style="border:none;background:#eee;padding:6px 10px;border-radius:8px">Fechar</button>
+      </header>
+      <div id="relatorioConteudo" class="rel"></div>
+    </div>
+  </div>
+
+  <script type="module" src="../../common/js/navegacao.js"></script>
+  <script defer src="../../common/js/toast.js"></script>
+  <script type="module" src="../js/preFecho.js"></script>
+
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(console.error);
+  }
+  </script>
+</body>
+</html>

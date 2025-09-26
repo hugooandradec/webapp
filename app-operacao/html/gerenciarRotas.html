@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerenciar Rotas</title>
+
+  <link rel="icon" href="../../common/img/favicon.ico" />
+  <link rel="manifest" href="../manifest.json" />
+  <meta name="theme-color" content="#6a1b9a" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+  <script type="module" src="../../common/js/navegacao.js"></script>
+  <script defer src="../../common/js/toast.js"></script>
+  <script type="module" src="../js/sync.js"></script>
+  <script type="module" src="../js/gerenciarRotas.js"></script>
+
+  <style>/* mesmo CSS base */ 
+    :root{ --roxo:#6a1b9a; --borda:#e6e6ee; --texto:#222; --muted:#6b7280; --vermelho:#c72626; }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#fff;color:var(--texto);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    main{max-width:900px;margin:0 auto;padding:16px 14px 28px}
+    .btn{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px;border-radius:12px;border:none;cursor:pointer;font-weight:600}
+    .btn-roxo{background:var(--roxo);color:#fff}.btn-cinza{background:#a3a3a3;color:#fff}
+    .form{background:#fff;border:1px solid var(--borda);border-radius:16px;padding:14px;margin:12px 2px;display:none}
+    label{display:block;font-weight:500;margin:10px 0 6px 2px}
+    input{width:100%;padding:10px;border:none;border-bottom:2px solid #ccc;background:transparent;font-size:16px}
+    input:focus{outline:none;border-bottom:2px solid #6a1b9a}
+    .linhas{display:grid;grid-template-columns:1fr;gap:8px}
+    @media(min-width:640px){ .linhas{grid-template-columns:1fr 1fr} }
+    .acoes-form{display:flex;gap:10px;margin-top:14px}
+    .search{display:none;margin-top:12px}.search .cx{background:#fff;border:1px solid var(--borda);border-radius:16px;padding:14px}
+    .lista .card{background:#fff;border:1px solid var(--borda);border-radius:16px;padding:12px;margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  </style>
+</head>
+<body>
+  <div id="cabecalho"></div>
+
+  <main>
+    <button id="btnNovo" class="btn btn-roxo"><i class="fas fa-route"></i> nova rota</button>
+    <button id="btnPesquisar" class="btn btn-cinza" style="margin-top:8px"><i class="fas fa-magnifying-glass"></i> pesquisar</button>
+
+    <!-- FORM EXEMPLO — adapte aos campos de rota -->
+    <section id="formWrap" class="form" aria-live="polite">
+      <input type="hidden" id="editId" value="">
+      <label for="nome">nome *</label>
+      <input id="nome" type="text" autocomplete="off" />
+      <div class="acoes-form">
+        <button id="btnSalvar" class="btn btn-roxo"><i class="fa-solid fa-save"></i> salvar</button>
+        <button id="btnCancelar" class="btn btn-cinza"><i class="fa-solid fa-xmark"></i> cancelar</button>
+      </div>
+      <div id="msgForm" class="msg" role="status"></div>
+    </section>
+
+    <section id="searchWrap" class="search">
+      <div class="cx">
+        <label for="busca">pesquisar rota</label>
+        <input id="busca" type="text" autocomplete="off" placeholder="digite nome">
+        <div id="lista" class="lista"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(console.error);
+  }
+  </script>
+</body>
+</html>

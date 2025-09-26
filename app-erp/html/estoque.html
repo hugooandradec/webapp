@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ERP – Estoque</title>
+
+  <link rel="manifest" href="../manifest.json">
+  <link rel="icon" href="../../common/img/favicon.ico">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    :root { --roxo:#6a1b9a; }
+    body { margin:0; font-family:Arial, Helvetica, sans-serif; background:#f6f3fa; }
+    .conteudo { padding:24px; max-width:960px; margin:0 auto; }
+    h2 { margin:0 0 12px 0; }
+    .card { background:#fff; border:1px solid #e6e0ef; border-radius:14px; padding:16px; margin:16px 0; }
+    .grid { display:grid; gap:12px; }
+    .dois { grid-template-columns: 1fr 1fr; }
+    .tres { grid-template-columns: 1fr 1fr 1fr; }
+    label { font-weight:700; font-size:14px; color:#342b50; }
+    input, select { width:100%; padding:10px 12px; border:none; border-bottom:2px solid #e0d6f2; outline:0; background:#faf9fc; }
+    .acoes { display:flex; gap:10px; margin-top:8px; }
+    .btn { border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; }
+    .salvar, .primario { background:#6a1b9a; color:#fff; }
+    .leve { background:#d1c8e3; color:#2a2540; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { padding:10px; border-bottom:1px solid #eee; text-align:left; }
+    th { color:#67518d; }
+    .acoes-linha button { border:0; background:transparent; cursor:pointer; color:#6a1b9a; }
+    @media (max-width:900px){ .tres { grid-template-columns: 1fr 1fr; } }
+    @media (max-width:600px){ .dois, .tres { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <!-- Header é injetado pelo navegacao.js -->
+
+  <main class="conteudo">
+    <section class="card">
+      <h2>Entrada de Compras</h2>
+      <div class="grid tres">
+        <div>
+          <label>Data</label>
+          <input type="date" id="e-data" />
+        </div>
+        <div>
+          <label>Fornecedor</label>
+          <select id="e-fornecedor"></select>
+        </div>
+        <div>
+          <label>Produto</label>
+          <select id="e-produto"></select>
+        </div>
+        <div>
+          <label>Quantidade</label>
+          <input id="e-quantidade" type="number" step="1" min="1" placeholder="Ex.: 50"/>
+        </div>
+        <div>
+          <label>Custo Unitário</label>
+          <input id="e-custo" inputmode="decimal" step="0.01" placeholder="Ex.: 10.50"/>
+        </div>
+        <div>
+          <label>Observação</label>
+          <input id="e-obs" placeholder="Lote, NF, etc. (opcional)"/>
+        </div>
+      </div>
+      <div class="acoes">
+        <button id="btn-salvar-entrada" class="btn salvar">
+          <i class="fa-solid fa-floppy-disk"></i> Salvar
+        </button>
+        <button id="btn-limpar" class="btn leve">Limpar</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Entradas Recentes</h2>
+      <div class="grid" style="margin-bottom:8px;">
+        <input id="busca-entrada" placeholder="Buscar por fornecedor/produto/obs"/>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Fornecedor</th>
+            <th>Produto</th>
+            <th>Qtd</th>
+            <th>Custo Unit.</th>
+            <th>Total</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="lista-entradas"></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Resumo de Estoque</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Produto</th>
+            <th>Quantidade</th>
+            <th>Custo Médio</th>
+            <th>Valor em Estoque</th>
+          </tr>
+        </thead>
+        <tbody id="lista-estoque"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+    document.addEventListener("DOMContentLoaded", () => {
+      inicializarPagina("ERP – Estoque", "erp");
+    });
+  </script>
+  <script type="module" src="../js/estoque.js"></script>
+</body>
+</html>
