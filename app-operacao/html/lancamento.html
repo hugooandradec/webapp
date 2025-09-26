@@ -5,13 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lançamento</title>
 
+  <!-- Manifest do app Operação -->
   <link rel="manifest" href="../manifest.json" />
   <link rel="icon" href="../../common/img/favicon.ico" />
   <meta name="theme-color" content="#6a1b9a" />
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <script type="module" src="../../common/js/navegacao.js"></script>
+  <!-- Header/Navegação com ROOT + /health + botão voltar inteligente -->
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+    // Página interna do app-operacao → voltar leva para o MENU do Operação
+    inicializarPagina("Lançamento", "operacao");
+  </script>
+
+  <!-- Seus utilitários -->
   <script defer src="../../common/js/toast.js"></script>
+  <!-- Lógica da tela (mantido como você já usa) -->
   <script type="module" src="../js/lancamento.js"></script>
 
   <style>
@@ -38,8 +48,6 @@
   </style>
 </head>
 <body>
-  <div id="cabecalho"></div>
-
   <main>
     <h2>Lançamento</h2>
 
@@ -69,11 +77,5 @@
   <div id="modal-relatorio">
     <div id="conteudo-relatorio"></div>
   </div>
-
-  <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(console.error);
-  }
-  </script>
 </body>
 </html>
