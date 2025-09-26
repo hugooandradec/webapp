@@ -29,7 +29,7 @@ export function requireApp(appKey) {
   const u = getCurrentUser();
   if (!u) { window.location.replace("./login.html"); return false; }
   if (!canAccess(appKey)) {
-    if (u.apps?.includes("erp")) window.location.replace("./erp/menu-erp.html");
+    if (u.apps?.includes("erp")) window.location.replace("./erp/menu.html");
     else window.location.replace("./app-selector.html");
     return false;
   }
