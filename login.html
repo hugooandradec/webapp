@@ -8,18 +8,29 @@
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./common/img/favicon.ico" />
   <style>
+    :root{ --roxo:#6a1b9a; }
     body { margin:0; font-family:Arial,sans-serif; background:#f5f5f5; }
-    header { background:#6a1b9a; color:#fff; padding:12px 16px; font-weight:700; }
+    header {
+      background:var(--roxo); color:#fff; padding:12px 16px; font-weight:700;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .dot {
+      width:10px; height:10px; border-radius:50%; background:#aaa; display:inline-block;
+    }
     .container { max-width:420px; margin:48px auto; background:#fff; padding:24px; border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,.08); }
     .form-group { margin-bottom:16px; }
     label { display:block; margin-bottom:6px; font-weight:700; }
     input { width:100%; padding:10px 0; border:none; border-bottom:2px solid #ddd; outline:0; font-size:16px; background:transparent; }
-    button { width:100%; margin-top:10px; padding:12px; background:#6a1b9a; color:#fff; border:none; border-radius:10px; font-weight:700; cursor:pointer; }
+    button { width:100%; margin-top:10px; padding:12px; background:var(--roxo); color:#fff; border:none; border-radius:10px; font-weight:700; cursor:pointer; }
     .erro { color:#b00020; margin-top:10px; text-align:center; }
   </style>
 </head>
 <body>
-  <header>Login</header>
+  <header>
+    <span>Login</span>
+    <span id="online-dot" class="dot" title="Status de conexão"></span>
+  </header>
+
   <main class="container">
     <form id="form-login">
       <div class="form-group">
@@ -37,14 +48,35 @@
 
   <script type="module">
     import { login, getCurrentUser } from "./common/js/auth.js";
+    import { isOnline } from "./common/js/navegacao.js";
 
+    // ROOT compatível com GitHub Pages e domínio próprio
+    const parts = location.pathname.split("/").filter(Boolean);
+    const ROOT = location.hostname.endsWith("github.io") && parts.length > 0 ? "/" + parts[0] + "/" : "/";
+
+    // Registrar o SW da raiz (silencioso)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register(`${ROOT}sw.js`).catch(() => {});
+    }
+
+    // Atualiza o dot de conexão
+    async function pintarStatus() {
+      const ok = await isOnline();
+      const dot = document.getElementById("online-dot");
+      if (dot) dot.style.background = ok ? "#16a34a" : "#aaa";
+    }
+    pintarStatus();
+    // opcional: revalidar a cada 30s
+    setInterval(pintarStatus, 30000);
+
+    // Fluxo de login
     const form = document.getElementById("form-login");
     const user = document.getElementById("input-user");
     const pass = document.getElementById("input-pass");
     const msg  = document.getElementById("msg");
 
     const params = new URLSearchParams(location.search);
-    const next = params.get("next") || "./app-selector.html";
+    const next = params.get("next") || `${ROOT}app-selector.html`;
 
     const u = getCurrentUser();
     if (u) window.location.replace(next);
