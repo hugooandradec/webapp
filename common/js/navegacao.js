@@ -20,12 +20,21 @@ export function getURLBackend() {
   );
 }
 
+// ===== status com retry (lida melhor com cold start do Render) =====
 export async function isOnline() {
-  try {
-    const resp = await fetch(`${getURLBackend()}/health`, { method: "GET", cache: "no-store" });
+  const url = `${getURLBackend()}/health`;
+
+  async function tentar() {
+    const resp = await fetch(url, { method: "GET", cache: "no-store" });
     if (!resp.ok) return false;
     const j = await resp.json().catch(() => ({}));
     return j?.status === "ok" || j?.mongo === "connected";
+  }
+
+  try {
+    if (await tentar()) return true;
+    await new Promise(r => setTimeout(r, 1500)); // cold start retry
+    return await tentar();
   } catch {
     return false;
   }
