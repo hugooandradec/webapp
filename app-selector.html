@@ -1,32 +1,63 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Escolher Aplicativo</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./common/img/favicon.ico" />
   <style>
-    :root{ --roxo:#6a1b9a; }
-    body { margin:0; font-family:Arial,sans-serif; background:#f5f5f5; }
+    :root { --roxo:#6a1b9a; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:Arial, Helvetica, sans-serif; background:#f6f3fa; }
     header {
-      background:var(--roxo); color:#fff; padding:12px 16px; font-weight:700;
+      background:var(--roxo); color:#fff;
+      padding:12px 20px; font-weight:700;
       display:flex; align-items:center; justify-content:space-between;
     }
     .dot {
-      width:10px; height:10px; border-radius:50%; background:#aaa; display:inline-block;
+      width:12px; height:12px; border-radius:50%;
+      background:#aaa; display:inline-block;
     }
-    .container { max-width:420px; margin:48px auto; background:#fff; padding:24px; border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,.08); }
-    .btn {
-      display:flex; align-items:center; gap:10px; padding:14px; margin:12px 0;
-      background:#fff; border:2px solid var(--roxo); border-radius:10px;
-      text-decoration:none; font-weight:700; color:var(--roxo); font-size:16px;
-      transition:.2s;
+    .conteudo{ padding:24px; max-width:680px; margin:0 auto; }
+    .grid{ display:grid; gap:16px; }
+    .btn{
+      display:flex; align-items:center; gap:12px;
+      padding:16px; background:#fff; border-radius:14px;
+      border:1px solid #e6e0ef; text-decoration:none; color:#2a2540; font-weight:700;
     }
-    .btn:hover { background:#f0e6f7; }
-    .btn i { color:var(--roxo); }
+    .btn i{ color:var(--roxo); font-size:20px }
   </style>
+  <script type="module">
+    import { inicializarPagina, isOnline } from "./common/js/navegacao.js";
+    import { getCurrentUser, canAccess } from "./common/js/auth.js";
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await inicializarPagina("Escolher Aplicativo");
+
+      const u = getCurrentUser();
+      if (!u) {
+        window.location.replace("./login.html?next="+encodeURIComponent("./app-selector.html"));
+        return;
+      }
+
+      // controle de acesso
+      document.querySelectorAll("[data-app]").forEach(card => {
+        const app = card.getAttribute("data-app");
+        if (!canAccess(app)) card.style.display = "none";
+      });
+
+      // pintar status do dot
+      async function atualizarDot() {
+        const ok = await isOnline();
+        const dot = document.getElementById("online-dot");
+        if (dot) dot.style.background = ok ? "#16a34a" : "#aaa";
+      }
+      atualizarDot();
+      setInterval(atualizarDot, 30000);
+    });
+  </script>
 </head>
 <body>
   <header>
@@ -34,35 +65,11 @@
     <span id="online-dot" class="dot" title="Status de conexão"></span>
   </header>
 
-  <main class="container">
-    <a class="btn" href="./app-erp/html/menu.html">
-      <i class="fas fa-people-carry"></i> App - ERP
-    </a>
-    <a class="btn" href="./app-operacao/html/menu.html">
-      <i class="fas fa-cogs"></i> App - Operação
-    </a>
+  <main class="conteudo">
+    <div class="grid">
+      <a class="btn" data-app="operacao" href="./app-operacao/html/menu.html"><i class="fa-solid fa-list"></i>App - Operação</a>
+      <a class="btn" data-app="erp" href="./app-erp/html/menu.html"><i class="fa-solid fa-boxes-stacked"></i>App - ERP</a>
+    </div>
   </main>
-
-  <script type="module">
-    import { isOnline } from "./common/js/navegacao.js";
-
-    // ROOT compatível com GitHub Pages e domínio próprio
-    const parts = location.pathname.split("/").filter(Boolean);
-    const ROOT = location.hostname.endsWith("github.io") && parts.length > 0 ? "/" + parts[0] + "/" : "/";
-
-    // Registrar o SW da raiz (silencioso)
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register(`${ROOT}sw.js`).catch(() => {});
-    }
-
-    // Atualiza o dot de conexão
-    async function pintarStatus() {
-      const ok = await isOnline();
-      const dot = document.getElementById("online-dot");
-      if (dot) dot.style.background = ok ? "#16a34a" : "#aaa";
-    }
-    pintarStatus();
-    setInterval(pintarStatus, 30000);
-  </script>
 </body>
 </html>
