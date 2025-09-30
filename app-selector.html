@@ -11,15 +11,6 @@
     :root { --roxo:#6a1b9a; }
     * { box-sizing: border-box; }
     body { margin:0; font-family:Arial, Helvetica, sans-serif; background:#f6f3fa; }
-    header {
-      background:var(--roxo); color:#fff;
-      padding:12px 20px; font-weight:700;
-      display:flex; align-items:center; justify-content:space-between;
-    }
-    .dot {
-      width:12px; height:12px; border-radius:50%;
-      background:#aaa; display:inline-block;
-    }
     .conteudo{ padding:24px; max-width:680px; margin:0 auto; }
     .grid{ display:grid; gap:16px; }
     .btn{
@@ -29,12 +20,15 @@
     }
     .btn i{ color:var(--roxo); font-size:20px }
   </style>
+
   <script type="module">
-    import { inicializarPagina, isOnline } from "./common/js/navegacao.js";
+    import { inicializarPagina } from "./common/js/navegacao.js";
     import { getCurrentUser, canAccess } from "./common/js/auth.js";
 
     document.addEventListener("DOMContentLoaded", async () => {
-      await inicializarPagina("Escolher Aplicativo");
+      // usa o header do navegacao.js (com dot online)
+      // appKey vazio: só verifica login. isMenuPage:true para o "voltar" não tentar sair daqui
+      await inicializarPagina("Escolher Aplicativo", "", { isMenuPage: true });
 
       const u = getCurrentUser();
       if (!u) {
@@ -42,33 +36,23 @@
         return;
       }
 
-      // controle de acesso
+      // controle de acesso por app
       document.querySelectorAll("[data-app]").forEach(card => {
         const app = card.getAttribute("data-app");
         if (!canAccess(app)) card.style.display = "none";
       });
-
-      // pintar status do dot
-      async function atualizarDot() {
-        const ok = await isOnline();
-        const dot = document.getElementById("online-dot");
-        if (dot) dot.style.background = ok ? "#16a34a" : "#aaa";
-      }
-      atualizarDot();
-      setInterval(atualizarDot, 30000);
     });
   </script>
 </head>
 <body>
-  <header>
-    <span>Escolher Aplicativo</span>
-    <span id="online-dot" class="dot" title="Status de conexão"></span>
-  </header>
-
   <main class="conteudo">
     <div class="grid">
-      <a class="btn" data-app="operacao" href="./app-operacao/html/menu.html"><i class="fa-solid fa-list"></i>App - Operação</a>
-      <a class="btn" data-app="erp" href="./app-erp/html/menu.html"><i class="fa-solid fa-boxes-stacked"></i>App - ERP</a>
+      <a class="btn" data-app="operacao" href="./app-operacao/html/menu.html">
+        <i class="fa-solid fa-list"></i> App - Operação
+      </a>
+      <a class="btn" data-app="erp" href="./app-erp/html/menu.html">
+        <i class="fa-solid fa-boxes-stacked"></i> App - ERP
+      </a>
     </div>
   </main>
 </body>
