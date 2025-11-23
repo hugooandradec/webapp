@@ -259,25 +259,18 @@
     </div>
   </div>
 
+  <!-- scripts -->
   <script type="module" src="../../common/js/navegacao.js"></script>
   <script defer src="../../common/js/toast.js"></script>
   <script type="module" src="../js/preFecho.js"></script>
 
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(console.error);
+      // de app-operacao/html até sw.js na raiz: ../../sw.js
+      navigator.serviceWorker
+        .register("../../sw.js")
+        .catch(console.error);
     }
-  </script>
-</body>
-</html>
-  <script type="module" src="../../common/js/navegacao.js"></script>
-  <script defer src="../../common/js/toast.js"></script>
-  <script type="module" src="../js/preFecho.js"></script>
-
-  <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("../sw.js", { scope: "../" }).catch(console.error);
-  }
   </script>
 </body>
 </html>
