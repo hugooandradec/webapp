@@ -85,7 +85,7 @@ function adicionarMaquina(listaMaquinas, totalGeralEl) {
           <input type="text" class="entrada-atual" placeholder="Atual">
         </div>
         <div class="dif">
-          Diferença: <span class="dif-entrada">0,00</span>
+          Diferença: <span class="dif-entrada">R$ 0,00</span>
         </div>
       </div>
 
@@ -98,13 +98,13 @@ function adicionarMaquina(listaMaquinas, totalGeralEl) {
           <input type="text" class="saida-atual" placeholder="Atual">
         </div>
         <div class="dif">
-          Diferença: <span class="dif-saida">0,00</span>
+          Diferença: <span class="dif-saida">R$ 0,00</span>
         </div>
       </div>
     </div>
 
     <div style="margin-top:8px;font-weight:700;">
-      Resultado: <span class="resultado-maquina positivo">R$ 0,00</span>
+      Resultado: <span class="resultado-maquina">R$ 0,00</span>
     </div>
   `;
 
@@ -125,19 +125,27 @@ function adicionarMaquina(listaMaquinas, totalGeralEl) {
     const saiAnt = parseNumero(saidaAnterior.value);
     const saiAt = parseNumero(saidaAtual.value);
 
-    // Diferença = Atual - Anterior
-    const difEntrada = entAt - entAnt;
-    const difSaida = saiAt - saiAnt;
+    // Diferenças brutas de relógio
+    const difEntradaBruta = entAt - entAnt;   // relógio
+    const difSaidaBruta   = saiAt - saiAnt;   // relógio
 
-    // Resultado geral da máquina (Saída - Entrada)
-    const resultado = difSaida - difEntrada;
+    // CONVERSÃO PARA REAIS (dois últimos dígitos = centavos)
+    // Entrada sempre POSITIVA
+    const entradaReais = Math.abs(difEntradaBruta) / 100;
 
-    spanDifEntrada.textContent = formatarNumero(difEntrada);
-    spanDifSaida.textContent = formatarNumero(difSaida);
+    // Saída sempre NEGATIVA
+    const saidaReais = -Math.abs(difSaidaBruta) / 100;
 
+    // Resultado final da máquina
+    const resultado = entradaReais + saidaReais;
+
+    // Diferenças exibidas em reais
+    spanDifEntrada.textContent = formatarMoeda(entradaReais);
+    spanDifSaida.textContent = formatarMoeda(saidaReais);
+
+    // Resultado em reais com cor
     spanResultado.textContent = formatarMoeda(resultado);
-    spanResultado.classList.toggle("positivo", resultado >= 0);
-    spanResultado.classList.toggle("negativo", resultado < 0);
+    aplicarCorValor(spanResultado, resultado);
 
     atualizarTotalGeral(totalGeralEl);
   };
@@ -165,8 +173,7 @@ function atualizarTotalGeral(totalGeralEl) {
   });
 
   totalGeralEl.textContent = `TOTAL: ${formatarMoeda(total)}`;
-  totalGeralEl.classList.toggle("positivo", total >= 0);
-  totalGeralEl.classList.toggle("negativo", total < 0);
+  aplicarCorValor(totalGeralEl, total);
 }
 
 // Abre relatório no modal
@@ -186,8 +193,8 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
     cards.forEach((card, idx) => {
       const selo = (card.querySelector(".inp-selo")?.value || "").trim();
       const jogo = (card.querySelector(".inp-jogo")?.value || "").trim();
-      const difEntrada = card.querySelector(".dif-entrada")?.textContent || "0,00";
-      const difSaida = card.querySelector(".dif-saida")?.textContent || "0,00";
+      const difEntrada = card.querySelector(".dif-entrada")?.textContent || "R$ 0,00";
+      const difSaida = card.querySelector(".dif-saida")?.textContent || "R$ 0,00";
       const resultado = card.querySelector(".resultado-maquina")?.textContent || "R$ 0,00";
 
       texto += `Máquina ${idx + 1}\n`;
@@ -210,21 +217,33 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
 // Helpers numéricos
 function parseNumero(valor) {
   if (!valor) return 0;
-  const limpo = valor.toString().replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+  const limpo = valor
+    .toString()
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
   const n = parseFloat(limpo);
   return isNaN(n) ? 0 : n;
-}
-
-function formatarNumero(n) {
-  return n.toLocaleString("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 }
 
 function formatarMoeda(n) {
   return n.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   });
+}
+
+// Aplica cor: verde (>0), vermelho (<0), preto (≈0)
+function aplicarCorValor(el, valor) {
+  const LIMIAR = 0.005; // evita ruído tipo 0.0000001
+  el.classList.remove("positivo", "negativo");
+
+  if (valor > LIMIAR) {
+    el.classList.add("positivo");
+  } else if (valor < -LIMIAR) {
+    el.classList.add("negativo");
+  }
+  // se estiver entre -0.005 e 0.005 fica sem classe → preto
 }
