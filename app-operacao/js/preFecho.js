@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnAdicionar.addEventListener("click", () => {
       adicionarMaquina(listaMaquinas, totalGeralEl);
       salvarNoStorage();
+      reposicionarBarraAcoes();
     });
   }
 
@@ -67,7 +68,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Carregar dados salvos (se existirem)
   carregarDoStorage(listaMaquinas, totalGeralEl);
+
+  // Garantir que a barra de ações fique logo após a lista de máquinas
+  reposicionarBarraAcoes();
 });
+
+/* ===========================
+   Barra de ações abaixo da última máquina
+=========================== */
+
+function reposicionarBarraAcoes() {
+  const lista = document.getElementById("listaMaquinas");
+  const acoes = document.querySelector(".acoes");
+  if (!lista || !acoes) return;
+
+  // insere a barra de ações logo após a lista de máquinas
+  const main = lista.parentElement;
+  if (!main) return;
+  const proximo = lista.nextSibling;
+  if (proximo === acoes) return; // já está no lugar certo
+
+  main.insertBefore(acoes, lista.nextSibling);
+}
 
 /* ===========================
    Criação de Máquina
@@ -143,6 +165,7 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
       card.remove();
       atualizarTotalGeral(totalGeralEl);
       salvarNoStorage();
+      reposicionarBarraAcoes();
     });
   }
 
@@ -223,14 +246,7 @@ function atualizarTotalGeral(totalGeralEl) {
   let total = 0;
 
   document.querySelectorAll(".resultado-maquina").forEach((span) => {
-    // Remove tudo que não for dígito, vírgula ou sinal de menos
-    let texto = span.textContent
-      .replace(/[^\d,-]/g, "") // sobra algo tipo "-632,55" ou "110,00"
-      .replace(",", ".");      // vírgula → ponto
-
-    if (!texto || texto === "-") return;
-
-    const valor = parseFloat(texto);
+    const valor = moedaParaNumero(span.textContent);
     if (!isNaN(valor)) {
       total += valor;
     }
@@ -241,43 +257,63 @@ function atualizarTotalGeral(totalGeralEl) {
 }
 
 /* ===========================
-   RELATÓRIO (MODAL)
+   RELATÓRIO (MODAL) COM CORES
 =========================== */
 
 function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo, modal) {
   const data = inputData?.value || "";
-  const cliente = inputCliente?.value || "";
+  const cliente = (inputCliente?.value || "").trim().toUpperCase();
 
-  let texto = "";
-  texto += `Data: ${data}\n`;
-  texto += `Cliente: ${cliente}\n`;
-  texto += "----------------------------------------\n\n";
+  let html = "";
+
+  html += `<div><strong>DATA:</strong> ${escapeHtml(data)}</div>`;
+  html += `<div><strong>CLIENTE:</strong> ${escapeHtml(cliente || "-")}</div>`;
+  html += `<hr style="margin:8px 0;">`;
 
   const cards = document.querySelectorAll(".card");
   if (!cards.length) {
-    texto += "Nenhuma máquina lançada.\n";
+    html += `<div>Nenhuma máquina lançada.</div>`;
   } else {
     cards.forEach((card, idx) => {
-      const selo = (card.querySelector(".inp-selo")?.value || "").trim();
-      const jogo = (card.querySelector(".inp-jogo")?.value || "").trim();
-      const difEntrada = card.querySelector(".dif-entrada")?.textContent || "R$ 0,00";
-      const difSaida = card.querySelector(".dif-saida")?.textContent || "R$ 0,00";
-      const resultado = card.querySelector(".resultado-maquina")?.textContent || "R$ 0,00";
+      const seloRaw = (card.querySelector(".inp-selo")?.value || "").trim();
+      const jogoRaw = (card.querySelector(".inp-jogo")?.value || "").trim();
 
-      texto += `Máquina ${idx + 1}\n`;
-      texto += `  Selo: ${selo}\n`;
-      texto += `  Jogo: ${jogo}\n`;
-      texto += `  Dif. Entrada: ${difEntrada}\n`;
-      texto += `  Dif. Saída:  ${difSaida}\n`;
-      texto += `  Resultado:   ${resultado}\n`;
-      texto += "\n";
+      const selo = seloRaw.toUpperCase();
+      const jogo = jogoRaw.toUpperCase();
+
+      const difEntradaTxt = card.querySelector(".dif-entrada")?.textContent || "R$ 0,00";
+      const difSaidaTxt   = card.querySelector(".dif-saida")?.textContent   || "R$ 0,00";
+      const resultadoTxt  = card.querySelector(".resultado-maquina")?.textContent || "R$ 0,00";
+
+      const clsEnt = classeValorMonetario(difEntradaTxt);
+      const clsSai = classeValorMonetario(difSaidaTxt);
+      const clsRes = classeValorMonetario(resultadoTxt);
+
+      html += `
+        <div style="margin-top:8px; padding:6px 0; border-bottom:1px dashed #ddd;">
+          <div><strong>MÁQUINA ${idx + 1}</strong></div>
+          <div>SELO: ${escapeHtml(selo || "-")}</div>
+          <div>JOGO: ${escapeHtml(jogo || "-")}</div>
+          <div>Dif. ENTRADA: <span class="${clsEnt}">${escapeHtml(difEntradaTxt)}</span></div>
+          <div>Dif. SAÍDA: <span class="${clsSai}">${escapeHtml(difSaidaTxt)}</span></div>
+          <div>RESULTADO: <span class="${clsRes}">${escapeHtml(resultadoTxt)}</span></div>
+        </div>
+      `;
     });
   }
 
-  texto += "----------------------------------------\n";
-  texto += totalGeralEl.textContent;
+  // Total
+  const totalTexto = totalGeralEl.textContent.replace(/^TOTAL:\s*/i, "");
+  const clsTotal = classeValorMonetario(totalTexto);
 
-  relatorioConteudo.textContent = texto;
+  html += `
+    <hr style="margin:8px 0;">
+    <div style="font-weight:800; font-size:1rem; text-align:right;">
+      TOTAL: <span class="${clsTotal}">${escapeHtml(totalTexto)}</span>
+    </div>
+  `;
+
+  relatorioConteudo.innerHTML = html;
   modal.classList.add("aberta");
 }
 
@@ -339,6 +375,7 @@ function carregarDoStorage(listaMaquinas, totalGeralEl) {
     }
 
     atualizarTotalGeral(totalGeralEl);
+    reposicionarBarraAcoes();
   } catch (e) {
     console.error("Erro ao carregar pré-fecho do storage:", e);
   }
@@ -354,7 +391,7 @@ function parseNumero(valor) {
     .toString()
     .replace(/\s/g, "")
     .replace(/\./g, "")
-    .replace(",", "."); // se digitar com vírgula, ainda funciona
+    .replace(",", ".");
   const n = parseFloat(limpo);
   return isNaN(n) ? 0 : n;
 }
@@ -368,9 +405,21 @@ function formatarMoeda(n) {
   });
 }
 
+// converte "R$ 1.234,56" em número
+function moedaParaNumero(txt) {
+  if (!txt) return 0;
+  const limpo = txt
+    .toString()
+    .replace(/[^0-9,-]/g, "") // mantém dígitos, vírgula e sinal
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const n = parseFloat(limpo);
+  return isNaN(n) ? 0 : n;
+}
+
 // Aplica cor: verde (>0), vermelho (<0), preto (≈0)
 function aplicarCorValor(el, valor) {
-  const LIMIAR = 0.005; // evita ruído tipo 0.0000001
+  const LIMIAR = 0.005;
   el.classList.remove("positivo", "negativo");
 
   if (valor > LIMIAR) {
@@ -378,5 +427,22 @@ function aplicarCorValor(el, valor) {
   } else if (valor < -LIMIAR) {
     el.classList.add("negativo");
   }
-  // se estiver entre -0.005 e 0.005 fica sem classe → preto
+}
+
+// para o relatório: retorna "positivo", "negativo" ou ""
+function classeValorMonetario(txt) {
+  const v = moedaParaNumero(txt);
+  const LIMIAR = 0.005;
+  if (v > LIMIAR) return "positivo";
+  if (v < -LIMIAR) return "negativo";
+  return "";
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
