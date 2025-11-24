@@ -181,11 +181,13 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     const saiAnt = parseNumero(saidaAnterior.value);
     const saiAt = parseNumero(saidaAtual.value);
 
+    // diferenças brutas de relógio
     const difEntradaBruta = entAt - entAnt;
     const difSaidaBruta   = saiAt - saiAnt;
 
-    const entradaReais = Math.abs(difEntradaBruta) / 100;
-    const saidaReais   = -Math.abs(difSaidaBruta) / 100;
+    // conversão para reais (2 últimos dígitos = centavos)
+    const entradaReais = Math.abs(difEntradaBruta) / 100;   // sempre positivo
+    const saidaReais   = -Math.abs(difSaidaBruta) / 100;   // sempre negativo
 
     const resultado = entradaReais + saidaReais;
 
@@ -210,6 +212,7 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     inp.addEventListener("change", salvarNoStorage);
   });
 
+  // preenche com dados salvos (caso venha do storage)
   if (dadosMaquina) {
     if (seloInput)        seloInput.value        = dadosMaquina.selo || "";
     if (jogoInput)        jogoInput.value        = dadosMaquina.jogo || "";
@@ -272,7 +275,7 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
       const clsRes = classeValorMonetario(resultadoTxt);
 
       html += `
-        <div style="margin-top:6px; padding:4px 0; border-bottom:1px dashed #eee;">
+        <div class="bloco-maquina">
           <div><strong>MÁQUINA ${idx + 1}</strong></div>
           <div>SELO: ${escapeHtml(selo || "-")}</div>
           <div>JOGO: ${escapeHtml(jogo || "-")}</div>
@@ -417,7 +420,7 @@ function classeValorMonetario(txt) {
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
+    .replace(/</g, "&lt;/g")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
