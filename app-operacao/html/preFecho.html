@@ -4,11 +4,15 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pré-Fecho</title>
+
+  <!-- FIX ABSOLUTO PARA GITHUB PAGES -->
+  <base href="/webapp/">
+
   <meta name="theme-color" content="#6a1b9a" />
-  <link rel="manifest" href="../manifest.json" />
-  <link rel="icon" href="../common/img/favicon.ico" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-  
+
   <style>
     :root{
       --roxo:#6a1b9a;
@@ -49,9 +53,7 @@
       background:transparent;
       outline:none;
     }
-    input[type="text"]:focus{
-      border-bottom-color:#6a1b9a;
-    }
+    input[type="text"]:focus{ border-bottom-color:#6a1b9a; }
 
     .barra{
       height:1px;
@@ -70,12 +72,10 @@
       gap:6px;
       font-size:0.95rem;
     }
-    .btn i{ font-size:1rem; }
-
     .btn.roxo{ background:#6a1b9a; color:#fff; }
     .btn.cinza{ background:#aaa; color:#fff; }
 
-    /* === BOTÕES FIXOS === */
+    /* BOTÕES FIXOS */
     .acoes{
       display:flex;
       flex-wrap:wrap;
@@ -83,8 +83,9 @@
       margin-bottom:10px;
 
       position: sticky;
-      top: 60px; /* abaixo do cabeçalho roxo */
+      top: 60px;
       z-index: 20;
+
       padding:8px 0;
       background:#f8f8f8;
       border-bottom:1px solid #e0e0e0;
@@ -107,10 +108,7 @@
       justify-content:space-between;
       align-items:center;
     }
-    .card-titulo small{
-      font-size:0.8rem;
-      color:#777;
-    }
+    .card-titulo small{ font-size:0.8rem; color:#777; }
 
     .grid{
       display:grid;
@@ -146,18 +144,10 @@
       background:transparent;
       outline:none;
       text-align:center;
-      font-size:0.9rem;
     }
-    .linha2 input:focus{
-      border-bottom-color:#6a1b9a;
-    }
+    .linha2 input:focus{ border-bottom-color:#6a1b9a; }
 
-    .dif{
-      margin-top:4px;
-      font-size:0.85rem;
-      text-align:center;
-      color:#555;
-    }
+    .dif{ margin-top:4px; font-size:0.85rem; text-align:center; color:#555; }
 
     .total{
       font-weight:900;
@@ -168,7 +158,7 @@
     .positivo{ color:var(--verde); }
     .negativo{ color:var(--vermelho); }
 
-    /* === MODAL RELATÓRIO === */
+    /* MODAL */
     .modal{
       position:fixed;
       inset:0;
@@ -189,32 +179,17 @@
       overflow:auto;
       padding:14px;
     }
-    .modal header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:8px;
-    }
-
-    .rel{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      white-space:pre-wrap;
-      font-size:0.9rem;
-    }
 
     @media (max-width:600px){
       .grid{
         grid-template-columns:1fr;
       }
-      .grid .divv{
-        display:none;
-      }
+      .grid .divv{ display:none; }
     }
   </style>
 </head>
 
 <body>
-  <!-- Cabeçalho roxo será injetado aqui -->
   <div id="cabecalho"></div>
 
   <main>
@@ -232,7 +207,6 @@
 
     <div class="barra"></div>
 
-    <!-- BOTÕES FIXOS -->
     <div class="acoes">
       <button id="btnAdicionar" class="btn roxo">
         <i class="fa-solid fa-plus"></i>
@@ -250,7 +224,6 @@
     <div id="totalGeral" class="total positivo">TOTAL: R$ 0,00</div>
   </main>
 
-  <!-- Modal relatório -->
   <div id="modalRelatorio" class="modal">
     <div class="cx">
       <header>
@@ -260,18 +233,16 @@
           Fechar
         </button>
       </header>
-
       <div id="relatorioConteudo" class="rel"></div>
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script type="module" src="../common/js/navegacao.js"></script>
-  <script defer src="../common/js/toast.js"></script>
-  <script type="module" src="../js/preFecho.js"></script>
+  <!-- CARREGAMENTO DOS SCRIPTS COM BASE FIXA -->
+  <script type="module" src="common/js/navegacao.js"></script>
+  <script defer src="common/js/toast.js"></script>
+  <script type="module" src="app-operacao/js/preFecho.js"></script>
 
   <script>
-    // Inicia cabeçalho roxo
     document.addEventListener("DOMContentLoaded", () => {
       if (typeof inicializarPagina === "function") {
         inicializarPagina("Pré-Fecho");
@@ -281,7 +252,7 @@
 
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("../../sw.js").catch(console.error);
+      navigator.serviceWorker.register("sw.js").catch(console.error);
     }
   </script>
 
