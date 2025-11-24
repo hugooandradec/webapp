@@ -201,10 +201,14 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     salvarNoStorage();
   };
 
-  [entradaAnterior, entradaAtual, saidaAnterior, saidaAtual].forEach((inp) => {
-    inp.addEventListener("input", atualizarCalculos);
-    inp.addEventListener("change", atualizarCalculos);
+  // Somente números + atualiza cálculos
+[entradaAnterior, entradaAtual, saidaAnterior, saidaAtual].forEach((inp) => {
+  inp.addEventListener("input", () => {
+    inp.value = inp.value.replace(/\D/g, ""); // só permite números
+    atualizarCalculos();
+    salvarNoStorage();
   });
+});
 
   [seloInput, jogoInput].forEach((inp) => {
     if (!inp) return;
