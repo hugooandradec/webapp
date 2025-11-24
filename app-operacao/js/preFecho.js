@@ -82,11 +82,10 @@ function reposicionarBarraAcoes() {
   const acoes = document.querySelector(".acoes");
   if (!lista || !acoes) return;
 
-  // insere a barra de ações logo após a lista de máquinas
   const main = lista.parentElement;
   if (!main) return;
   const proximo = lista.nextSibling;
-  if (proximo === acoes) return; // já está no lugar certo
+  if (proximo === acoes) return;
 
   main.insertBefore(acoes, lista.nextSibling);
 }
@@ -95,8 +94,6 @@ function reposicionarBarraAcoes() {
    Criação de Máquina
 =========================== */
 
-// Cria um card de máquina
-// se "dadosMaquina" for passado, preenche com os valores salvos
 function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
   contadorMaquinas++;
 
@@ -158,7 +155,6 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
 
   listaMaquinas.appendChild(card);
 
-  // Botão remover máquina
   const btnRemover = card.querySelector(".btn-remover");
   if (btnRemover) {
     btnRemover.addEventListener("click", () => {
@@ -169,7 +165,6 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     });
   }
 
-  // Inputs da máquina
   const seloInput = card.querySelector(".inp-selo");
   const jogoInput = card.querySelector(".inp-jogo");
   const entradaAnterior = card.querySelector(".entrada-anterior");
@@ -186,25 +181,17 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     const saiAnt = parseNumero(saidaAnterior.value);
     const saiAt = parseNumero(saidaAtual.value);
 
-    // Diferenças brutas de relógio
-    const difEntradaBruta = entAt - entAnt;   // relógio
-    const difSaidaBruta   = saiAt - saiAnt;   // relógio
+    const difEntradaBruta = entAt - entAnt;
+    const difSaidaBruta   = saiAt - saiAnt;
 
-    // CONVERSÃO PARA REAIS (dois últimos dígitos = centavos)
-    // Entrada sempre POSITIVA
     const entradaReais = Math.abs(difEntradaBruta) / 100;
+    const saidaReais   = -Math.abs(difSaidaBruta) / 100;
 
-    // Saída sempre NEGATIVA
-    const saidaReais = -Math.abs(difSaidaBruta) / 100;
-
-    // Resultado final da máquina
     const resultado = entradaReais + saidaReais;
 
-    // Diferenças exibidas em reais
     spanDifEntrada.textContent = formatarMoeda(entradaReais);
-    spanDifSaida.textContent = formatarMoeda(saidaReais);
+    spanDifSaida.textContent   = formatarMoeda(saidaReais);
 
-    // Resultado em reais com cor
     spanResultado.textContent = formatarMoeda(resultado);
     aplicarCorValor(spanResultado, resultado);
 
@@ -212,7 +199,6 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     salvarNoStorage();
   };
 
-  // Eventos para recalcular e salvar
   [entradaAnterior, entradaAtual, saidaAnterior, saidaAtual].forEach((inp) => {
     inp.addEventListener("input", atualizarCalculos);
     inp.addEventListener("change", atualizarCalculos);
@@ -224,16 +210,14 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     inp.addEventListener("change", salvarNoStorage);
   });
 
-  // Se veio do storage, preenche com os valores salvos
   if (dadosMaquina) {
-    if (seloInput) seloInput.value = dadosMaquina.selo || "";
-    if (jogoInput) jogoInput.value = dadosMaquina.jogo || "";
-    if (entradaAnterior) entradaAnterior.value = dadosMaquina.entradaAnterior || "";
-    if (entradaAtual) entradaAtual.value = dadosMaquina.entradaAtual || "";
-    if (saidaAnterior) saidaAnterior.value = dadosMaquina.saidaAnterior || "";
-    if (saidaAtual) saidaAtual.value = dadosMaquina.saidaAtual || "";
+    if (seloInput)        seloInput.value        = dadosMaquina.selo || "";
+    if (jogoInput)        jogoInput.value        = dadosMaquina.jogo || "";
+    if (entradaAnterior)  entradaAnterior.value  = dadosMaquina.entradaAnterior || "";
+    if (entradaAtual)     entradaAtual.value     = dadosMaquina.entradaAtual || "";
+    if (saidaAnterior)    saidaAnterior.value    = dadosMaquina.saidaAnterior || "";
+    if (saidaAtual)       saidaAtual.value       = dadosMaquina.saidaAtual || "";
 
-    // Força cálculo inicial com esses valores
     atualizarCalculos();
   }
 }
@@ -247,9 +231,7 @@ function atualizarTotalGeral(totalGeralEl) {
 
   document.querySelectorAll(".resultado-maquina").forEach((span) => {
     const valor = moedaParaNumero(span.textContent);
-    if (!isNaN(valor)) {
-      total += valor;
-    }
+    if (!isNaN(valor)) total += valor;
   });
 
   totalGeralEl.textContent = `TOTAL: ${formatarMoeda(total)}`;
@@ -257,7 +239,7 @@ function atualizarTotalGeral(totalGeralEl) {
 }
 
 /* ===========================
-   RELATÓRIO (MODAL) COM CORES
+   RELATÓRIO (MODAL) – COMPACTO
 =========================== */
 
 function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo, modal) {
@@ -266,13 +248,13 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
 
   let html = "";
 
-  html += `<div><strong>DATA:</strong> ${escapeHtml(data)}</div>`;
-  html += `<div><strong>CLIENTE:</strong> ${escapeHtml(cliente || "-")}</div>`;
-  html += `<hr style="margin:8px 0;">`;
+  html += `<div style="margin-bottom:4px;"><strong>DATA:</strong> ${escapeHtml(data)}</div>`;
+  html += `<div style="margin-bottom:6px;"><strong>CLIENTE:</strong> ${escapeHtml(cliente || "-")}</div>`;
+  html += `<hr style="margin:4px 0 6px;">`;
 
   const cards = document.querySelectorAll(".card");
   if (!cards.length) {
-    html += `<div>Nenhuma máquina lançada.</div>`;
+    html += `<div style="margin-top:4px;">Nenhuma máquina lançada.</div>`;
   } else {
     cards.forEach((card, idx) => {
       const seloRaw = (card.querySelector(".inp-selo")?.value || "").trim();
@@ -290,7 +272,7 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
       const clsRes = classeValorMonetario(resultadoTxt);
 
       html += `
-        <div style="margin-top:8px; padding:6px 0; border-bottom:1px dashed #ddd;">
+        <div style="margin-top:6px; padding:4px 0; border-bottom:1px dashed #eee;">
           <div><strong>MÁQUINA ${idx + 1}</strong></div>
           <div>SELO: ${escapeHtml(selo || "-")}</div>
           <div>JOGO: ${escapeHtml(jogo || "-")}</div>
@@ -302,13 +284,12 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
     });
   }
 
-  // Total
   const totalTexto = totalGeralEl.textContent.replace(/^TOTAL:\s*/i, "");
   const clsTotal = classeValorMonetario(totalTexto);
 
   html += `
-    <hr style="margin:8px 0;">
-    <div style="font-weight:800; font-size:1rem; text-align:right;">
+    <hr style="margin:6px 0 4px;">
+    <div style="font-weight:800; font-size:0.95rem; text-align:right;">
       TOTAL: <span class="${clsTotal}">${escapeHtml(totalTexto)}</span>
     </div>
   `;
@@ -357,14 +338,12 @@ function carregarDoStorage(listaMaquinas, totalGeralEl) {
     const dados = JSON.parse(bruto);
     if (!dados || typeof dados !== "object") return;
 
-    // Data e cliente
     const inputData = document.getElementById("data");
     const inputCliente = document.getElementById("cliente");
 
     if (inputData && dados.data) inputData.value = dados.data;
     if (inputCliente && dados.cliente) inputCliente.value = dados.cliente;
 
-    // Máquinas
     listaMaquinas.innerHTML = "";
     contadorMaquinas = 0;
 
@@ -405,19 +384,17 @@ function formatarMoeda(n) {
   });
 }
 
-// converte "R$ 1.234,56" em número
 function moedaParaNumero(txt) {
   if (!txt) return 0;
   const limpo = txt
     .toString()
-    .replace(/[^0-9,-]/g, "") // mantém dígitos, vírgula e sinal
+    .replace(/[^0-9,-]/g, "")
     .replace(/\./g, "")
     .replace(",", ".");
   const n = parseFloat(limpo);
   return isNaN(n) ? 0 : n;
 }
 
-// Aplica cor: verde (>0), vermelho (<0), preto (≈0)
 function aplicarCorValor(el, valor) {
   const LIMIAR = 0.005;
   el.classList.remove("positivo", "negativo");
@@ -429,7 +406,6 @@ function aplicarCorValor(el, valor) {
   }
 }
 
-// para o relatório: retorna "positivo", "negativo" ou ""
 function classeValorMonetario(txt) {
   const v = moedaParaNumero(txt);
   const LIMIAR = 0.005;
