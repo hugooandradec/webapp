@@ -6,8 +6,9 @@
   <title>Pré-Fecho</title>
   <meta name="theme-color" content="#6a1b9a" />
   <link rel="manifest" href="../manifest.json" />
-  <link rel="icon" href="../../common/img/favicon.ico" />
+  <link rel="icon" href="../common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  
   <style>
     :root{
       --roxo:#6a1b9a;
@@ -29,6 +30,7 @@
       color:#5e2aa0;
       text-align:center;
     }
+
     .linha{
       display:flex;
       align-items:center;
@@ -50,11 +52,13 @@
     input[type="text"]:focus{
       border-bottom-color:#6a1b9a;
     }
+
     .barra{
       height:1px;
       background:#e7e7ef;
       margin:14px 0;
     }
+
     .btn{
       padding:12px 14px;
       border:none;
@@ -66,41 +70,35 @@
       gap:6px;
       font-size:0.95rem;
     }
-    .btn i{
-      font-size:1rem;
-    }
-    .btn.roxo{
-      background:#6a1b9a;
-      color:#fff;
-    }
-    .btn.cinza{
-      background:#aaa;
-      color:#fff;
-    }
+    .btn i{ font-size:1rem; }
+
+    .btn.roxo{ background:#6a1b9a; color:#fff; }
+    .btn.cinza{ background:#aaa; color:#fff; }
+
+    /* === BOTÕES FIXOS === */
     .acoes{
       display:flex;
       flex-wrap:wrap;
       gap:10px;
       margin-bottom:10px;
 
-      /* fixa no topo ao rolar */
       position: sticky;
-      top: 0;
+      top: 60px; /* abaixo do cabeçalho roxo */
       z-index: 20;
       padding:8px 0;
       background:#f8f8f8;
       border-bottom:1px solid #e0e0e0;
     }
-    .cards{
-      display:grid;
-      gap:10px;
-    }
+
+    .cards{ display:grid; gap:10px; }
+
     .card{
       background:#fff;
       border:1px solid #eee;
       border-radius:12px;
       padding:12px;
     }
+
     .card-titulo{
       font-weight:800;
       margin-bottom:8px;
@@ -108,10 +106,8 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
-      gap:8px;
     }
     .card-titulo small{
-      font-weight:500;
       font-size:0.8rem;
       color:#777;
     }
@@ -120,8 +116,8 @@
       display:grid;
       grid-template-columns:1fr 1px 1fr;
       gap:10px;
-      align-items:center;
       margin-top:6px;
+      align-items:center;
     }
     .grid .col h4{
       margin:0 0 6px;
@@ -136,6 +132,7 @@
       height:100%;
       background:#e7e7ef;
     }
+
     .linha2{
       display:grid;
       grid-template-columns:1fr 1fr;
@@ -154,12 +151,14 @@
     .linha2 input:focus{
       border-bottom-color:#6a1b9a;
     }
+
     .dif{
       margin-top:4px;
       font-size:0.85rem;
       text-align:center;
       color:#555;
     }
+
     .total{
       font-weight:900;
       text-align:right;
@@ -169,7 +168,7 @@
     .positivo{ color:var(--verde); }
     .negativo{ color:var(--vermelho); }
 
-    /* Modal relatório */
+    /* === MODAL RELATÓRIO === */
     .modal{
       position:fixed;
       inset:0;
@@ -180,12 +179,10 @@
       z-index:50;
       padding:12px;
     }
-    .modal.aberta{
-      display:flex;
-    }
+    .modal.aberta{ display:flex; }
+
     .modal .cx{
       background:#fff;
-      color:#222;
       border-radius:12px;
       width:min(980px,100%);
       max-height:85dvh;
@@ -196,12 +193,9 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
-      margin:0 0 8px;
-      gap:8px;
+      margin-bottom:8px;
     }
-    .modal header h3{
-      margin:0;
-    }
+
     .rel{
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       white-space:pre-wrap;
@@ -209,9 +203,6 @@
     }
 
     @media (max-width:600px){
-      label{
-        min-width:70px;
-      }
       .grid{
         grid-template-columns:1fr;
       }
@@ -221,7 +212,9 @@
     }
   </style>
 </head>
+
 <body>
+  <!-- Cabeçalho roxo será injetado aqui -->
   <div id="cabecalho"></div>
 
   <main>
@@ -239,11 +232,13 @@
 
     <div class="barra"></div>
 
+    <!-- BOTÕES FIXOS -->
     <div class="acoes">
       <button id="btnAdicionar" class="btn roxo">
         <i class="fa-solid fa-plus"></i>
         Adicionar máquina
       </button>
+
       <button id="btnRelatorio" class="btn cinza">
         <i class="fa-solid fa-file-lines"></i>
         Visualizar relatório
@@ -251,6 +246,7 @@
     </div>
 
     <div id="listaMaquinas" class="cards"></div>
+
     <div id="totalGeral" class="total positivo">TOTAL: R$ 0,00</div>
   </main>
 
@@ -259,33 +255,35 @@
     <div class="cx">
       <header>
         <h3>Relatório do Pré-Fecho</h3>
-        <button id="btnFecharModal" style="border:none;background:#eee;padding:6px 10px;border-radius:8px;cursor:pointer;">
+        <button id="btnFecharModal"
+          style="border:none;background:#eee;padding:6px 10px;border-radius:8px;cursor:pointer;">
           Fechar
         </button>
       </header>
+
       <div id="relatorioConteudo" class="rel"></div>
     </div>
   </div>
 
-  <!-- scripts -->
-  <script type="module" src="../../common/js/navegacao.js"></script>
-  <script defer src="../../common/js/toast.js"></script>
+  <!-- Scripts -->
+  <script type="module" src="../common/js/navegacao.js"></script>
+  <script defer src="../common/js/toast.js"></script>
   <script type="module" src="../js/preFecho.js"></script>
 
   <script>
-    // inicializa cabeçalho roxo, usuário, botão sair, etc.
-    if (typeof inicializarPagina === "function") {
-      inicializarPagina("Pré-Fecho");
-    }
+    // Inicia cabeçalho roxo
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof inicializarPagina === "function") {
+        inicializarPagina("Pré-Fecho");
+      }
+    });
   </script>
 
   <script>
     if ("serviceWorker" in navigator) {
-      // de app-operacao/html até sw.js na raiz: ../../sw.js
-      navigator.serviceWorker
-        .register("../../sw.js")
-        .catch(console.error);
+      navigator.serviceWorker.register("../../sw.js").catch(console.error);
     }
   </script>
+
 </body>
 </html>
