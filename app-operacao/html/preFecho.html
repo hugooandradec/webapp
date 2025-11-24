@@ -273,6 +273,13 @@
   <script type="module" src="../js/preFecho.js"></script>
 
   <script>
+    // inicializa cabeçalho roxo, usuário, botão sair, etc.
+    if (typeof inicializarPagina === "function") {
+      inicializarPagina("Pré-Fecho");
+    }
+  </script>
+
+  <script>
     if ("serviceWorker" in navigator) {
       // de app-operacao/html até sw.js na raiz: ../../sw.js
       navigator.serviceWorker
