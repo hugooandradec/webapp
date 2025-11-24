@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pré-Fecho</title>
   <meta name="theme-color" content="#6a1b9a" />
-
-  <!-- estamos em: /webapp/app-operacao/html -->
-  <!-- sobe 2 pastas -> /webapp/ -->
   <link rel="manifest" href="../../manifest.json" />
   <link rel="icon" href="../../common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -33,7 +30,6 @@
       color:#5e2aa0;
       text-align:center;
     }
-
     .linha{
       display:flex;
       align-items:center;
@@ -55,7 +51,6 @@
     input[type="text"]:focus{
       border-bottom-color:#6a1b9a;
     }
-
     .barra{
       height:1px;
       background:#e7e7ef;
@@ -73,31 +68,17 @@
       gap:6px;
       font-size:0.95rem;
     }
-    .btn i{
-      font-size:1rem;
-    }
-    .btn.roxo{
-      background:#6a1b9a;
-      color:#fff;
-    }
-    .btn.cinza{
-      background:#aaa;
-      color:#fff;
-    }
+    .btn i{ font-size:1rem; }
+    .btn.roxo{ background:#6a1b9a; color:#fff; }
+    .btn.cinza{ background:#aaa; color:#fff; }
 
-    /* barra de ações fixa, logo abaixo do cabeçalho roxo */
+    /* agora NÃO é mais sticky */
     .acoes{
       display:flex;
       flex-wrap:wrap;
       gap:10px;
-      margin-bottom:10px;
-
-      position: sticky;
-      top: 56px;        /* ajusta se o header tiver outra altura */
-      z-index: 20;
+      margin:20px 0 10px;
       padding:8px 0;
-      background:#f8f8f8;
-      border-bottom:1px solid #e0e0e0;
     }
 
     .cards{
@@ -117,12 +98,6 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
-      gap:8px;
-    }
-    .card-titulo small{
-      font-weight:500;
-      font-size:0.8rem;
-      color:#777;
     }
 
     .grid{
@@ -132,18 +107,10 @@
       align-items:center;
       margin-top:6px;
     }
-    .grid .col h4{
-      margin:0 0 6px;
-      text-align:center;
-      color:#444;
-      font-size:0.9rem;
-      text-transform:uppercase;
-      letter-spacing:0.03em;
-    }
     .grid .divv{
       width:1px;
-      height:100%;
       background:#e7e7ef;
+      height:100%;
     }
 
     .linha2{
@@ -156,110 +123,65 @@
       padding:8px 0;
       border:none;
       border-bottom:2px solid #ddd;
-      background:transparent;
-      outline:none;
       text-align:center;
-      font-size:0.9rem;
-    }
-    .linha2 input:focus{
-      border-bottom-color:#6a1b9a;
-    }
-
-    .dif{
-      margin-top:4px;
-      font-size:0.85rem;
-      text-align:center;
-      color:#555;
     }
 
     .total{
       font-weight:900;
       text-align:right;
-      margin-top:10px;
-      font-size:1rem;
+      margin:20px 0;
+      font-size:1.1rem;
     }
     .positivo{ color:var(--verde); }
     .negativo{ color:var(--vermelho); }
 
-    /* Modal relatório */
+    /* Modal */
     .modal{
       position:fixed;
       inset:0;
       background:rgba(0,0,0,.5);
       display:none;
-      align-items:center;
       justify-content:center;
+      align-items:center;
       z-index:50;
-      padding:12px;
     }
-    .modal.aberta{
-      display:flex;
-    }
+    .modal.aberta{ display:flex; }
     .modal .cx{
       background:#fff;
-      color:#222;
-      border-radius:12px;
-      width:min(980px,100%);
-      max-height:85dvh;
+      border-radius:10px;
+      padding:16px;
+      width:min(900px, 95%);
+      max-height:85vh;
       overflow:auto;
-      padding:14px;
-    }
-    .modal header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin:0 0 8px;
-      gap:8px;
-    }
-    .modal header h3{
-      margin:0;
-    }
-    .rel{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      white-space:pre-wrap;
-      font-size:0.9rem;
-    }
-
-    @media (max-width:600px){
-      label{
-        min-width:70px;
-      }
-      .grid{
-        grid-template-columns:1fr;
-      }
-      .grid .divv{
-        display:none;
-      }
     }
   </style>
 </head>
+
 <body>
-  <!-- cabeçalho padrão entra aqui pelo navegacao.js -->
   <div id="cabecalho"></div>
 
   <main>
     <h1>Pré-Fecho</h1>
 
     <div class="linha">
-      <label for="data">Data:</label>
-      <input id="data" type="text" readonly />
+      <label>Data:</label>
+      <input id="data" type="text" readonly>
     </div>
 
     <div class="linha">
-      <label for="cliente">Cliente:</label>
-      <input id="cliente" type="text" placeholder="digite o nome do cliente / ponto" />
+      <label>Cliente:</label>
+      <input id="cliente" type="text" placeholder="digite o nome do cliente / ponto">
     </div>
 
     <div class="barra"></div>
 
-    <div class="acoes">
+    <!-- Botões aqui, mas NÃO FIXOS -->
+    <div class="acoes" id="acoesBar">
       <button id="btnAdicionar" class="btn roxo">
-        <i class="fa-solid fa-plus"></i>
-        Adicionar máquina
+        <i class="fa-solid fa-plus"></i> Adicionar máquina
       </button>
       <button id="btnRelatorio" class="btn cinza">
-        <i class="fa-solid fa-file-lines"></i>
-        Visualizar relatório
+        <i class="fa-solid fa-file-lines"></i> Visualizar relatório
       </button>
     </div>
 
@@ -267,38 +189,28 @@
     <div id="totalGeral" class="total positivo">TOTAL: R$ 0,00</div>
   </main>
 
-  <!-- Modal relatório -->
+  <!-- Modal -->
   <div id="modalRelatorio" class="modal">
     <div class="cx">
-      <header>
+      <header style="display:flex;justify-content:space-between;align-items:center;">
         <h3>Relatório do Pré-Fecho</h3>
-        <button id="btnFecharModal" style="border:none;background:#eee;padding:6px 10px;border-radius:8px;cursor:pointer;">
-          Fechar
-        </button>
+        <button id="btnFecharModal" class="btn cinza">Fechar</button>
       </header>
-      <div id="relatorioConteudo" class="rel"></div>
+      <div id="relatorioConteudo" style="white-space:pre-wrap;font-family:monospace;"></div>
     </div>
   </div>
 
-  <!-- scripts: estamos em /app-operacao/html -->
   <script type="module" src="../../common/js/navegacao.js"></script>
   <script defer src="../../common/js/toast.js"></script>
   <script type="module" src="../js/preFecho.js"></script>
 
   <script>
-    // usa o mesmo padrão das outras páginas
     document.addEventListener("DOMContentLoaded", () => {
-      if (typeof inicializarPagina === "function") {
-        inicializarPagina("Pré-Fecho");
-      }
+      if (window.inicializarPagina) inicializarPagina("Pré-Fecho");
     });
-  </script>
 
-  <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("../../sw.js")
-        .catch(console.error);
+      navigator.serviceWorker.register("../../sw.js");
     }
   </script>
 </body>
