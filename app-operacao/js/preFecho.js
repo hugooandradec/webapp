@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputCliente = document.getElementById("cliente");
   const btnAdicionar = document.getElementById("btnAdicionar");
   const btnRelatorio = document.getElementById("btnRelatorio");
+  const btnLimpar = document.getElementById("btnLimpar");
   const listaMaquinas = document.getElementById("listaMaquinas");
   const totalGeralEl = document.getElementById("totalGeral");
   const modal = document.getElementById("modalRelatorio");
@@ -47,6 +48,44 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnRelatorio) {
     btnRelatorio.addEventListener("click", () => {
       abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo, modal);
+    });
+  }
+
+  // Botão limpar tudo
+  if (btnLimpar) {
+    btnLimpar.addEventListener("click", () => {
+      if (!confirm("Tem certeza que deseja limpar tudo?")) return;
+
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {
+        console.error("Erro ao limpar storage do pré-fecho:", e);
+      }
+
+      const inputData = document.getElementById("data");
+      const inputCliente = document.getElementById("cliente");
+      const lista = document.getElementById("listaMaquinas");
+      const totalEl = document.getElementById("totalGeral");
+
+      if (inputCliente) inputCliente.value = "";
+
+      if (inputData) {
+        const hoje = new Date();
+        const dia = String(hoje.getDate()).padStart(2, "0");
+        const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+        const ano = hoje.getFullYear();
+        inputData.value = `${dia}/${mes}/${ano}`;
+      }
+
+      if (lista) lista.innerHTML = "";
+      contadorMaquinas = 0;
+
+      if (totalEl) {
+        totalEl.textContent = "TOTAL: R$ 0,00";
+        totalEl.classList.remove("positivo", "negativo");
+      }
+
+      reposicionarBarraAcoes();
     });
   }
 
@@ -126,8 +165,8 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
       <div class="col">
         <h4>Entrada</h4>
         <div class="linha2">
-          <input type="text" class="entrada-anterior" placeholder="Anterior">
-          <input type="text" class="entrada-atual" placeholder="Atual">
+          <input type="text" class="entrada-anterior" placeholder="Anterior" inputmode="numeric">
+          <input type="text" class="entrada-atual" placeholder="Atual" inputmode="numeric">
         </div>
         <div class="dif">
           Diferença: <span class="dif-entrada">R$ 0,00</span>
@@ -139,8 +178,8 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
       <div class="col">
         <h4>Saída</h4>
         <div class="linha2">
-          <input type="text" class="saida-anterior" placeholder="Anterior">
-          <input type="text" class="saida-atual" placeholder="Atual">
+          <input type="text" class="saida-anterior" placeholder="Anterior" inputmode="numeric">
+          <input type="text" class="saida-atual" placeholder="Atual" inputmode="numeric">
         </div>
         <div class="dif">
           Diferença: <span class="dif-saida">R$ 0,00</span>
@@ -186,8 +225,9 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     const difSaidaBruta   = saiAt - saiAnt;
 
     // conversão para reais (2 últimos dígitos = centavos)
-    const entradaReais = Math.abs(difEntradaBruta) / 100;   // sempre positivo
-    const saidaReais   = -Math.abs(difSaidaBruta) / 100;   // sempre negativo
+    // entrada sempre positiva, saída sempre negativa
+    const entradaReais = Math.abs(difEntradaBruta) / 100;
+    const saidaReais   = -Math.abs(difSaidaBruta) / 100;
 
     const resultado = entradaReais + saidaReais;
 
@@ -201,14 +241,17 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     salvarNoStorage();
   };
 
-  // Somente números + atualiza cálculos
-[entradaAnterior, entradaAtual, saidaAnterior, saidaAtual].forEach((inp) => {
-  inp.addEventListener("input", () => {
-    inp.value = inp.value.replace(/\D/g, ""); // só permite números
-    atualizarCalculos();
-    salvarNoStorage();
+  // Campos de relógio: só números + recalcula
+  [entradaAnterior, entradaAtual, saidaAnterior, saidaAtual].forEach((inp) => {
+    inp.addEventListener("input", () => {
+      inp.value = inp.value.replace(/\D/g, ""); // só dígitos
+      atualizarCalculos();
+    });
+    inp.addEventListener("change", () => {
+      inp.value = inp.value.replace(/\D/g, "");
+      atualizarCalculos();
+    });
   });
-});
 
   [seloInput, jogoInput].forEach((inp) => {
     if (!inp) return;
@@ -424,7 +467,7 @@ function classeValorMonetario(txt) {
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;/g")
+    .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
