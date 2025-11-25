@@ -387,7 +387,7 @@
       });
     }
 
-    // bruto /2 +10%, - despesas, + cartao*0.94
+    // bruto /2 +10%, - despesas, - cartao*0.94
     function calcularResultadoSala(sala) {
       const bruto = parseCentavos(sala.bruto);
       const despesas = parseCentavos(sala.despesas);
@@ -400,7 +400,7 @@
       const aposDespesas = com10 - despesas;
       const cartaoLiquido = cartao * 0.94;
 
-      return aposDespesas + cartaoLiquido;
+      return aposDespesas - cartaoLiquido;
     }
 
     function salvarNoStorage() {
