@@ -1,4 +1,247 @@
-  <main>
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cálculo de Retenção</title>
+  <meta name="theme-color" content="#6a1b9a" />
+
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <!-- Cabeçalho padrão -->
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+    inicializarPagina("Cálculo de Retenção", "operacao");
+  </script>
+
+  <!-- Toast -->
+  <script defer src="../../common/js/toast.js"></script>
+
+  <!-- Script da página -->
+  <script type="module" src="../js/calculoRetencao.js"></script>
+
+  <style>
+    :root {
+      --roxo: #6a1b9a;
+      --verde: #16a34a;
+      --vermelho: #dc2626;
+    }
+
+    html,
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: #f8f8f8;
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* título some porque já aparece no cabeçalho roxo */
+    h1 {
+      display: none;
+    }
+
+    .linha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    label {
+      font-weight: 700;
+      min-width: 90px;
+    }
+
+    input[type="text"],
+    input[type="date"] {
+      flex: 1;
+      padding: 10px 0;
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      background: transparent;
+      outline: none;
+      text-transform: uppercase;
+    }
+
+    input[type="text"]:focus,
+    input[type="date"]:focus {
+      border-bottom-color: var(--roxo);
+    }
+
+    .barra {
+      height: 1px;
+      background: #e7e7ef;
+      margin: 14px 0;
+    }
+
+    .btn {
+      padding: 12px 14px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.95rem;
+    }
+
+    .btn i {
+      font-size: 1rem;
+    }
+
+    .btn.roxo {
+      background: #6a1b9a;
+      color: #fff;
+    }
+
+    .btn.cinza {
+      background: #aaa;
+      color: #fff;
+    }
+
+    .btn.perigo {
+      background: #d9534f;
+      color: #fff;
+    }
+
+    .acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 20px 0 10px;
+      padding: 8px 0;
+    }
+
+    .cards {
+      display: grid;
+      gap: 10px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .card-titulo {
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #444;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-titulo small {
+      font-weight: 400;
+      font-size: 0.75rem;
+      color: #777;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .grid .divv {
+      width: 1px;
+      background: #e7e7ef;
+      height: 100%;
+    }
+
+    .col h4 {
+      margin: 0 0 4px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-align: center;
+      color: #444;
+    }
+
+    .col input[type="tel"],
+    .col input[type="number"] {
+      width: 100%;
+      padding: 8px 0;
+      border: none;
+      border-bottom: 2px solid #ddd;
+      text-align: center;
+      background: transparent;
+      outline: none;
+    }
+
+    .col input[type="tel"]:focus,
+    .col input[type="number"]:focus {
+      border-bottom-color: var(--roxo);
+    }
+
+    .resultado-resumo {
+      margin-top: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .verde {
+      color: var(--verde);
+      font-weight: 700;
+    }
+
+    .vermelho {
+      color: var(--vermelho);
+      font-weight: 700;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+    }
+
+    .modal.aberta {
+      display: flex;
+    }
+
+    .modal .cx {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      width: min(900px, 95%);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .rel {
+      font-family: ui-monospace, Menlo, Consolas;
+      font-size: 0.9rem;
+      line-height: 1.25;
+    }
+
+    .bloco-ret {
+      padding: 6px 0;
+      margin: 6px 0;
+      border-bottom: 1px dashed #ddd;
+    }
+  </style>
+</head>
+
+<body>
+    <main>
     <h1>Cálculo de Retenção</h1>
 
     <div class="linha">
@@ -31,3 +274,19 @@
       </button>
     </div>
   </main>
+
+
+  <!-- Modal -->
+  <div id="modalRet" class="modal">
+    <div class="cx">
+      <header style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;">Relatório de Retenção</h3>
+        <button id="btnFecharModal" class="btn cinza">Fechar</button>
+      </header>
+
+      <div id="relConteudo" class="rel"></div>
+    </div>
+  </div>
+</body>
+
+</html>
