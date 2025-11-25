@@ -11,6 +11,7 @@
   <link rel="icon" href="../../common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
+  <!-- Toast -->
   <script defer src="../../common/js/toast.js"></script>
 
   <style>
@@ -22,9 +23,7 @@
       --danger: #d9534f;
     }
 
-    *,
-    *::before,
-    *::after {
+    * {
       box-sizing: border-box;
     }
 
@@ -32,101 +31,75 @@
     body {
       margin: 0;
       padding: 0;
-      width: 100%;
+      background: #f8f8f8;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
       overflow-x: hidden;
     }
 
-    body {
-      background: #f8f8f8;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    }
-
     main {
-      width: 100%;
-      max-width: 480px;
+      max-width: 980px;
       margin: 0 auto;
-      padding: 16px 12px 24px;
+      padding: 16px;
     }
 
     h2 {
       color: var(--roxo);
       text-align: center;
-      margin-top: 6px;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
+      font-size: 1.5rem;
+      font-weight: 900;
     }
 
-    /* Linha de filtros/inputs */
     .linha {
       display: flex;
       align-items: center;
       gap: 8px;
       margin: 10px 0;
-      width: 100%;
     }
 
     .linha label {
-      font-weight: bold;
-      min-width: 70px;
-      font-size: 0.9rem;
+      font-weight: 700;
+      min-width: 80px;
     }
 
     .linha span.sub {
       font-size: 0.8rem;
       color: #666;
-      white-space: nowrap;
+      font-weight: 600;
     }
 
-    .linha input[type="date"] {
-      flex: 1;
-      padding: 4px 6px;
-      font-size: 0.9rem;
+    input[type="date"] {
+      padding: 6px 10px;
       border-radius: 6px;
       border: 1px solid #dcdcdc;
       outline: none;
-    }
-
-    /* Inputs de texto/numéricos */
-    input[type="text"],
-    input[type="number"] {
-      flex: 1;
-      padding: 6px 0;
-      border: none;
-      border-bottom: 2px solid #dcdcdc;
       font-size: 0.95rem;
-      background: transparent;
-      outline: none;
-      text-transform: uppercase;
-    }
-
-    input[type="text"]:focus,
-    input[type="number"]:focus {
-      border-bottom-color: var(--roxo);
     }
 
     .barra {
       height: 1px;
       background: #ddd;
-      margin: 14px 0;
+      margin: 12px 0;
     }
 
-    /* Botões principais */
+    /* Botões */
     .acoes {
       display: flex;
-      gap: 10px;
       flex-wrap: wrap;
-      margin: 20px 0 10px;
+      gap: 10px;
+      margin-bottom: 20px;
     }
 
     .btn {
-      padding: 10px 14px;
+      padding: 10px 16px;
       border: none;
       border-radius: 10px;
       font-weight: 800;
       cursor: pointer;
-      display: inline-flex;
+      display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
       white-space: nowrap;
     }
 
@@ -145,86 +118,103 @@
       color: #fff;
     }
 
-    /* Área das salas */
+    /* Cards */
     .cards {
       display: grid;
       gap: 12px;
-      width: 100%;
-      max-width: 100%;
     }
 
     .card {
       background: #fff;
+      border-radius: 12px;
       border: 1px solid #eee;
-      border-radius: 10px;
-      padding: 10px 12px;
-      width: 100% !important;
-      max-width: 100%;
+      padding: 14px 14px;
       overflow: hidden;
     }
 
     .card-titulo {
-      font-weight: 800;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 4px;
-      font-size: 0.9rem;
+      font-weight: 800;
+      font-size: 1rem;
+      margin-bottom: 6px;
+      color: #444;
     }
 
     .card-titulo .remover {
       cursor: pointer;
       color: #999;
+      font-size: 1rem;
     }
 
     .linha-nome {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin: 6px 0 2px;
+      margin-bottom: 10px;
     }
 
     .linha-nome label {
-      font-weight: bold;
-      font-size: 0.9rem;
-      min-width: 48px;
+      font-weight: 700;
+      min-width: 55px;
+    }
+
+    .linha-nome input {
+      flex: 1;
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      padding: 6px 0;
+      text-transform: uppercase;
+      outline: none;
+      background: transparent;
+    }
+
+    .linha-nome input:focus {
+      border-bottom-color: var(--roxo);
     }
 
     .linha3x {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      margin-top: 8px;
-      width: 100%;
+      gap: 12px;
+      margin-top: 10px;
     }
 
     .campo-col {
       display: flex;
       flex-direction: column;
-      font-size: 0.8rem;
       text-align: center;
+      font-size: 0.85rem;
     }
 
     .campo-col span {
-      margin-bottom: 2px;
-      font-weight: 600;
+      font-weight: 700;
+      margin-bottom: 4px;
     }
 
-    .campo-col input[type="text"],
-    .campo-col input[type="number"] {
+    .campo-col input {
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      padding: 6px 0;
       text-align: center;
-      padding: 4px 0;
-      font-size: 0.9rem;
+      font-size: 1rem;
+      outline: none;
+      background: transparent;
+    }
+
+    .campo-col input:focus {
+      border-bottom-color: var(--roxo);
     }
 
     .resultado {
-      margin-top: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
+      margin-top: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
     }
 
     .resultado .valor {
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .verde {
@@ -237,13 +227,13 @@
 
     /* Total geral */
     .total-geral {
-      margin-top: 16px;
+      margin-top: 20px;
+      font-weight: 900;
+      font-size: 1.1rem;
       text-align: right;
-      font-weight: 800;
-      font-size: 0.95rem;
     }
 
-    /* Modal de relatório */
+    /* Modal */
     .modal {
       position: fixed;
       inset: 0;
@@ -260,41 +250,18 @@
 
     .modal .cx {
       background: #fff;
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 16px;
       width: min(900px, 95%);
       max-height: 85vh;
       overflow-y: auto;
     }
 
-    .modal header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
     .rel {
-      font-family: ui-monospace, Menlo, Consolas, "Courier New", monospace;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
       font-size: 0.9rem;
       line-height: 1.25;
-    }
-
-    .bloco-ret {
-      padding: 6px 0;
-      margin: 6px 0;
-      border-bottom: 1px dashed #ddd;
-    }
-
-    @media (max-width: 360px) {
-      .btn {
-        font-size: 0.8rem;
-        padding: 8px 10px;
-      }
-
-      .linha label {
-        min-width: 60px;
-      }
+      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -315,304 +282,37 @@
     <div class="barra"></div>
 
     <div class="acoes">
-      <button id="btnAdicionar" class="btn roxo">
+      <button id="btnAddSala" class="btn roxo">
         <i class="fa-solid fa-plus"></i> Adicionar Sala
       </button>
 
-      <button id="btnRelatorio" class="btn cInza btn cinza">
+      <button id="btnRelatorioSala" class="btn cinza">
         <i class="fa-solid fa-file-lines"></i> Relatório
       </button>
 
-      <button id="btnLimpar" class="btn danger">
+      <button id="btnLimparSala" class="btn danger">
         <i class="fa-solid fa-trash"></i> Limpar Tudo
       </button>
     </div>
 
     <div id="listaSalas" class="cards"></div>
 
-    <div id="totalGeral" class="total-geral"></div>
+    <div id="totalGeralSalas" class="total-geral"></div>
   </main>
 
-  <!-- Modal de relatório -->
+  <!-- Modal -->
   <div id="modalSalas" class="modal">
     <div class="cx">
-      <header>
+      <header style="display:flex;justify-content:space-between;align-items:center;">
         <h3 style="margin:0;">Relatório de Salas</h3>
-        <button id="btnFecharModal" class="btn cinza">
-          Fechar
-        </button>
+        <button id="btnFecharModalSalas" class="btn cinza">Fechar</button>
       </header>
-      <div id="relConteudo" class="rel"></div>
+
+      <div id="relConteudoSalas" class="rel"></div>
     </div>
   </div>
 
-  <script type="module">
-    import { inicializarPagina } from "../../common/js/navegacao.js";
-
-    // ====== ESTADO ======
-    const STORAGE_KEY = "calculo_salas_v1";
-    let salas = [];
-
-    // ====== HELPERS ======
-    function parseCentavos(v) {
-      if (!v) return 0;
-      const apenasDigitos = v.toString().replace(/\D/g, "");
-      if (!apenasDigitos) return 0;
-      return Number(apenasDigitos) / 100; // dois últimos dígitos = centavos
-    }
-
-    function formatarMoeda(v) {
-      return (Number(v) || 0).toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-        minimumFractionDigits: 2
-      });
-    }
-
-    function calcularResultadoSala(sala) {
-      const bruto = parseCentavos(sala.bruto);
-      const despesas = parseCentavos(sala.despesas);
-      const cartao = parseCentavos(sala.cartao);
-
-      if (!bruto && !despesas && !cartao) return 0;
-
-      const metade = bruto / 2;
-      const comDezPorCento = metade * 1.10;          // +10%
-      const aposDespesas = comDezPorCento - despesas;
-      const cartaoLiquido = cartao * 0.94;           // -6%
-
-      return aposDespesas + cartaoLiquido;
-    }
-
-    function salvarNoStorage() {
-      const dataDe = document.getElementById("dataDe").value || "";
-      const dataAte = document.getElementById("dataAte").value || "";
-
-      const payload = { dataDe, dataAte, salas };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    }
-
-    function carregarDoStorage() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-
-      try {
-        const dados = JSON.parse(raw);
-        document.getElementById("dataDe").value = dados.dataDe || "";
-        document.getElementById("dataAte").value = dados.dataAte || "";
-        salas = Array.isArray(dados.salas) ? dados.salas : [];
-      } catch (e) {
-        console.error("Erro ao carregar storage:", e);
-      }
-    }
-
-    function atualizarTotalGeral() {
-      const elTotal = document.getElementById("totalGeral");
-      let total = 0;
-      salas.forEach((s) => {
-        total += calcularResultadoSala(s);
-      });
-
-      elTotal.textContent = "";
-      elTotal.classList.remove("verde", "vermelho");
-
-      if (!salas.length) return;
-
-      elTotal.textContent = "TOTAL GERAL: " + formatarMoeda(total);
-      elTotal.classList.add(total < 0 ? "vermelho" : "verde");
-    }
-
-    function criarCardSala(sala, index) {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      const titulo = document.createElement("div");
-      titulo.className = "card-titulo";
-      titulo.innerHTML = `<span>Sala ${index + 1}</span>`;
-      const btnRemover = document.createElement("span");
-      btnRemover.className = "remover";
-      btnRemover.innerHTML = `<i class="fa-solid fa-trash-can"></i>`;
-      btnRemover.addEventListener("click", () => {
-        salas.splice(index, 1);
-        renderizarSalas();
-        salvarNoStorage();
-      });
-      titulo.appendChild(btnRemover);
-
-      // Nome
-      const linhaNome = document.createElement("div");
-      linhaNome.className = "linha-nome";
-      const labelNome = document.createElement("label");
-      labelNome.textContent = "Nome:";
-      const inputNome = document.createElement("input");
-      inputNome.type = "text";
-      inputNome.value = sala.nome || "";
-      inputNome.addEventListener("input", () => {
-        salas[index].nome = inputNome.value.toUpperCase();
-        salvarNoStorage();
-      });
-      linhaNome.appendChild(labelNome);
-      linhaNome.appendChild(inputNome);
-
-      // Bruto / Despesas / Cartão
-      const linha3x = document.createElement("div");
-      linha3x.className = "linha3x";
-
-      const campos = [
-        { chave: "bruto", rotulo: "Bruto" },
-        { chave: "despesas", rotulo: "Despesas" },
-        { chave: "cartao", rotulo: "Cartão" },
-      ];
-
-      campos.forEach((c) => {
-        const col = document.createElement("div");
-        col.className = "campo-col";
-        const span = document.createElement("span");
-        span.textContent = c.rotulo;
-        const inp = document.createElement("input");
-        inp.type = "text";
-        inp.inputMode = "numeric";
-        inp.value = sala[c.chave] || "";
-        inp.addEventListener("input", () => {
-          salas[index][c.chave] = inp.value;
-          atualizarResultadoSala(card, salas[index]);
-          atualizarTotalGeral();
-          salvarNoStorage();
-        });
-        col.appendChild(span);
-        col.appendChild(inp);
-        linha3x.appendChild(col);
-      });
-
-      const resultadoDiv = document.createElement("div");
-      resultadoDiv.className = "resultado";
-      resultadoDiv.innerHTML = `Resultado: <span class="valor">R$ 0,00</span>`;
-
-      card.appendChild(titulo);
-      card.appendChild(linhaNome);
-      card.appendChild(linha3x);
-      card.appendChild(resultadoDiv);
-
-      atualizarResultadoSala(card, sala);
-
-      return card;
-    }
-
-    function atualizarResultadoSala(card, sala) {
-      const valor = calcularResultadoSala(sala);
-      const divRes = card.querySelector(".resultado .valor");
-      const linhaRes = card.querySelector(".resultado");
-
-      if (!divRes || !linhaRes) return;
-
-      divRes.textContent = formatarMoeda(valor);
-      linhaRes.classList.remove("verde", "vermelho");
-
-      if (valor < 0) {
-        linhaRes.classList.add("vermelho");
-        linhaRes.innerHTML = `Resultado: <span class="valor">${formatarMoeda(valor)}</span> (Prejuízo)`;
-      } else {
-        linhaRes.classList.add("verde");
-        linhaRes.innerHTML = `Resultado: <span class="valor">${formatarMoeda(valor)}</span>`;
-      }
-    }
-
-    function renderizarSalas() {
-      const lista = document.getElementById("listaSalas");
-      lista.innerHTML = "";
-
-      salas.forEach((sala, idx) => {
-        const card = criarCardSala(sala, idx);
-        lista.appendChild(card);
-      });
-
-      atualizarTotalGeral();
-    }
-
-    function abrirModal() {
-      const modal = document.getElementById("modalSalas");
-      const rel = document.getElementById("relConteudo");
-
-      const dataDe = document.getElementById("dataDe").value;
-      const dataAte = document.getElementById("dataAte").value;
-
-      let html = "";
-      html += `Período: ${dataDe || "___/___/____"} até ${dataAte || "___/___/____"}\n\n`;
-
-      let total = 0;
-
-      salas.forEach((sala, idx) => {
-        const bruto = parseCentavos(sala.bruto);
-        const despesas = parseCentavos(sala.despesas);
-        const cartao = parseCentavos(sala.cartao);
-        const res = calcularResultadoSala(sala);
-        total += res;
-
-        html += `Sala ${idx + 1} - ${sala.nome || "SEM NOME"}\n`;
-        html += `  Bruto:    ${formatarMoeda(bruto)}\n`;
-        html += `  Despesas: ${formatarMoeda(despesas)}\n`;
-        html += `  Cartão:   ${formatarMoeda(cartao)}\n`;
-        html += `  Resultado: ${formatarMoeda(res)}\n`;
-        html += `----------------------------------------\n`;
-      });
-
-      html += `TOTAL GERAL: ${formatarMoeda(total)}\n`;
-
-      rel.textContent = html;
-      modal.classList.add("aberta");
-    }
-
-    function fecharModal() {
-      document.getElementById("modalSalas").classList.remove("aberta");
-    }
-
-    function limparTudo() {
-      if (!confirm("Deseja limpar todas as salas e datas?")) return;
-      salas = [];
-      document.getElementById("dataDe").value = "";
-      document.getElementById("dataAte").value = "";
-      renderizarSalas();
-      salvarNoStorage();
-    }
-
-    // ====== INIT ======
-    document.addEventListener("DOMContentLoaded", () => {
-      inicializarPagina("Cálculo de Salas", "operacao");
-
-      carregarDoStorage();
-      renderizarSalas();
-      atualizarTotalGeral();
-
-      document.getElementById("dataDe").addEventListener("change", salvarNoStorage);
-      document.getElementById("dataAte").addEventListener("change", salvarNoStorage);
-
-      document.getElementById("btnAdicionar").addEventListener("click", () => {
-        salas.push({
-          nome: "",
-          bruto: "",
-          despesas: "",
-          cartao: ""
-        });
-        renderizarSalas();
-        salvarNoStorage();
-      });
-
-      document.getElementById("btnRelatorio").addEventListener("click", () => {
-        if (!salas.length) {
-          if (window.toast) toast.warn("Adicione pelo menos uma sala.");
-          return;
-        }
-        abrirModal();
-      });
-
-      document.getElementById("btnLimpar").addEventListener("click", limparTudo);
-      document.getElementById("btnFecharModal").addEventListener("click", fecharModal);
-      document.getElementById("modalSalas").addEventListener("click", (e) => {
-        if (e.target.id === "modalSalas") fecharModal();
-      });
-    });
-  </script>
-
+  <script src="../js/calculoSalas.js"></script>
 </body>
 
 </html>
