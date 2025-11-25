@@ -30,88 +30,60 @@
       --vermelho: #dc2626;
     }
 
-    /* trava geral pra nada passar da tela */
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
-
     html,
     body {
       margin: 0;
-      padding: 0;
-      width: 100%;
-      overflow-x: hidden;
-    }
-
-    body {
-      background: #f8f8f8;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: #f8f8f8;
     }
 
     main {
-      width: 100%;
-      max-width: 480px; /* deixa o card certinho no mobile */
+      max-width: 980px;
       margin: 0 auto;
-      padding: 16px 12px 24px;
+      padding: 16px;
     }
 
-    h2 {
-      color: var(--roxo);
-      text-align: center;
-      margin-top: 6px;
-      margin-bottom: 12px;
+    /* título some porque já aparece no cabeçalho roxo */
+    h1 {
+      display: none;
     }
 
-    /* Inputs */
     .linha {
       display: flex;
       align-items: center;
       gap: 8px;
       margin: 10px 0;
-      width: 100%;
     }
 
     label {
-      font-weight: bold;
-      min-width: 85px;
-      font-size: 0.9rem;
+      font-weight: 700;
+      min-width: 90px;
     }
 
     input[type="text"],
-    input[type="number"],
     input[type="date"] {
       flex: 1;
-      padding: 6px 0;
+      padding: 10px 0;
       border: none;
       border-bottom: 2px solid #dcdcdc;
-      font-size: 0.95rem;
       background: transparent;
       outline: none;
-      text-transform: uppercase; /* ponto, selo, jogo em maiúsculas */
+      text-transform: uppercase;
     }
 
-    input:focus {
+    input[type="text"]:focus,
+    input[type="date"]:focus {
       border-bottom-color: var(--roxo);
     }
 
     .barra {
       height: 1px;
-      background: #ddd;
+      background: #e7e7ef;
       margin: 14px 0;
     }
 
-    /* Botões */
-    .acoes {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin: 20px 0;
-    }
-
     .btn {
-      padding: 10px 14px;
+      padding: 12px 14px;
       border: none;
       border-radius: 10px;
       font-weight: 800;
@@ -119,12 +91,15 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.9rem;
-      white-space: nowrap;
+      font-size: 0.95rem;
+    }
+
+    .btn i {
+      font-size: 1rem;
     }
 
     .btn.roxo {
-      background: var(--roxo);
+      background: #6a1b9a;
       color: #fff;
     }
 
@@ -133,61 +108,98 @@
       color: #fff;
     }
 
-    /* Cards */
+    .btn.perigo {
+      background: #d9534f;
+      color: #fff;
+    }
+
+    .acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 20px 0 10px;
+      padding: 8px 0;
+    }
+
     .cards {
       display: grid;
-      gap: 12px;
-      width: 100%;
-      max-width: 100%;
+      gap: 10px;
     }
 
     .card {
       background: #fff;
       border: 1px solid #eee;
-      border-radius: 10px;
-      padding: 10px 12px;
-      width: 100% !important;
-      max-width: 100%;
-      overflow: hidden;
+      border-radius: 12px;
+      padding: 12px;
     }
 
     .card-titulo {
       font-weight: 800;
+      margin-bottom: 8px;
+      color: #444;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 4px;
-      font-size: 0.9rem;
     }
 
-    /* Compactação aqui */
-    .linha2x {
+    .card-titulo small {
+      font-weight: 400;
+      font-size: 0.75rem;
+      color: #777;
+    }
+
+    .grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-top: 4px;
-      width: 100%;
+      grid-template-columns: 1fr 1px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 6px;
     }
 
-    .linha2x input {
-      text-align: center;
-      padding: 6px 0;
+    .grid .divv {
+      width: 1px;
+      background: #e7e7ef;
+      height: 100%;
+    }
+
+    .col h4 {
+      margin: 0 0 4px;
       font-size: 0.9rem;
+      font-weight: 700;
+      text-align: center;
+      color: #444;
+    }
+
+    .col input[type="tel"],
+    .col input[type="number"] {
+      width: 100%;
+      padding: 8px 0;
       border: none;
       border-bottom: 2px solid #ddd;
+      text-align: center;
       background: transparent;
       outline: none;
-      text-transform: uppercase;
+    }
+
+    .col input[type="tel"]:focus,
+    .col input[type="number"]:focus {
+      border-bottom-color: var(--roxo);
+    }
+
+    .resultado-resumo {
+      margin-top: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
     }
 
     .verde {
       color: var(--verde);
-      font-weight: bold;
+      font-weight: 700;
     }
 
     .vermelho {
       color: var(--vermelho);
-      font-weight: bold;
+      font-weight: 700;
     }
 
     /* Modal */
@@ -225,34 +237,21 @@
       margin: 6px 0;
       border-bottom: 1px dashed #ddd;
     }
-
-    /* Pequeno ajuste pra telas muito estreitas */
-    @media (max-width: 360px) {
-      label {
-        min-width: 70px;
-      }
-
-      .btn {
-        font-size: 0.8rem;
-        padding: 8px 10px;
-      }
-    }
   </style>
 </head>
 
 <body>
-
   <main>
-    <h2>Cálculo de Retenção</h2>
+    <h1>Cálculo de Retenção</h1>
 
     <div class="linha">
-      <label>Data:</label>
+      <label for="data">Data:</label>
       <input id="data" type="date">
     </div>
 
     <div class="linha">
-      <label>Ponto:</label>
-      <input id="ponto" type="text" placeholder="NOME DO PONTO">
+      <label for="ponto">Ponto:</label>
+      <input id="ponto" type="text" placeholder="NOME DO PONTO / LOCAL">
     </div>
 
     <div class="barra"></div>
@@ -266,7 +265,7 @@
         <i class="fa-solid fa-file-lines"></i> Relatório
       </button>
 
-      <button id="btnLimpar" class="btn cinza" style="background:#d9534f;">
+      <button id="btnLimpar" class="btn perigo">
         <i class="fa-solid fa-trash"></i> Limpar Tudo
       </button>
     </div>
@@ -285,7 +284,6 @@
       <div id="relConteudo" class="rel"></div>
     </div>
   </div>
-
 </body>
 
 </html>
