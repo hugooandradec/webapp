@@ -197,32 +197,23 @@
       border-bottom-color: var(--roxo);
     }
 
-    /* Grid 3 colunas estilo pré-fecho/ret */
+    /* Campos monetários em coluna */
     .grid-sala {
-      display: grid;
-      grid-template-columns: 1fr 1px 1fr 1px 1fr;
-      gap: 10px;
-      align-items: stretch;
-      margin-top: 6px;
-    }
-
-    .grid-sala .divv {
-      width: 1px;
-      background: #e7e7ef;
-      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
     }
 
     .col-sala {
       display: flex;
       flex-direction: column;
-      text-align: center;
       font-size: 0.85rem;
     }
 
-    .col-sala h4 {
-      margin: 0 0 4px;
-      font-size: 0.9rem;
+    .col-sala label {
       font-weight: 700;
+      margin-bottom: 2px;
       color: #444;
     }
 
@@ -230,10 +221,10 @@
       border: none;
       border-bottom: 2px solid #dcdcdc;
       padding: 6px 0;
-      text-align: center;
       font-size: 0.95rem;
       outline: none;
       background: transparent;
+      text-align: right;
     }
 
     .col-sala input:focus {
@@ -376,6 +367,19 @@
       });
     }
 
+    function formatarInputMonetario(input) {
+      let v = (input.value || "").toString().replace(/\D/g, "");
+      if (!v) {
+        input.value = "";
+        return;
+      }
+      const num = Number(v) / 100;
+      input.value = num.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
     // bruto /2 +10%, - despesas, + cartao*0.94
     function calcularResultadoSala(sala) {
       const bruto = parseCentavos(sala.bruto);
@@ -459,17 +463,15 @@
 
         <div class="grid-sala">
           <div class="col-sala">
-            <h4>Bruto</h4>
+            <label>Bruto (R$)</label>
             <input type="tel" inputmode="numeric" class="sala-bruto" placeholder="0,00">
           </div>
-          <div class="divv"></div>
           <div class="col-sala">
-            <h4>Despesas</h4>
+            <label>Despesas (-R$)</label>
             <input type="tel" inputmode="numeric" class="sala-despesas" placeholder="0,00">
           </div>
-          <div class="divv"></div>
           <div class="col-sala">
-            <h4>Cartão</h4>
+            <label>Cartão (R$)</label>
             <input type="tel" inputmode="numeric" class="sala-cartao" placeholder="0,00">
           </div>
         </div>
@@ -490,21 +492,20 @@
 
       // restaurar valores
       if (sala.nome) nomeInput.value = sala.nome;
-      if (sala.bruto) brutoInput.value = sala.bruto;
-      if (sala.despesas) despesasInput.value = sala.despesas;
-      if (sala.cartao) cartaoInput.value = sala.cartao;
+      if (sala.bruto) { brutoInput.value = sala.bruto; formatarInputMonetario(brutoInput); }
+      if (sala.despesas) { despesasInput.value = sala.despesas; formatarInputMonetario(despesasInput); }
+      if (sala.cartao) { cartaoInput.value = sala.cartao; formatarInputMonetario(cartaoInput); }
 
       const atualizarResultado = () => {
         salas[index].nome = (nomeInput.value || "").toUpperCase();
+
+        formatarInputMonetario(brutoInput);
+        formatarInputMonetario(despesasInput);
+        formatarInputMonetario(cartaoInput);
+
         salas[index].bruto = brutoInput.value || "";
         salas[index].despesas = despesasInput.value || "";
         salas[index].cartao = cartaoInput.value || "";
-
-        // só números nos campos monetários
-        [brutoInput, despesasInput, cartaoInput].forEach(inp => {
-          const limpo = (inp.value || "").replace(/\D/g, "");
-          inp.value = limpo;
-        });
 
         const res = calcularResultadoSala(salas[index]);
         valorSpan.textContent = formatarMoeda(res);
@@ -566,7 +567,7 @@
       const dataDe = document.getElementById("dataDe").value || "___/___/____";
       const dataAte = document.getElementById("dataAte").value || "___/___/____";
 
-      let texto = `Período: ${dataDe} até ${dataAte}\n\n`;
+      let html = `Período: ${dataDe} até ${dataAte}<br><br>`;
       let total = 0;
 
       salas.forEach((sala, idx) => {
@@ -576,16 +577,20 @@
         const res = calcularResultadoSala(sala);
         total += res;
 
-        texto += `Sala ${idx + 1} - ${sala.nome || "SEM NOME"}\n`;
-        texto += `  Bruto:    ${formatarMoeda(bruto)}\n`;
-        texto += `  Despesas: ${formatarMoeda(despesas)}\n`;
-        texto += `  Cartão:   ${formatarMoeda(cartao)}\n`;
-        texto += `  Resultado: ${formatarMoeda(res)}\n`;
-        texto += `----------------------------------------\n`;
+        const classeRes = res < 0 ? "vermelho" : res > 0 ? "verde" : "neutro";
+
+        html += `<strong>Sala ${idx + 1} - ${sala.nome || "SEM NOME"}</strong><br>`;
+        html += `Bruto: ${formatarMoeda(bruto)}<br>`;
+        html += `Despesas: -${formatarMoeda(despesas)}<br>`;
+        html += `Cartão: ${formatarMoeda(cartao)}<br>`;
+        html += `Resultado: <span class="${classeRes}">${formatarMoeda(res)}</span><br>`;
+        html += `----------------------------------------<br><br>`;
       });
 
-      texto += `TOTAL GERAL: ${formatarMoeda(total)}\n`;
-      rel.textContent = texto;
+      const classeTotal = total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro";
+      html += `<strong>TOTAL GERAL: <span class="${classeTotal}">${formatarMoeda(total)}</span></strong>`;
+
+      rel.innerHTML = html;
       modal.classList.add("aberta");
     }
 
