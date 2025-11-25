@@ -1,9 +1,8 @@
 // js/lancamento.js
-import { inicializarPagina } from "../../common/js/navegacao.js";
 
 /* ===== INIT ===== */
 document.addEventListener("DOMContentLoaded", () => {
-  inicializarPagina("Lançamento");
+  // inicializarPagina("Lançamento");  // REMOVIDO pra não duplicar cabeçalho
   carregarDoStorage();
 
   ["data","valorInicial","valorFinal"].forEach(id=>{
@@ -13,9 +12,19 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ===== HELPERS ===== */
-function formatarMoeda(valor){ return (Number(valor)||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL",minimumFractionDigits:2}); }
-function parseValor(v){ return parseFloat((v||"0").toString().replace(",", ".")) || 0; }
-function normalizarPonto(n){ return (n||"").trim().toLowerCase(); }
+function formatarMoeda(valor){
+  return (Number(valor)||0).toLocaleString("pt-BR",{
+    style:"currency",
+    currency:"BRL",
+    minimumFractionDigits:2
+  });
+}
+function parseValor(v){
+  return parseFloat((v||"0").toString().replace(",", ".")) || 0;
+}
+function normalizarPonto(n){
+  return (n||"").trim().toLowerCase();
+}
 const corPos = "#1b8f2e";
 const corNeg = "#c0392b";
 const corAzul = "#1976d2";
@@ -44,15 +53,21 @@ function carregarDoStorage(){
 
   const raw = localStorage.getItem(RAW_STORAGE_KEY);
   historicoRaw = raw ? JSON.parse(raw) : [];
-  rebuildAgregadoFromRaw(); salvarNoStorage(); atualizarLista();
+  rebuildAgregadoFromRaw();
+  salvarNoStorage();
+  atualizarLista();
 }
 
 /* ===== AGREGAÇÃO ===== */
 function rebuildAgregadoFromRaw(){
-  const mapa = new Map(); const ordem = [];
+  const mapa = new Map();
+  const ordem = [];
   for (const e of historicoRaw){
     const k = normalizarPonto(e.ponto);
-    if (!mapa.has(k)){ mapa.set(k,{ponto:k,dinheiro:0,cartao:0,outros:0,saida:0}); ordem.push(k); }
+    if (!mapa.has(k)){
+      mapa.set(k,{ponto:k,dinheiro:0,cartao:0,outros:0,saida:0});
+      ordem.push(k);
+    }
     const acc = mapa.get(k);
     acc.dinheiro += Number(e.dinheiro)||0;
     acc.cartao   += Number(e.cartao)||0;
@@ -90,7 +105,10 @@ window.salvarEntrada = function(){
   const saida    = parseValor(document.getElementById("saida").value);
   const editIdx  = document.getElementById("editIndex").value;
 
-  if (!ponto){ window.toast?.error?.("informe o nome do ponto."); return; }
+  if (!ponto){
+    window.toast?.error?.("informe o nome do ponto.");
+    return;
+  }
 
   if (editIdx!==""){
     const idx = Number(editIdx);
@@ -98,7 +116,8 @@ window.salvarEntrada = function(){
     if (antigo){
       const delta = {
         id: crypto?.randomUUID?.() || String(Date.now()),
-        ts: Date.now(), ponto,
+        ts: Date.now(),
+        ponto,
         dinheiro: (dinheiro - (Number(antigo.dinheiro)||0)),
         cartao:   (cartao   - (Number(antigo.cartao)||0)),
         outros:   (outros   - (Number(antigo.outros)||0)),
@@ -109,13 +128,22 @@ window.salvarEntrada = function(){
       window.toast?.success?.("Entrada atualizada.");
     }
   } else {
-    historicoRaw.push({ id: crypto?.randomUUID?.() || String(Date.now()), ts: Date.now(), ponto, dinheiro, cartao, outros, saida });
+    historicoRaw.push({
+      id: crypto?.randomUUID?.() || String(Date.now()),
+      ts: Date.now(),
+      ponto,
+      dinheiro,
+      cartao,
+      outros,
+      saida
+    });
     rebuildAgregadoFromRaw();
     window.toast?.success?.("Entrada salva.");
   }
 
   document.getElementById("container-nova-entrada").innerHTML = "";
-  salvarNoStorage(); atualizarLista();
+  salvarNoStorage();
+  atualizarLista();
 };
 
 /* ===== LISTA ===== */
@@ -125,6 +153,7 @@ function atualizarLista(){
   listaLancamentos.forEach((it, idx)=>{
     const div = document.createElement("div");
     div.className = "linha-lancamento";
+
     const bloco = document.createElement("div");
     bloco.innerHTML = `<strong>${it.ponto}</strong><br/>`;
     const detalhe = [];
@@ -133,13 +162,17 @@ function atualizarLista(){
     if (it.outros)   detalhe.push(`Outros: <span style="color:${corPos}">${formatarMoeda(it.outros)}</span>`);
     if (it.saida)    detalhe.push(`Saída: <span style="color:${corNeg}">-${formatarMoeda(it.saida)}</span>`);
     bloco.innerHTML += detalhe.join(" | ");
+
     const acoes = document.createElement("div");
     acoes.className = "acoes";
     acoes.innerHTML = `
       <button class="editar" title="Editar" onclick="editarLancamento(${idx})"><i class="fas fa-pen"></i></button>
       <button class="historico" title="Histórico" onclick="visualizarHistorico(${idx})"><i class="fas fa-clock-rotate-left"></i></button>
       <button class="excluir" title="Excluir" onclick="excluirLancamento(${idx})"><i class="fas fa-trash"></i></button>`;
-    div.appendChild(bloco); div.appendChild(acoes); lista.appendChild(div);
+
+    div.appendChild(bloco);
+    div.appendChild(acoes);
+    lista.appendChild(div);
   });
   atualizarTotais();
 }
@@ -178,19 +211,28 @@ function atualizarTotais(){
 }
 
 /* ===== AÇÕES LISTA ===== */
-window.editarLancamento = (i)=>{ const it = listaLancamentos[i]; if (!it) return; window.adicionarEntrada(it, i); };
+window.editarLancamento = (i)=>{
+  const it = listaLancamentos[i];
+  if (!it) return;
+  window.adicionarEntrada(it, i);
+};
+
 window.excluirLancamento = (i)=>{
-  const it = listaLancamentos[i]; if(!it) return;
+  const it = listaLancamentos[i];
+  if(!it) return;
   if (!confirm("Excluir este lançamento (e o histórico deste ponto)?")) return;
   const key = normalizarPonto(it.ponto);
   historicoRaw = historicoRaw.filter(e => normalizarPonto(e.ponto)!==key);
-  rebuildAgregadoFromRaw(); salvarNoStorage(); atualizarLista();
+  rebuildAgregadoFromRaw();
+  salvarNoStorage();
+  atualizarLista();
   window.toast?.info?.("Lançamento removido.");
 };
 
 /* ===== HISTÓRICO ===== */
 window.visualizarHistorico = function(index){
-  const it = listaLancamentos[index]; if(!it) return;
+  const it = listaLancamentos[index];
+  if(!it) return;
   const key = normalizarPonto(it.ponto);
   const itens = historicoRaw.filter(e=>normalizarPonto(e.ponto)===key);
   const linhas = itens.map(e=>{
@@ -198,12 +240,14 @@ window.visualizarHistorico = function(index){
     const data = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
     const hora = dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     const sub = (Number(e.dinheiro)||0)+(Number(e.outros)||0)-(Number(e.saida)||0);
-    return `<tr><td style="text-align:left">${data} ${hora}</td>
+    return `<tr>
+      <td style="text-align:left">${data} ${hora}</td>
       <td style="text-align:right"><span style="color:${e.dinheiro?corPos:'#777'}">${e.dinheiro?formatarMoeda(e.dinheiro):"-"}</span></td>
       <td style="text-align:right"><span style="color:${e.cartao?corAzul:'#777'}">${e.cartao?formatarMoeda(e.cartao):"-"}</span></td>
       <td style="text-align:right"><span style="color:${e.outros?corPos:'#777'}">${e.outros?formatarMoeda(e.outros):"-"}</span></td>
       <td style="text-align:right"><span style="color:${e.saida?corNeg:'#777'}">${e.saida?"-"+formatarMoeda(e.saida):"-"}</span></td>
-      <td style="text-align:right;font-weight:700;${sub<0?`color:${corNeg}`:`color:${corPos}` }">${formatarMoeda(sub)}</td></tr>`;
+      <td style="text-align:right;font-weight:700;${sub<0?`color:${corNeg}`:`color:${corPos}` }">${formatarMoeda(sub)}</td>
+    </tr>`;
   }).join("");
   const html = `
     <button class="fechar-x" onclick="fecharRelatorio()">✖</button>
@@ -217,19 +261,24 @@ window.visualizarHistorico = function(index){
           <th style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee">Outros</th>
           <th style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee">Saída</th>
           <th style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee">Subtotal</th>
-        </tr></thead><tbody>${linhas||`<tr><td colspan="6" style="text-align:center; padding:12px;">Sem entradas.</td></tr>`}</tbody>
+        </tr></thead><tbody>
+          ${linhas||`<tr><td colspan="6" style="text-align:center; padding:12px;">Sem entradas.</td></tr>`}
+        </tbody>
       </table>
     </div>`;
   const box = document.getElementById("conteudo-relatorio");
   box.innerHTML = html;
   const modal = document.getElementById("modal-relatorio");
-  modal.classList.add("aberta"); document.documentElement.style.overflow='hidden'; document.body.style.overflow='hidden';
+  modal.classList.add("aberta");
+  document.documentElement.style.overflow='hidden';
+  document.body.style.overflow='hidden';
 };
 
 /* ===== MODAL CONTROLES ===== */
 window.fecharRelatorio = function(){
   document.getElementById("modal-relatorio").classList.remove("aberta");
-  document.documentElement.style.overflow=''; document.body.style.overflow='';
+  document.documentElement.style.overflow='';
+  document.body.style.overflow='';
 };
 
 /* ===== MODAL "RESUMO" ===== */
@@ -303,7 +352,7 @@ window.visualizarRelatorio = function () {
             <td class="num" style="padding:8px 6px; color:${corAzul}">${formatarMoeda(totalCartao)}</td>
             <td class="num" style="padding:8px 6px; color:${corPos}">${formatarMoeda(totalOutros)}</td>
             <td class="num" style="padding:8px 6px; color:${corNeg}">-${formatarMoeda(totalSaida)}</td>
-            <td class="num" style="padding:8px 6px; ${ (totalDinheiro+totalOutros-totalSaida)<0 ? `color:${corNeg}` : `color:${corPos}` }">
+            <td class="num" style="padding:8px 6px; ${(totalDinheiro+totalOutros-totalSaida)<0 ? `color:${corNeg}` : `color:${corPos}` }">
               ${formatarMoeda(totalDinheiro + totalOutros - totalSaida)}
             </td>
           </tr>
@@ -319,15 +368,20 @@ window.visualizarRelatorio = function () {
   document.documentElement.style.overflow = "hidden";
   document.body.style.overflow = "hidden";
 
-  // ESC fecha
-  const onEsc = (ev)=>{ if(ev.key==="Escape"){ window.removeEventListener("keydown", onEsc); fecharRelatorio(); } };
+  const onEsc = (ev)=>{
+    if(ev.key==="Escape"){
+      window.removeEventListener("keydown", onEsc);
+      fecharRelatorio();
+    }
+  };
   window.addEventListener("keydown", onEsc);
 };
 
 /* ===== LIMPAR ===== */
 window.limparLancamentos = function(){
   if (!confirm("Deseja realmente limpar todos os lançamentos e valores?")) return;
-  listaLancamentos.length=0; historicoRaw=[];
+  listaLancamentos.length=0;
+  historicoRaw=[];
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(RAW_STORAGE_KEY);
   localStorage.removeItem("dataLancamento");
