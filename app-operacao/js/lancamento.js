@@ -223,7 +223,7 @@ window.excluirLancamento = (i) => {
   rebuildAgregadoFromRaw();
   salvarNoStorage();
   atualizarLista();
-  window.toast?.info?.("Lançamento removido.");
+  window.toast?.success?.("Lançamento removido.");
 };
 
 /* ===== HISTÓRICO ===== */
