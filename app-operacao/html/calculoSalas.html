@@ -387,21 +387,31 @@
       });
     }
 
-    // bruto /2 +10%, - despesas, - cartao*0.94
-    function calcularResultadoSala(sala) {
-      const bruto = parseCentavos(sala.bruto);
-      const despesas = parseCentavos(sala.despesas);
-      const cartao = parseCentavos(sala.cartao);
+    // bruto / 2 + 10% em cima da metade - despesas = valor1
+// cartão - 8% (taxa) = valor2
+// valor1 - valor2 = lucro final
+function calcularResultadoSala(sala) {
+  const bruto    = parseCentavos(sala.bruto);
+  const despesas = parseCentavos(sala.despesas);
+  const cartao   = parseCentavos(sala.cartao);
 
-      if (!bruto && !despesas && !cartao) return 0;
+  if (!bruto && !despesas && !cartao) return 0;
 
-      const metade = bruto / 2;
-      const com10 = metade * 1.10;
-      const aposDespesas = com10 - despesas;
-      const cartaoLiquido = cartao * 0.94;
+  // metade do bruto
+  const metade = bruto / 2;
 
-      return aposDespesas - cartaoLiquido;
-    }
+  // adiciona 10% em cima da metade
+  const com10 = metade * 1.10;
+
+  // valor1 = metade + 10% - despesas
+  const valor1 = com10 - despesas;
+
+  // valor2 = taxa do cartão (8% do valor do cartão)
+  const valor2 = cartao * 0.08;
+
+  // lucro final
+  return valor1 - valor2;
+}
 
     function salvarNoStorage() {
       const dataDe = document.getElementById("dataDe").value || "";
