@@ -126,7 +126,7 @@ function adicionarMaquina(lista, dados = null) {
       <span class="ret-resumo">
         <span class="verde">E: R$ 0,00</span> |
         <span class="vermelho">S: R$ 0,00</span> |
-        Ret: 0.000%
+        Ret: 0.00%
       </span>
     </div>
   `;
@@ -160,7 +160,7 @@ function adicionarMaquina(lista, dados = null) {
     resumo.innerHTML = `
       <span class="verde">E: R$ ${formatarReais(valorE)}</span> |
       <span class="vermelho">S: R$ ${formatarReais(valorS)}</span> |
-      Ret: ${ret.toFixed(3)}%
+      Ret: ${ret.toFixed(2)}%
     `;
 
     salvarRetencao();
@@ -235,7 +235,7 @@ function abrirRelatorio(inputData, inputPonto, relConteudo, modal) {
           ${selo} — ${jogo}<br>
           <span class="verde">E: R$ ${formatarReais(valorE)}</span> |
           <span class="vermelho">S: R$ ${formatarReais(valorS)}</span> |
-          Ret: ${ret.toFixed(3)}%
+          Ret: ${ret.toFixed(2)}%
         </div>
       `;
     });
