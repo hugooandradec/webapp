@@ -54,38 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Botão limpar tudo
   if (btnLimpar) {
     btnLimpar.addEventListener("click", () => {
-      if (!confirm("Tem certeza que deseja limpar tudo?")) return;
-
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch (e) {
-        console.error("Erro ao limpar storage do pré-fecho:", e);
-      }
-
-      const inputData = document.getElementById("data");
-      const inputCliente = document.getElementById("cliente");
-      const lista = document.getElementById("listaMaquinas");
-      const totalEl = document.getElementById("totalGeral");
-
-      if (inputCliente) inputCliente.value = "";
-
-      if (inputData) {
-        const hoje = new Date();
-        const dia = String(hoje.getDate()).padStart(2, "0");
-        const mes = String(hoje.getMonth() + 1).padStart(2, "0");
-        const ano = hoje.getFullYear();
-        inputData.value = `${dia}/${mes}/${ano}`;
-      }
-
-      if (lista) lista.innerHTML = "";
-      contadorMaquinas = 0;
-
-      if (totalEl) {
-        totalEl.textContent = "TOTAL: R$ 0,00";
-        totalEl.classList.remove("positivo", "negativo");
-      }
-
-      reposicionarBarraAcoes();
+      limparTudo(listaMaquinas, totalGeralEl);
     });
   }
 
@@ -108,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Carregar dados salvos (se existirem)
   carregarDoStorage(listaMaquinas, totalGeralEl);
 
-  // Garantir que a barra de ações fique logo após a lista de máquinas
+  // Garante que a barra de ações fique logo após a lista de máquinas
   reposicionarBarraAcoes();
 });
 
@@ -118,11 +87,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function reposicionarBarraAcoes() {
   const lista = document.getElementById("listaMaquinas");
-  const acoes = document.querySelector(".acoes");
+  const acoes = document.getElementById("acoesBar");
   if (!lista || !acoes) return;
 
   const main = lista.parentElement;
   if (!main) return;
+
   const proximo = lista.nextSibling;
   if (proximo === acoes) return;
 
@@ -152,21 +122,21 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     </div>
 
     <div class="linha">
-      <label style="min-width:50px;" for="selo-${contadorMaquinas}">Selo:</label>
-      <input id="selo-${contadorMaquinas}" type="text" class="inp-selo" placeholder="código da máquina">
+      <label style="min-width:50px;">Selo:</label>
+      <input type="text" class="inp-selo" placeholder="código da máquina">
     </div>
 
     <div class="linha">
-      <label style="min-width:50px;" for="jogo-${contadorMaquinas}">Jogo:</label>
-      <input id="jogo-${contadorMaquinas}" type="text" class="inp-jogo" placeholder="tipo de jogo">
+      <label style="min-width:50px;">Jogo:</label>
+      <input type="text" class="inp-jogo" placeholder="tipo de jogo">
     </div>
 
     <div class="grid">
       <div class="col">
         <h4>Entrada</h4>
         <div class="linha2">
-          <input type="text" class="entrada-anterior" placeholder="Anterior" inputmode="numeric">
-          <input type="text" class="entrada-atual" placeholder="Atual" inputmode="numeric">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" class="entrada-anterior" placeholder="Anterior">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" class="entrada-atual" placeholder="Atual">
         </div>
         <div class="dif">
           Diferença: <span class="dif-entrada">R$ 0,00</span>
@@ -178,8 +148,8 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
       <div class="col">
         <h4>Saída</h4>
         <div class="linha2">
-          <input type="text" class="saida-anterior" placeholder="Anterior" inputmode="numeric">
-          <input type="text" class="saida-atual" placeholder="Atual" inputmode="numeric">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" class="saida-anterior" placeholder="Anterior">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" class="saida-atual" placeholder="Atual">
         </div>
         <div class="dif">
           Diferença: <span class="dif-saida">R$ 0,00</span>
@@ -214,26 +184,40 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
   const spanDifSaida = card.querySelector(".dif-saida");
   const spanResultado = card.querySelector(".resultado-maquina");
 
+  const sanitizarNumero = (el) => {
+    if (!el) return;
+    const soDigitos = (el.value || "").replace(/\D/g, "");
+    if (el.value !== soDigitos) el.value = soDigitos;
+  };
+
   const atualizarCalculos = () => {
+    // Garante que só tenha dígitos
+    [entradaAnterior, entradaAtual, saidaAnterior, saidaAtual].forEach(sanitizarNumero);
+
     const entAnt = parseNumero(entradaAnterior.value);
     const entAt = parseNumero(entradaAtual.value);
     const saiAnt = parseNumero(saidaAnterior.value);
     const saiAt = parseNumero(saidaAtual.value);
 
-    // diferenças brutas de relógio
+    // Diferenças brutas de relógio
     const difEntradaBruta = entAt - entAnt;
     const difSaidaBruta   = saiAt - saiAnt;
 
-    // conversão para reais (2 últimos dígitos = centavos)
-    // entrada sempre positiva, saída sempre negativa
+    // CONVERSÃO PARA REAIS (dois últimos dígitos = centavos)
+    // Entrada sempre POSITIVA
     const entradaReais = Math.abs(difEntradaBruta) / 100;
+
+    // Saída sempre NEGATIVA
     const saidaReais   = -Math.abs(difSaidaBruta) / 100;
 
+    // Resultado final da máquina
     const resultado = entradaReais + saidaReais;
 
+    // Diferenças exibidas em reais
     spanDifEntrada.textContent = formatarMoeda(entradaReais);
     spanDifSaida.textContent   = formatarMoeda(saidaReais);
 
+    // Resultado em reais com cor
     spanResultado.textContent = formatarMoeda(resultado);
     aplicarCorValor(spanResultado, resultado);
 
@@ -241,16 +225,9 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     salvarNoStorage();
   };
 
-  // Campos de relógio: só números + recalcula
   [entradaAnterior, entradaAtual, saidaAnterior, saidaAtual].forEach((inp) => {
-    inp.addEventListener("input", () => {
-      inp.value = inp.value.replace(/\D/g, ""); // só dígitos
-      atualizarCalculos();
-    });
-    inp.addEventListener("change", () => {
-      inp.value = inp.value.replace(/\D/g, "");
-      atualizarCalculos();
-    });
+    inp.addEventListener("input", atualizarCalculos);
+    inp.addEventListener("change", atualizarCalculos);
   });
 
   [seloInput, jogoInput].forEach((inp) => {
@@ -259,7 +236,7 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     inp.addEventListener("change", salvarNoStorage);
   });
 
-  // preenche com dados salvos (caso venha do storage)
+  // Se veio do storage, preenche com os valores salvos
   if (dadosMaquina) {
     if (seloInput)        seloInput.value        = dadosMaquina.selo || "";
     if (jogoInput)        jogoInput.value        = dadosMaquina.jogo || "";
@@ -346,6 +323,46 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
 
   relatorioConteudo.innerHTML = html;
   modal.classList.add("aberta");
+}
+
+/* ===========================
+   LIMPAR TUDO
+=========================== */
+
+function limparTudo(listaMaquinas, totalGeralEl) {
+  // Zera campos principais
+  const inputCliente = document.getElementById("cliente");
+  if (inputCliente) inputCliente.value = "";
+
+  const inputData = document.getElementById("data");
+  if (inputData) {
+    const hoje = new Date();
+    const dia = String(hoje.getDate()).padStart(2, "0");
+    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+    const ano = hoje.getFullYear();
+    inputData.value = `${dia}/${mes}/${ano}`;
+  }
+
+  // Remove máquinas
+  if (listaMaquinas) {
+    listaMaquinas.innerHTML = "";
+  }
+  contadorMaquinas = 0;
+
+  // Zera total
+  if (totalGeralEl) {
+    totalGeralEl.textContent = `TOTAL: ${formatarMoeda(0)}`;
+    totalGeralEl.classList.remove("positivo", "negativo");
+  }
+
+  // Limpa storage
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (e) {
+    console.error("Erro ao limpar storage do pré-fecho:", e);
+  }
+
+  reposicionarBarraAcoes();
 }
 
 /* ===========================
