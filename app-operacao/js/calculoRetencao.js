@@ -1,5 +1,5 @@
 // ================================
-// CÁLCULO DE RETENÇÃO — LAYOUT PRÉ-FECHO (COMPACTO)
+// CÁLCULO DE RETENÇÃO — CARD ESTILO PRÉ-FECHO
 // ================================
 
 const RET_STORAGE = "retencao_dados_v2";
@@ -17,6 +17,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const inputData = document.getElementById("data");
   const inputPonto = document.getElementById("ponto");
+
+  // Ponto sempre em maiúsculo
+  if (inputPonto) {
+    inputPonto.addEventListener("input", () => {
+      inputPonto.value = inputPonto.value.toUpperCase();
+      salvarRetencao();
+    });
+  }
+
+  if (inputData) {
+    inputData.addEventListener("change", salvarRetencao);
+    inputData.addEventListener("input", salvarRetencao);
+  }
 
   if (btnAdd) {
     btnAdd.addEventListener("click", () => {
@@ -49,14 +62,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // força ponto em maiúsculo ao digitar
-  if (inputPonto) {
-    inputPonto.addEventListener("input", () => {
-      inputPonto.value = inputPonto.value.toUpperCase();
-      salvarRetencao();
-    });
-  }
-
   carregarRetencao(lista);
 });
 
@@ -70,7 +75,7 @@ function formatarReais(valor) {
 }
 
 // ===============================
-//   ADICIONAR MÁQUINA  
+//   ADICIONAR MÁQUINA (CARD IGUAL AO PRÉ-FECHO)
 // ===============================
 
 function adicionarMaquina(lista, dados = null) {
@@ -82,33 +87,46 @@ function adicionarMaquina(lista, dados = null) {
   card.innerHTML = `
     <div class="card-titulo">
       <span>Máquina ${retContador}</span>
-      <button class="btn-remover" style="background:none;border:none;color:#777;">
-        <i class="fa-solid fa-trash"></i>
-      </button>
-    </div>
-
-    <div class="linha2x">
-      <div class="linha">
-        <label>Selo:</label>
-        <input type="text" class="ret-selo">
-      </div>
-
-      <div class="linha">
-        <label>Jogo:</label>
-        <input type="text" class="ret-jogo">
+      <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+        <small>digite E / S para ver a retenção</small>
+        <button class="btn-remover" title="Remover máquina"
+                style="border:none;background:transparent;color:#999;cursor:pointer;">
+          <i class="fa-solid fa-trash"></i>
+        </button>
       </div>
     </div>
 
-    <div class="linha2x" style="margin-top:4px;">
-      <input type="number" class="ret-entrada" placeholder="ENTRADA" inputmode="numeric">
-      <input type="number" class="ret-saida" placeholder="SAÍDA" inputmode="numeric">
+    <div class="linha">
+      <label style="min-width:50px;">Selo:</label>
+      <input type="text" class="ret-selo" placeholder="código da máquina">
     </div>
 
-    <div style="margin-top:6px;font-weight:700;font-size:0.9rem;">
+    <div class="linha">
+      <label style="min-width:50px;">Jogo:</label>
+      <input type="text" class="ret-jogo" placeholder="tipo de jogo">
+    </div>
+
+    <div class="grid">
+      <div class="col">
+        <h4>Entrada</h4>
+        <input type="tel" inputmode="numeric" pattern="[0-9]*"
+               class="ret-entrada" placeholder="valor de entrada">
+      </div>
+
+      <div class="divv"></div>
+
+      <div class="col">
+        <h4>Saída</h4>
+        <input type="tel" inputmode="numeric" pattern="[0-9]*"
+               class="ret-saida" placeholder="valor de saída">
+      </div>
+    </div>
+
+    <div class="resultado-resumo">
       <span class="ret-resumo">
         <span class="verde">E: R$ 0,00</span> |
         <span class="vermelho">S: R$ 0,00</span> |
-        Ret: 0.00%
+        Ret: 0.000%
       </span>
     </div>
   `;
@@ -123,46 +141,61 @@ function adicionarMaquina(lista, dados = null) {
   const btnRemover = card.querySelector(".btn-remover");
 
   const atualizar = () => {
+    // só dígitos
+    [entrada, saida].forEach((inp) => {
+      if (!inp) return;
+      const limpo = (inp.value || "").replace(/\D/g, "");
+      if (inp.value !== limpo) inp.value = limpo;
+    });
+
     const E = Number(entrada.value) || 0;
     const S = Number(saida.value) || 0;
 
-    const ret = E > 0 ? ((E - S) / E) * 100 : 0;
-
+    // dois últimos dígitos = centavos
     const valorE = E / 100;
     const valorS = S / 100;
+
+    const ret = E > 0 ? ((E - S) / E) * 100 : 0;
 
     resumo.innerHTML = `
       <span class="verde">E: R$ ${formatarReais(valorE)}</span> |
       <span class="vermelho">S: R$ ${formatarReais(valorS)}</span> |
-      Ret: ${ret.toFixed(2)}%
+      Ret: ${ret.toFixed(3)}%
     `;
 
     salvarRetencao();
   };
 
-  // listeners
+  // listeners números
   [entrada, saida].forEach((inp) => {
+    if (!inp) return;
     inp.addEventListener("input", atualizar);
+    inp.addEventListener("change", atualizar);
   });
 
+  // selo/jogo sempre em maiúsculo
   [selo, jogo].forEach((inp) => {
+    if (!inp) return;
     inp.addEventListener("input", () => {
       inp.value = inp.value.toUpperCase();
       salvarRetencao();
     });
   });
 
-  btnRemover.addEventListener("click", () => {
-    card.remove();
-    salvarRetencao();
-  });
+  // remover card
+  if (btnRemover) {
+    btnRemover.addEventListener("click", () => {
+      card.remove();
+      salvarRetencao();
+    });
+  }
 
   // restaurar dados se vier do storage
   if (dados) {
-    selo.value = (dados.selo || "").toUpperCase();
-    jogo.value = (dados.jogo || "").toUpperCase();
-    entrada.value = dados.entrada || "";
-    saida.value = dados.saida || "";
+    if (selo) selo.value = (dados.selo || "").toUpperCase();
+    if (jogo) jogo.value = (dados.jogo || "").toUpperCase();
+    if (entrada) entrada.value = dados.entrada || "";
+    if (saida) saida.value = dados.saida || "";
     atualizar();
   }
 }
@@ -172,8 +205,8 @@ function adicionarMaquina(lista, dados = null) {
 // ===============================
 
 function abrirRelatorio(inputData, inputPonto, relConteudo, modal) {
-  const data = inputData.value || "-";
-  const ponto = (inputPonto.value || "-").toUpperCase();
+  const data = inputData?.value || "-";
+  const ponto = (inputPonto?.value || "-").toUpperCase();
 
   let html = `
     <div><strong>DATA:</strong> ${data}</div>
@@ -187,14 +220,14 @@ function abrirRelatorio(inputData, inputPonto, relConteudo, modal) {
     html += `<p>Nenhuma máquina lançada.</p>`;
   } else {
     cards.forEach((c, i) => {
-      const selo = (c.querySelector(".ret-selo").value || "-").toUpperCase();
-      const jogo = (c.querySelector(".ret-jogo").value || "-").toUpperCase();
-      const entrada = Number(c.querySelector(".ret-entrada").value || 0);
-      const saida = Number(c.querySelector(".ret-saida").value || 0);
-      const ret = entrada > 0 ? (((entrada - saida) / entrada) * 100).toFixed(2) : "0.00";
+      const selo = (c.querySelector(".ret-selo")?.value || "-").toUpperCase();
+      const jogo = (c.querySelector(".ret-jogo")?.value || "-").toUpperCase();
+      const entrada = Number(c.querySelector(".ret-entrada")?.value || 0);
+      const saida = Number(c.querySelector(".ret-saida")?.value || 0);
 
       const valorE = entrada / 100;
       const valorS = saida / 100;
+      const ret = entrada > 0 ? ((entrada - saida) / entrada) * 100 : 0;
 
       html += `
         <div class="bloco-ret">
@@ -202,7 +235,7 @@ function abrirRelatorio(inputData, inputPonto, relConteudo, modal) {
           ${selo} — ${jogo}<br>
           <span class="verde">E: R$ ${formatarReais(valorE)}</span> |
           <span class="vermelho">S: R$ ${formatarReais(valorS)}</span> |
-          Ret: ${ret}%
+          Ret: ${ret.toFixed(3)}%
         </div>
       `;
     });
@@ -228,10 +261,10 @@ function salvarRetencao() {
 
   document.querySelectorAll(".card").forEach(card => {
     maquinas.push({
-      selo: card.querySelector(".ret-selo").value.toUpperCase(),
-      jogo: card.querySelector(".ret-jogo").value.toUpperCase(),
-      entrada: card.querySelector(".ret-entrada").value,
-      saida: card.querySelector(".ret-saida").value
+      selo: (card.querySelector(".ret-selo")?.value || "").toUpperCase(),
+      jogo: (card.querySelector(".ret-jogo")?.value || "").toUpperCase(),
+      entrada: card.querySelector(".ret-entrada")?.value || "",
+      saida: card.querySelector(".ret-saida")?.value || ""
     });
   });
 
@@ -250,15 +283,20 @@ function carregarRetencao(lista) {
   if (inputData) inputData.value = dados.data || "";
   if (inputPonto) inputPonto.value = (dados.ponto || "").toUpperCase();
 
-  if (dados.maquinas && Array.isArray(dados.maquinas)) {
+  if (Array.isArray(dados.maquinas)) {
     dados.maquinas.forEach(m => adicionarMaquina(lista, m));
   }
 }
 
 function limparTudo(lista) {
-  if (!confirm("Excluir todas as máquinas?")) return;
+  if (!confirm("Excluir todas as máquinas e limpar dados?")) return;
 
   lista.innerHTML = "";
   localStorage.removeItem(RET_STORAGE);
   retContador = 0;
+
+  const inputData = document.getElementById("data");
+  const inputPonto = document.getElementById("ponto");
+  if (inputData) inputData.value = "";
+  if (inputPonto) inputPonto.value = "";
 }
