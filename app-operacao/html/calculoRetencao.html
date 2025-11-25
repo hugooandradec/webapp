@@ -30,22 +30,38 @@
       --vermelho: #dc2626;
     }
 
+    /* trava geral pra nada passar da tela */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html,
     body {
       margin: 0;
+      padding: 0;
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
       background: #f8f8f8;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
     }
 
     main {
-      max-width: 980px;
+      width: 100%;
+      max-width: 480px; /* deixa o card certinho no mobile */
       margin: 0 auto;
-      padding: 16px;
+      padding: 16px 12px 24px;
     }
 
     h2 {
       color: var(--roxo);
       text-align: center;
       margin-top: 6px;
+      margin-bottom: 12px;
     }
 
     /* Inputs */
@@ -54,11 +70,13 @@
       align-items: center;
       gap: 8px;
       margin: 10px 0;
+      width: 100%;
     }
 
     label {
       font-weight: bold;
       min-width: 85px;
+      font-size: 0.9rem;
     }
 
     input[type="text"],
@@ -71,7 +89,7 @@
       font-size: 0.95rem;
       background: transparent;
       outline: none;
-      text-transform: uppercase;
+      text-transform: uppercase; /* ponto, selo, jogo em maiúsculas */
     }
 
     input:focus {
@@ -102,6 +120,7 @@
       align-items: center;
       gap: 6px;
       font-size: 0.9rem;
+      white-space: nowrap;
     }
 
     .btn.roxo {
@@ -118,6 +137,8 @@
     .cards {
       display: grid;
       gap: 12px;
+      width: 100%;
+      max-width: 100%;
     }
 
     .card {
@@ -125,6 +146,9 @@
       border: 1px solid #eee;
       border-radius: 10px;
       padding: 10px 12px;
+      width: 100% !important;
+      max-width: 100%;
+      overflow: hidden;
     }
 
     .card-titulo {
@@ -133,6 +157,7 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 4px;
+      font-size: 0.9rem;
     }
 
     /* Compactação aqui */
@@ -141,6 +166,7 @@
       grid-template-columns: 1fr 1fr;
       gap: 6px;
       margin-top: 4px;
+      width: 100%;
     }
 
     .linha2x input {
@@ -151,6 +177,7 @@
       border-bottom: 2px solid #ddd;
       background: transparent;
       outline: none;
+      text-transform: uppercase;
     }
 
     .verde {
@@ -197,6 +224,18 @@
       padding: 6px 0;
       margin: 6px 0;
       border-bottom: 1px dashed #ddd;
+    }
+
+    /* Pequeno ajuste pra telas muito estreitas */
+    @media (max-width: 360px) {
+      label {
+        min-width: 70px;
+      }
+
+      .btn {
+        font-size: 0.8rem;
+        padding: 8px 10px;
+      }
     }
   </style>
 </head>
