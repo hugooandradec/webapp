@@ -1,104 +1,246 @@
-const STORAGE_KEY = "retencao_compacto";
-let maquinas = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+// ================================
+// CÁLCULO DE RETENÇÃO — LAYOUT PRÉ-FECHO (COMPACTO)
+// ================================
 
-function salvar() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(maquinas));
-}
+const RET_STORAGE = "retencao_dados_v1";
+let retContador = 0;
 
-function adicionarMaquina() {
-  const selo = document.getElementById("selo").value.trim().toUpperCase();
-  const jogo = document.getElementById("jogo").value.trim();
-  const entrada = Number(document.getElementById("entrada").value);
-  const saida = Number(document.getElementById("saida").value);
+document.addEventListener("DOMContentLoaded", () => {
+  const btnAdd = document.getElementById("btnAdicionar");
+  const btnRel = document.getElementById("btnRelatorio");
+  const btnLimpar = document.getElementById("btnLimpar");
+  const lista = document.getElementById("listaMaquinas");
+  const totalEl = document.getElementById("totalGeral");
 
-  if (!selo || !jogo || isNaN(entrada) || isNaN(saida)) {
-    alert("Preencha todos os campos corretamente!");
-    return;
-  }
+  const modal = document.getElementById("modalRet");
+  const btnFecharModa = document.getElementById("btnFecharModal");
+  const relConteudo = document.getElementById("relConteudo");
 
-  const ret = entrada > 0 ? ((entrada - saida) / entrada) * 100 : 0;
+  const inputData = document.getElementById("data");
+  const inputPonto = document.getElementById("ponto");
 
-  maquinas.push({
-    selo,
-    jogo,
-    entrada,
-    saida,
-    ret: ret.toFixed(1)
+  if (btnAdd) btnAdd.addEventListener("click", () => {
+    adicionarMaquina(lista, totalEl);
+    salvarRetencao();
   });
 
-  salvar();
-  renderLista();
-
-  document.getElementById("selo").value = "";
-  document.getElementById("jogo").value = "";
-  document.getElementById("entrada").value = "";
-  document.getElementById("saida").value = "";
-}
-
-function renderLista() {
-  const box = document.getElementById("lista");
-  box.innerHTML = "";
-
-  let totalGeral = 0;
-
-  maquinas.forEach(m => {
-    totalGeral += (m.entrada - m.saida);
-
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
-      <strong>${m.selo} — ${m.jogo}</strong><br>
-      E: ${m.entrada} | S: ${m.saida} | Ret: ${m.ret}%
-    `;
-    box.appendChild(div);
+  if (btnRel) btnRel.addEventListener("click", () => {
+    abrirRelatorio(inputData, inputPonto, totalEl, relConteudo, modal);
   });
 
-  document.getElementById("totalGeral").innerHTML =
-    `TOTAL: R$ ${totalGeral.toFixed(2)}`;
-}
+  if (btnLimpar) btnLimpar.addEventListener("click", () => {
+    limparTudo(lista, totalEl);
+  });
 
-renderLista();
+  if (btnFecharModa) btnFecharModa.addEventListener("click", () => {
+    modal.classList.remove("aberta");
+  });
 
-function abrirRelatorio() {
-  const data = document.getElementById("data").value;
-  const ponto = document.getElementById("ponto").value.trim();
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.remove("aberta");
+  });
 
-  let dataFmt = "-";
-  if (data) {
-    const [y,m,d] = data.split("-");
-    const dt = new Date(+y, +m - 1, +d);
-    const dia = dt.toLocaleDateString("pt-BR", { weekday: "long" });
-    dataFmt = `${d}/${m}/${y} (${dia})`;
-  }
+  carregarRetencao(lista, totalEl);
+});
 
-  let html = `
-    <h3 style="color:#6a1b9a; text-align:center; margin-bottom:12px;">Relatório</h3>
-    <p><strong>Data:</strong> ${dataFmt}</p>
-    <p><strong>Ponto:</strong> ${ponto || "-"}</p>
-    <hr><br>
+
+// ===============================
+//   ADICIONAR MÁQUINA  
+// ===============================
+
+function adicionarMaquina(lista, totalEl, dados = null) {
+  retContador++;
+
+  const card = document.createElement("div");
+  card.className = "card";
+
+  card.innerHTML = `
+    <div class="card-titulo">
+      <span>Máquina ${retContador}</span>
+      <button class="btn-remover" style="background:none;border:none;color:#777;">
+        <i class="fa-solid fa-trash"></i>
+      </button>
+    </div>
+
+    <div class="linha">
+      <label>Selo:</label>
+      <input type="text" class="ret-selo" placeholder="selo">
+    </div>
+
+    <div class="linha">
+      <label>Jogo:</label>
+      <input type="text" class="ret-jogo" placeholder="jogo">
+    </div>
+
+    <div class="linha2">
+      <input type="number" class="ret-entrada" placeholder="Entrada" inputmode="numeric">
+      <input type="number" class="ret-saida" placeholder="Saída" inputmode="numeric">
+    </div>
+
+    <div style="margin-top:8px;font-weight:700;">
+      <span class="ret-resumo">E: 0 | S: 0 | Ret: 0%</span>
+    </div>
   `;
 
-  maquinas.forEach(m => {
-    html += `
-      <div class="linha-relatorio">
-        <strong>${m.selo} — ${m.jogo}</strong><br>
-        E: ${m.entrada} | S: ${m.saida} | Ret: ${m.ret}%
-      </div>
-    `;
+  lista.appendChild(card);
+
+  const btnRem = card.querySelector(".btn-remover");
+  const selo = card.querySelector(".ret-selo");
+  const jogo = card.querySelector(".ret-jogo");
+  const entrada = card.querySelector(".ret-entrada");
+  const saida = card.querySelector(".ret-saida");
+  const resumo = card.querySelector(".ret-resumo");
+
+  const atualizar = () => {
+    const E = Number(entrada.value);
+    const S = Number(saida.value);
+    const ret = E > 0 ? ((E - S) / E) * 100 : 0;
+
+    resumo.innerHTML = `E: ${E} | S: ${S} | Ret: ${ret.toFixed(1)}%`;
+    salvarRetencao();
+    atualizarTotalGeral(totalEl);
+  };
+
+  entrada.addEventListener("input", atualizar);
+  saida.addEventListener("input", atualizar);
+  selo.addEventListener("input", salvarRetencao);
+  jogo.addEventListener("input", salvarRetencao);
+
+  btnRem.addEventListener("click", () => {
+    card.remove();
+    salvarRetencao();
+    atualizarTotalGeral(totalEl);
   });
 
-  document.getElementById("relatorio").innerHTML = html;
-  document.getElementById("modal").classList.add("aberto");
+  if (dados) {
+    selo.value = dados.selo || "";
+    jogo.value = dados.jogo || "";
+    entrada.value = dados.entrada || "";
+    saida.value = dados.saida || "";
+    atualizar();
+  }
 }
 
-function fecharRelatorio() {
-  document.getElementById("modal").classList.remove("aberto");
+
+// ===============================
+//  TOTAL GERAL
+// ===============================
+
+function atualizarTotalGeral(totalEl) {
+  let total = 0;
+
+  document.querySelectorAll(".ret-resumo").forEach(span => {
+    const txt = span.textContent;
+    const m = txt.match(/E:\s*([0-9.]+)\s*\|\s*S:\s*([0-9.]+)/);
+    if (!m) return;
+
+    const E = Number(m[1]);
+    const S = Number(m[2]);
+
+    total += (E - S);
+  });
+
+  totalEl.innerHTML = `TOTAL: R$ ${total.toFixed(2)}`;
+  totalEl.classList.remove("positivo", "negativo");
+  if (total > 0) totalEl.classList.add("positivo");
+  else if (total < 0) totalEl.classList.add("negativo");
 }
 
-function limparTudo() {
-  if (!confirm("Apagar tudo?")) return;
 
-  maquinas = [];
-  salvar();
-  renderLista();
+// ===============================
+//  RELATÓRIO (MODAL)
+// ===============================
+
+function abrirRelatorio(inputData, inputPonto, totalEl, relConteudo, modal) {
+  const data = inputData.value || "-";
+  const ponto = inputPonto.value || "-";
+
+  let html = `
+    <div><strong>DATA:</strong> ${data}</div>
+    <div><strong>PONTO:</strong> ${ponto}</div>
+    <hr>
+  `;
+
+  const cards = document.querySelectorAll(".card");
+
+  if (!cards.length) {
+    html += `<p>Nenhuma máquina lançada.</p>`;
+  } else {
+    cards.forEach((c, i) => {
+      const selo = c.querySelector(".ret-selo").value || "-";
+      const jogo = c.querySelector(".ret-jogo").value || "-";
+      const entrada = c.querySelector(".ret-entrada").value || "0";
+      const saida = c.querySelector(".ret-saida").value || "0";
+      const ret = entrada > 0 ? (((entrada - saida) / entrada) * 100).toFixed(1) : "0";
+
+      html += `
+        <div class="bloco-ret">
+          <strong>MÁQUINA ${i + 1}</strong><br>
+          ${selo} — ${jogo}<br>
+          E: ${entrada} | S: ${saida} | Ret: ${ret}%
+        </div>
+      `;
+    });
+  }
+
+  html += `
+    <hr>
+    <div style="font-weight:900;text-align:right;">
+      ${totalEl.innerHTML}
+    </div>
+  `;
+
+  relConteudo.innerHTML = html;
+  modal.classList.add("aberta");
+}
+
+
+// ===============================
+//  STORAGE
+// ===============================
+
+function salvarRetencao() {
+  const data = document.getElementById("data").value;
+  const ponto = document.getElementById("ponto").value;
+
+  const maquinas = [];
+
+  document.querySelectorAll(".card").forEach(card => {
+    maquinas.push({
+      selo: card.querySelector(".ret-selo").value,
+      jogo: card.querySelector(".ret-jogo").value,
+      entrada: card.querySelector(".ret-entrada").value,
+      saida: card.querySelector(".ret-saida").value
+    });
+  });
+
+  localStorage.setItem(RET_STORAGE, JSON.stringify({ data, ponto, maquinas }));
+}
+
+function carregarRetencao(lista, totalEl) {
+  const raw = localStorage.getItem(RET_STORAGE);
+  if (!raw) return;
+
+  const dados = JSON.parse(raw);
+
+  document.getElementById("data").value = dados.data || "";
+  document.getElementById("ponto").value = dados.ponto || "";
+
+  if (dados.maquinas) {
+    dados.maquinas.forEach(m =>
+      adicionarMaquina(lista, totalEl, m)
+    );
+  }
+
+  atualizarTotalGeral(totalEl);
+}
+
+function limparTudo(lista, totalEl) {
+  if (!confirm("Excluir tudo?")) return;
+
+  lista.innerHTML = "";
+  localStorage.removeItem(RET_STORAGE);
+  retContador = 0;
+
+  atualizarTotalGeral(totalEl);
 }
