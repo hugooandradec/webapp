@@ -18,30 +18,56 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputData = document.getElementById("data");
   const inputPonto = document.getElementById("ponto");
 
-  btnAdd.addEventListener("click", () => {
-    adicionarMaquina(lista);
-    salvarRetencao();
-  });
+  if (btnAdd) {
+    btnAdd.addEventListener("click", () => {
+      adicionarMaquina(lista);
+      salvarRetencao();
+    });
+  }
 
-  btnRel.addEventListener("click", () => {
-    abrirRelatorio(inputData, inputPonto, relConteudo, modal);
-  });
+  if (btnRel) {
+    btnRel.addEventListener("click", () => {
+      abrirRelatorio(inputData, inputPonto, relConteudo, modal);
+    });
+  }
 
-  btnLimpar.addEventListener("click", () => {
-    limparTudo(lista);
-  });
+  if (btnLimpar) {
+    btnLimpar.addEventListener("click", () => {
+      limparTudo(lista);
+    });
+  }
 
-  btnFecharModal.addEventListener("click", () => {
-    modal.classList.remove("aberta");
-  });
+  if (btnFecharModal) {
+    btnFecharModal.addEventListener("click", () => {
+      modal.classList.remove("aberta");
+    });
+  }
 
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.classList.remove("aberta");
-  });
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.classList.remove("aberta");
+    });
+  }
+
+  // força ponto em maiúsculo ao digitar
+  if (inputPonto) {
+    inputPonto.addEventListener("input", () => {
+      inputPonto.value = inputPonto.value.toUpperCase();
+      salvarRetencao();
+    });
+  }
 
   carregarRetencao(lista);
 });
 
+// ====== helpers ======
+
+function formatarReais(valor) {
+  return valor.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
 
 // ===============================
 //   ADICIONAR MÁQUINA  
@@ -73,16 +99,16 @@ function adicionarMaquina(lista, dados = null) {
       </div>
     </div>
 
-    <div class="linha2x" style="margin-top:8px;">
-      <input type="number" class="ret-entrada" placeholder="Entrada" inputmode="numeric">
-      <input type="number" class="ret-saida" placeholder="Saída" inputmode="numeric">
+    <div class="linha2x" style="margin-top:4px;">
+      <input type="number" class="ret-entrada" placeholder="ENTRADA" inputmode="numeric">
+      <input type="number" class="ret-saida" placeholder="SAÍDA" inputmode="numeric">
     </div>
 
-    <div style="margin-top:8px;font-weight:700;">
+    <div style="margin-top:6px;font-weight:700;font-size:0.9rem;">
       <span class="ret-resumo">
-        <span class="verde">E: 0</span> | 
-        <span class="vermelho">S: 0</span> | 
-        Ret: 0%
+        <span class="verde">E: R$ 0,00</span> |
+        <span class="vermelho">S: R$ 0,00</span> |
+        Ret: 0.00%
       </span>
     </div>
   `;
@@ -94,41 +120,52 @@ function adicionarMaquina(lista, dados = null) {
   const entrada = card.querySelector(".ret-entrada");
   const saida = card.querySelector(".ret-saida");
   const resumo = card.querySelector(".ret-resumo");
+  const btnRemover = card.querySelector(".btn-remover");
 
   const atualizar = () => {
-    const E = Number(entrada.value);
-    const S = Number(saida.value);
+    const E = Number(entrada.value) || 0;
+    const S = Number(saida.value) || 0;
+
     const ret = E > 0 ? ((E - S) / E) * 100 : 0;
 
+    const valorE = E / 100;
+    const valorS = S / 100;
+
     resumo.innerHTML = `
-      <span class="verde">E: ${E}</span> |
-      <span class="vermelho">S: ${S}</span> |
-      Ret: ${ret.toFixed(1)}%
+      <span class="verde">E: R$ ${formatarReais(valorE)}</span> |
+      <span class="vermelho">S: R$ ${formatarReais(valorS)}</span> |
+      Ret: ${ret.toFixed(2)}%
     `;
 
     salvarRetencao();
   };
 
-  entrada.addEventListener("input", atualizar);
-  saida.addEventListener("input", atualizar);
-  selo.addEventListener("input", salvarRetencao);
-  jogo.addEventListener("input", salvarRetencao);
+  // listeners
+  [entrada, saida].forEach((inp) => {
+    inp.addEventListener("input", atualizar);
+  });
 
-  card.querySelector(".btn-remover").addEventListener("click", () => {
+  [selo, jogo].forEach((inp) => {
+    inp.addEventListener("input", () => {
+      inp.value = inp.value.toUpperCase();
+      salvarRetencao();
+    });
+  });
+
+  btnRemover.addEventListener("click", () => {
     card.remove();
     salvarRetencao();
   });
 
-  // Restaurar dados
+  // restaurar dados se vier do storage
   if (dados) {
-    selo.value = dados.selo || "";
-    jogo.value = dados.jogo || "";
+    selo.value = (dados.selo || "").toUpperCase();
+    jogo.value = (dados.jogo || "").toUpperCase();
     entrada.value = dados.entrada || "";
     saida.value = dados.saida || "";
     atualizar();
   }
 }
-
 
 // ===============================
 //  RELATÓRIO
@@ -136,7 +173,7 @@ function adicionarMaquina(lista, dados = null) {
 
 function abrirRelatorio(inputData, inputPonto, relConteudo, modal) {
   const data = inputData.value || "-";
-  const ponto = inputPonto.value || "-";
+  const ponto = (inputPonto.value || "-").toUpperCase();
 
   let html = `
     <div><strong>DATA:</strong> ${data}</div>
@@ -146,43 +183,53 @@ function abrirRelatorio(inputData, inputPonto, relConteudo, modal) {
 
   const cards = document.querySelectorAll(".card");
 
-  cards.forEach((c, i) => {
-    const selo = c.querySelector(".ret-selo").value || "-";
-    const jogo = c.querySelector(".ret-jogo").value || "-";
-    const entrada = Number(c.querySelector(".ret-entrada").value || 0);
-    const saida = Number(c.querySelector(".ret-saida").value || 0);
-    const ret = entrada > 0 ? (((entrada - saida) / entrada) * 100).toFixed(1) : "0";
+  if (!cards.length) {
+    html += `<p>Nenhuma máquina lançada.</p>`;
+  } else {
+    cards.forEach((c, i) => {
+      const selo = (c.querySelector(".ret-selo").value || "-").toUpperCase();
+      const jogo = (c.querySelector(".ret-jogo").value || "-").toUpperCase();
+      const entrada = Number(c.querySelector(".ret-entrada").value || 0);
+      const saida = Number(c.querySelector(".ret-saida").value || 0);
+      const ret = entrada > 0 ? (((entrada - saida) / entrada) * 100).toFixed(2) : "0.00";
 
-    html += `
-      <div class="bloco-ret">
-        <strong>MÁQUINA ${i + 1}</strong><br>
-        ${selo} — ${jogo}<br>
-        <span class="verde">E: ${entrada}</span> |
-        <span class="vermelho">S: ${saida}</span> |
-        Ret: ${ret}%
-      </div>
-    `;
-  });
+      const valorE = entrada / 100;
+      const valorS = saida / 100;
+
+      html += `
+        <div class="bloco-ret">
+          <strong>MÁQUINA ${i + 1}</strong><br>
+          ${selo} — ${jogo}<br>
+          <span class="verde">E: R$ ${formatarReais(valorE)}</span> |
+          <span class="vermelho">S: R$ ${formatarReais(valorS)}</span> |
+          Ret: ${ret}%
+        </div>
+      `;
+    });
+  }
 
   relConteudo.innerHTML = html;
   modal.classList.add("aberta");
 }
-
 
 // ===============================
 //  STORAGE
 // ===============================
 
 function salvarRetencao() {
-  const data = document.getElementById("data").value;
-  const ponto = document.getElementById("ponto").value;
+  const inputData = document.getElementById("data");
+  const inputPonto = document.getElementById("ponto");
+
+  const data = inputData ? inputData.value : "";
+  if (inputPonto) inputPonto.value = inputPonto.value.toUpperCase();
+  const ponto = inputPonto ? inputPonto.value : "";
 
   const maquinas = [];
 
   document.querySelectorAll(".card").forEach(card => {
     maquinas.push({
-      selo: card.querySelector(".ret-selo").value,
-      jogo: card.querySelector(".ret-jogo").value,
+      selo: card.querySelector(".ret-selo").value.toUpperCase(),
+      jogo: card.querySelector(".ret-jogo").value.toUpperCase(),
       entrada: card.querySelector(".ret-entrada").value,
       saida: card.querySelector(".ret-saida").value
     });
@@ -197,16 +244,19 @@ function carregarRetencao(lista) {
 
   const dados = JSON.parse(raw);
 
-  document.getElementById("data").value = dados.data || "";
-  document.getElementById("ponto").value = dados.ponto || "";
+  const inputData = document.getElementById("data");
+  const inputPonto = document.getElementById("ponto");
 
-  if (dados.maquinas) {
+  if (inputData) inputData.value = dados.data || "";
+  if (inputPonto) inputPonto.value = (dados.ponto || "").toUpperCase();
+
+  if (dados.maquinas && Array.isArray(dados.maquinas)) {
     dados.maquinas.forEach(m => adicionarMaquina(lista, m));
   }
 }
 
 function limparTudo(lista) {
-  if (!confirm("Excluir tudo?")) return;
+  if (!confirm("Excluir todas as máquinas?")) return;
 
   lista.innerHTML = "";
   localStorage.removeItem(RET_STORAGE);
