@@ -5,9 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pré-Fecho</title>
   <meta name="theme-color" content="#6a1b9a" />
-  <link rel="manifest" href="../../manifest.json" />
+  <!-- Manifest do app Operação -->
+  <link rel="manifest" href="../manifest.json" />
   <link rel="icon" href="../../common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <!-- Header/Navegação seguindo o modelo do Lançamento -->
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+    // Página interna do app-operacao → voltar leva para o MENU do Operação
+    inicializarPagina("Pré-Fecho", "operacao");
+  </script>
+
+  <!-- Toasts e lógica da tela -->
+  <script defer src="../../common/js/toast.js"></script>
+  <script type="module" src="../js/preFecho.js"></script>
 
   <style>
     :root{
@@ -25,10 +37,9 @@
       margin: 0 auto;
       padding: 16px;
     }
+    /* título some porque já aparece no cabeçalho roxo */
     h1{
-      margin:8px 0 16px;
-      color:#5e2aa0;
-      text-align:center;
+      display:none;
     }
     .linha{
       display:flex;
@@ -156,7 +167,6 @@
       overflow:auto;
     }
 
-    /* Conteúdo do relatório – compacto */
     .rel{
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       white-space: normal;
@@ -172,23 +182,22 @@
 </head>
 
 <body>
-  <div id="cabecalho"></div>
-
   <main>
     <h1>Pré-Fecho</h1>
 
     <div class="linha">
-      <label>Data:</label>
+      <label for="data">Data:</label>
       <input id="data" type="text" readonly>
     </div>
 
     <div class="linha">
-      <label>Cliente:</label>
+      <label for="cliente">Cliente:</label>
       <input id="cliente" type="text" placeholder="digite o nome do cliente / ponto">
     </div>
 
     <div class="barra"></div>
 
+    <!-- Barra de ações (JS reposiciona para ficar sempre abaixo da última máquina) -->
     <div class="acoes" id="acoesBar">
       <button id="btnAdicionar" class="btn roxo">
         <i class="fa-solid fa-plus"></i> Adicionar máquina
@@ -218,15 +227,7 @@
     </div>
   </div>
 
-  <script type="module" src="../../common/js/navegacao.js"></script>
-  <script defer src="../../common/js/toast.js"></script>
-  <script type="module" src="../js/preFecho.js"></script>
-
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      if (window.inicializarPagina) inicializarPagina("Pré-Fecho");
-    });
-
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("../../sw.js");
     }
