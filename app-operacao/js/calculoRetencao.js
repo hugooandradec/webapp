@@ -1,14 +1,10 @@
-// ===== LOCAL STORAGE =====
-const STORAGE_KEY = "retencao_maquinas";
-
+const STORAGE_KEY = "retencao_compacto";
 let maquinas = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
 
-// ===== SALVAR =====
 function salvar() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(maquinas));
 }
 
-// ===== ADICIONAR MÁQUINA =====
 function adicionarMaquina() {
   const selo = document.getElementById("selo").value.trim().toUpperCase();
   const jogo = document.getElementById("jogo").value.trim();
@@ -16,18 +12,18 @@ function adicionarMaquina() {
   const saida = Number(document.getElementById("saida").value);
 
   if (!selo || !jogo || isNaN(entrada) || isNaN(saida)) {
-    alert("Preencha todos os campos corretamente.");
+    alert("Preencha todos os campos corretamente!");
     return;
   }
 
-  const retencao = entrada > 0 ? ((entrada - saida) / entrada) * 100 : 0;
+  const ret = entrada > 0 ? ((entrada - saida) / entrada) * 100 : 0;
 
   maquinas.push({
     selo,
     jogo,
     entrada,
     saida,
-    retencao: retencao.toFixed(1)
+    ret: ret.toFixed(1)
   });
 
   salvar();
@@ -39,39 +35,44 @@ function adicionarMaquina() {
   document.getElementById("saida").value = "";
 }
 
-// ===== EXIBIR LISTA =====
 function renderLista() {
-  const box = document.getElementById("listaMaquinas");
+  const box = document.getElementById("lista");
   box.innerHTML = "";
 
+  let totalGeral = 0;
+
   maquinas.forEach(m => {
+    totalGeral += (m.entrada - m.saida);
+
     const div = document.createElement("div");
-    div.className = "item-maquina";
+    div.className = "item";
     div.innerHTML = `
       <strong>${m.selo} — ${m.jogo}</strong><br>
-      E: ${m.entrada} | S: ${m.saida} | Ret: ${m.retencao}%
+      E: ${m.entrada} | S: ${m.saida} | Ret: ${m.ret}%
     `;
     box.appendChild(div);
   });
+
+  document.getElementById("totalGeral").innerHTML =
+    `TOTAL: R$ ${totalGeral.toFixed(2)}`;
 }
 
 renderLista();
 
-// ===== MODAL RELATÓRIO =====
 function abrirRelatorio() {
   const data = document.getElementById("data").value;
   const ponto = document.getElementById("ponto").value.trim();
 
   let dataFmt = "-";
   if (data) {
-    const [y, m, d] = data.split("-");
+    const [y,m,d] = data.split("-");
     const dt = new Date(+y, +m - 1, +d);
     const dia = dt.toLocaleDateString("pt-BR", { weekday: "long" });
     dataFmt = `${d}/${m}/${y} (${dia})`;
   }
 
   let html = `
-    <h3 style="color:#6a1b9a; text-align:center; margin-bottom:10px;">Relatório de Retenção</h3>
+    <h3 style="color:#6a1b9a; text-align:center; margin-bottom:12px;">Relatório</h3>
     <p><strong>Data:</strong> ${dataFmt}</p>
     <p><strong>Ponto:</strong> ${ponto || "-"}</p>
     <hr><br>
@@ -81,7 +82,7 @@ function abrirRelatorio() {
     html += `
       <div class="linha-relatorio">
         <strong>${m.selo} — ${m.jogo}</strong><br>
-        E: ${m.entrada} | S: ${m.saida} | Ret: ${m.retencao}%
+        E: ${m.entrada} | S: ${m.saida} | Ret: ${m.ret}%
       </div>
     `;
   });
@@ -90,14 +91,13 @@ function abrirRelatorio() {
   document.getElementById("modal").classList.add("aberto");
 }
 
-// ===== FECHAR RELATÓRIO =====
 function fecharRelatorio() {
   document.getElementById("modal").classList.remove("aberto");
 }
 
-// ===== LIMPAR TUDO =====
 function limparTudo() {
-  if (!confirm("Deseja realmente apagar tudo?")) return;
+  if (!confirm("Apagar tudo?")) return;
+
   maquinas = [];
   salvar();
   renderLista();
