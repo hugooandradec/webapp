@@ -2,7 +2,7 @@
 // CÁLCULO DE RETENÇÃO — LAYOUT PRÉ-FECHO (COMPACTO)
 // ================================
 
-const RET_STORAGE = "retencao_dados_v1";
+const RET_STORAGE = "retencao_dados_v2";
 let retContador = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -10,29 +10,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnRel = document.getElementById("btnRelatorio");
   const btnLimpar = document.getElementById("btnLimpar");
   const lista = document.getElementById("listaMaquinas");
-  const totalEl = document.getElementById("totalGeral");
 
   const modal = document.getElementById("modalRet");
-  const btnFecharModa = document.getElementById("btnFecharModal");
+  const btnFecharModal = document.getElementById("btnFecharModal");
   const relConteudo = document.getElementById("relConteudo");
 
   const inputData = document.getElementById("data");
   const inputPonto = document.getElementById("ponto");
 
-  if (btnAdd) btnAdd.addEventListener("click", () => {
-    adicionarMaquina(lista, totalEl);
+  btnAdd.addEventListener("click", () => {
+    adicionarMaquina(lista);
     salvarRetencao();
   });
 
-  if (btnRel) btnRel.addEventListener("click", () => {
-    abrirRelatorio(inputData, inputPonto, totalEl, relConteudo, modal);
+  btnRel.addEventListener("click", () => {
+    abrirRelatorio(inputData, inputPonto, relConteudo, modal);
   });
 
-  if (btnLimpar) btnLimpar.addEventListener("click", () => {
-    limparTudo(lista, totalEl);
+  btnLimpar.addEventListener("click", () => {
+    limparTudo(lista);
   });
 
-  if (btnFecharModa) btnFecharModa.addEventListener("click", () => {
+  btnFecharModal.addEventListener("click", () => {
     modal.classList.remove("aberta");
   });
 
@@ -40,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === modal) modal.classList.remove("aberta");
   });
 
-  carregarRetencao(lista, totalEl);
+  carregarRetencao(lista);
 });
 
 
@@ -48,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
 //   ADICIONAR MÁQUINA  
 // ===============================
 
-function adicionarMaquina(lista, totalEl, dados = null) {
+function adicionarMaquina(lista, dados = null) {
   retContador++;
 
   const card = document.createElement("div");
@@ -62,29 +61,34 @@ function adicionarMaquina(lista, totalEl, dados = null) {
       </button>
     </div>
 
-    <div class="linha">
-      <label>Selo:</label>
-      <input type="text" class="ret-selo" placeholder="selo">
+    <div class="linha2x">
+      <div class="linha">
+        <label>Selo:</label>
+        <input type="text" class="ret-selo">
+      </div>
+
+      <div class="linha">
+        <label>Jogo:</label>
+        <input type="text" class="ret-jogo">
+      </div>
     </div>
 
-    <div class="linha">
-      <label>Jogo:</label>
-      <input type="text" class="ret-jogo" placeholder="jogo">
-    </div>
-
-    <div class="linha2">
+    <div class="linha2x" style="margin-top:8px;">
       <input type="number" class="ret-entrada" placeholder="Entrada" inputmode="numeric">
       <input type="number" class="ret-saida" placeholder="Saída" inputmode="numeric">
     </div>
 
     <div style="margin-top:8px;font-weight:700;">
-      <span class="ret-resumo">E: 0 | S: 0 | Ret: 0%</span>
+      <span class="ret-resumo">
+        <span class="verde">E: 0</span> | 
+        <span class="vermelho">S: 0</span> | 
+        Ret: 0%
+      </span>
     </div>
   `;
 
   lista.appendChild(card);
 
-  const btnRem = card.querySelector(".btn-remover");
   const selo = card.querySelector(".ret-selo");
   const jogo = card.querySelector(".ret-jogo");
   const entrada = card.querySelector(".ret-entrada");
@@ -96,9 +100,13 @@ function adicionarMaquina(lista, totalEl, dados = null) {
     const S = Number(saida.value);
     const ret = E > 0 ? ((E - S) / E) * 100 : 0;
 
-    resumo.innerHTML = `E: ${E} | S: ${S} | Ret: ${ret.toFixed(1)}%`;
+    resumo.innerHTML = `
+      <span class="verde">E: ${E}</span> |
+      <span class="vermelho">S: ${S}</span> |
+      Ret: ${ret.toFixed(1)}%
+    `;
+
     salvarRetencao();
-    atualizarTotalGeral(totalEl);
   };
 
   entrada.addEventListener("input", atualizar);
@@ -106,12 +114,12 @@ function adicionarMaquina(lista, totalEl, dados = null) {
   selo.addEventListener("input", salvarRetencao);
   jogo.addEventListener("input", salvarRetencao);
 
-  btnRem.addEventListener("click", () => {
+  card.querySelector(".btn-remover").addEventListener("click", () => {
     card.remove();
     salvarRetencao();
-    atualizarTotalGeral(totalEl);
   });
 
+  // Restaurar dados
   if (dados) {
     selo.value = dados.selo || "";
     jogo.value = dados.jogo || "";
@@ -123,35 +131,10 @@ function adicionarMaquina(lista, totalEl, dados = null) {
 
 
 // ===============================
-//  TOTAL GERAL
+//  RELATÓRIO
 // ===============================
 
-function atualizarTotalGeral(totalEl) {
-  let total = 0;
-
-  document.querySelectorAll(".ret-resumo").forEach(span => {
-    const txt = span.textContent;
-    const m = txt.match(/E:\s*([0-9.]+)\s*\|\s*S:\s*([0-9.]+)/);
-    if (!m) return;
-
-    const E = Number(m[1]);
-    const S = Number(m[2]);
-
-    total += (E - S);
-  });
-
-  totalEl.innerHTML = `TOTAL: R$ ${total.toFixed(2)}`;
-  totalEl.classList.remove("positivo", "negativo");
-  if (total > 0) totalEl.classList.add("positivo");
-  else if (total < 0) totalEl.classList.add("negativo");
-}
-
-
-// ===============================
-//  RELATÓRIO (MODAL)
-// ===============================
-
-function abrirRelatorio(inputData, inputPonto, totalEl, relConteudo, modal) {
+function abrirRelatorio(inputData, inputPonto, relConteudo, modal) {
   const data = inputData.value || "-";
   const ponto = inputPonto.value || "-";
 
@@ -163,32 +146,23 @@ function abrirRelatorio(inputData, inputPonto, totalEl, relConteudo, modal) {
 
   const cards = document.querySelectorAll(".card");
 
-  if (!cards.length) {
-    html += `<p>Nenhuma máquina lançada.</p>`;
-  } else {
-    cards.forEach((c, i) => {
-      const selo = c.querySelector(".ret-selo").value || "-";
-      const jogo = c.querySelector(".ret-jogo").value || "-";
-      const entrada = c.querySelector(".ret-entrada").value || "0";
-      const saida = c.querySelector(".ret-saida").value || "0";
-      const ret = entrada > 0 ? (((entrada - saida) / entrada) * 100).toFixed(1) : "0";
+  cards.forEach((c, i) => {
+    const selo = c.querySelector(".ret-selo").value || "-";
+    const jogo = c.querySelector(".ret-jogo").value || "-";
+    const entrada = Number(c.querySelector(".ret-entrada").value || 0);
+    const saida = Number(c.querySelector(".ret-saida").value || 0);
+    const ret = entrada > 0 ? (((entrada - saida) / entrada) * 100).toFixed(1) : "0";
 
-      html += `
-        <div class="bloco-ret">
-          <strong>MÁQUINA ${i + 1}</strong><br>
-          ${selo} — ${jogo}<br>
-          E: ${entrada} | S: ${saida} | Ret: ${ret}%
-        </div>
-      `;
-    });
-  }
-
-  html += `
-    <hr>
-    <div style="font-weight:900;text-align:right;">
-      ${totalEl.innerHTML}
-    </div>
-  `;
+    html += `
+      <div class="bloco-ret">
+        <strong>MÁQUINA ${i + 1}</strong><br>
+        ${selo} — ${jogo}<br>
+        <span class="verde">E: ${entrada}</span> |
+        <span class="vermelho">S: ${saida}</span> |
+        Ret: ${ret}%
+      </div>
+    `;
+  });
 
   relConteudo.innerHTML = html;
   modal.classList.add("aberta");
@@ -217,7 +191,7 @@ function salvarRetencao() {
   localStorage.setItem(RET_STORAGE, JSON.stringify({ data, ponto, maquinas }));
 }
 
-function carregarRetencao(lista, totalEl) {
+function carregarRetencao(lista) {
   const raw = localStorage.getItem(RET_STORAGE);
   if (!raw) return;
 
@@ -227,20 +201,14 @@ function carregarRetencao(lista, totalEl) {
   document.getElementById("ponto").value = dados.ponto || "";
 
   if (dados.maquinas) {
-    dados.maquinas.forEach(m =>
-      adicionarMaquina(lista, totalEl, m)
-    );
+    dados.maquinas.forEach(m => adicionarMaquina(lista, m));
   }
-
-  atualizarTotalGeral(totalEl);
 }
 
-function limparTudo(lista, totalEl) {
+function limparTudo(lista) {
   if (!confirm("Excluir tudo?")) return;
 
   lista.innerHTML = "";
   localStorage.removeItem(RET_STORAGE);
   retContador = 0;
-
-  atualizarTotalGeral(totalEl);
 }
