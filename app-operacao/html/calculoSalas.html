@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cálculo de Salas</title>
+  <meta name="theme-color" content="#6a1b9a" />
+
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <!-- Cabeçalho padrão -->
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+    inicializarPagina("Cálculo de Salas", "operacao");
+  </script>
+
+  <!-- Toast -->
+  <script defer src="../../common/js/toast.js"></script>
+
+  <!-- Script da página -->
+  <script type="module" src="../js/calculoSalas.js"></script>
+
+  <style>
+    :root {
+      --roxo: #6a1b9a;
+      --verde: #16a34a;
+      --vermelho: #dc2626;
+    }
+
+    body {
+      margin: 0;
+      background: #f8f8f8;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    h2 {
+      color: var(--roxo);
+      text-align: center;
+      margin-top: 6px;
+    }
+
+    .linha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    label {
+      font-weight: bold;
+      min-width: 85px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"] {
+      flex: 1;
+      padding: 6px 0;
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      font-size: 0.95rem;
+      background: transparent;
+      outline: none;
+      text-transform: uppercase;
+    }
+
+    input:focus {
+      border-bottom-color: var(--roxo);
+    }
+
+    .barra {
+      height: 1px;
+      background: #ddd;
+      margin: 14px 0;
+    }
+
+    .acoes {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+    }
+
+    .btn.roxo {
+      background: var(--roxo);
+      color: #fff;
+    }
+
+    .btn.cinza {
+      background: #aaa;
+      color: #fff;
+    }
+
+    .cards {
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .card-titulo {
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .linha2x {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .linha2x input {
+      text-align: center;
+      padding: 6px 0;
+      font-size: 0.9rem;
+      border: none;
+      border-bottom: 2px solid #ddd;
+      background: transparent;
+      outline: none;
+      text-transform: none; /* valores podem ter casas decimais */
+    }
+
+    .resultado-sala {
+      margin-top: 6px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .positivo {
+      color: var(--verde);
+    }
+
+    .negativo {
+      color: var(--vermelho);
+    }
+
+    #totalGeralSalas {
+      margin-top: 18px;
+      text-align: right;
+      font-weight: 900;
+      font-size: 1rem;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+    }
+
+    .modal.aberta {
+      display: flex;
+    }
+
+    .modal .cx {
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      width: min(900px, 95%);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .rel {
+      font-family: ui-monospace, Menlo, Consolas;
+      font-size: 0.9rem;
+      line-height: 1.25;
+    }
+
+    .bloco-sala {
+      padding: 6px 0;
+      margin: 6px 0;
+      border-bottom: 1px dashed #ddd;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main>
+    <h2>Cálculo de Salas</h2>
+
+    <div class="linha">
+      <label>Data:</label>
+      <input id="data-salas" type="date">
+    </div>
+
+    <div class="linha">
+      <label>Ponto:</label>
+      <input id="ponto-salas" type="text" placeholder="NOME DO PONTO / LOCAL">
+    </div>
+
+    <div class="barra"></div>
+
+    <div class="acoes">
+      <button id="btnAddSala" class="btn roxo">
+        <i class="fa-solid fa-plus"></i> Adicionar Sala
+      </button>
+
+      <button id="btnRelatorioSala" class="btn cinsa btn cinza">
+        <i class="fa-solid fa-file-lines"></i> Relatório
+      </button>
+
+      <button id="btnLimparSala" class="btn cinza" style="background:#d9534f;">
+        <i class="fa-solid fa-trash"></i> Limpar Tudo
+      </button>
+    </div>
+
+    <div id="listaSalas" class="cards"></div>
+
+    <div id="totalGeralSalas">TOTAL GERAL: R$ 0,00</div>
+  </main>
+
+  <!-- Modal -->
+  <div id="modalSalas" class="modal">
+    <div class="cx">
+      <header style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;">Relatório de Salas</h3>
+        <button id="btnFecharModalSalas" class="btn cinza">Fechar</button>
+      </header>
+
+      <div id="relConteudoSalas" class="rel"></div>
+    </div>
+  </div>
+
+</body>
+
+</html>
