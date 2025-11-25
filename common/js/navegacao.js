@@ -1,6 +1,12 @@
 // common/js/navegacao.js
 // utilidades globais de navegação, header e PWA
 
+import {
+  getCurrentUser,
+  canAccess as authCanAccess,
+  canAccessRoute
+} from "./auth.js";
+
 // ===== raiz do site (funciona em GitHub Pages e domínio próprio) =====
 function getRootPath() {
   const parts = location.pathname.split("/").filter(Boolean);
@@ -10,6 +16,16 @@ function getRootPath() {
   return "/";
 }
 const ROOT = getRootPath();
+
+// ===== mapeamento de páginas -> rotas de permissão =====
+// só coloquei as páginas da operação que têm regra específica
+const ROTAS_POR_PAGINA = {
+  "preFecho.html":        "operacao-preFecho",
+  "calculoRetencao.html": "operacao-retencao",
+  "calculoSalas.html":    "operacao-salas",
+  "lancamento.html":      "operacao-lancamento"
+  // se criar novas páginas restritas, é só adicionar aqui
+};
 
 // ===== backend (com fallback) =====
 export function getURLBackend() {
@@ -40,16 +56,18 @@ export async function isOnline() {
   }
 }
 
-// ===== auth helpers (leve integração com auth.js) =====
+// ===== auth helpers (agora integrados com auth.js) =====
 function getUser() {
-  try { return JSON.parse(localStorage.getItem("usuarioLogado")) || null; } catch { return null; }
+  return getCurrentUser();
 }
+
 function canAccess(appKey) {
-  const u = getUser(); if (!u) return false;
-  if (!appKey) return true;
-  return Array.isArray(u.apps) && u.apps.includes(appKey);
+  // delega pro auth.js (que já trata admin, apps etc.)
+  return authCanAccess(appKey);
 }
+
 function logout() {
+  // só limpa o usuário; o redirect a gente faz aqui com ROOT certo
   localStorage.removeItem("usuarioLogado");
   window.location.replace(`${ROOT}login.html`);
 }
@@ -143,8 +161,21 @@ export async function inicializarPagina(titulo, appKey, options = {}) {
     window.location.replace(`${ROOT}login.html`);
     return;
   }
+
+  // checa se pode usar o módulo (operacao / erp / base etc.)
   if (!canAccess(appKey)) {
     window.location.replace(`${ROOT}app-selector.html`);
+    return;
+  }
+
+  // ===== checagem de rota/página (pré-fecho, retenção, salas, lançamento) =====
+  const pagina = window.location.pathname.split("/").pop().split("?")[0];
+  const routeKey = ROTAS_POR_PAGINA[pagina];
+
+  if (routeKey && !canAccessRoute(routeKey)) {
+    // se não tiver permissão pra essa rota, manda pro menu do app
+    const destino = menuPath(appKey) || `${ROOT}app-selector.html`;
+    window.location.replace(destino);
     return;
   }
 
