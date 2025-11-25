@@ -42,6 +42,10 @@
       padding: 16px;
     }
 
+    h1 {
+      display: none;
+    }
+
     h2 {
       color: var(--roxo);
       text-align: center;
@@ -59,13 +63,584 @@
 
     .linha label {
       font-weight: 700;
-      min-width: 80px;
+      min-width: 70px;
     }
 
     .linha span.sub {
       font-size: 0.8rem;
       color: #666;
       font-weight: 600;
+    }
+
+    input[type="date"] {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #dcdcdc;
+      outline: none;
+      font-size: 0.95rem;
+    }
+
+    .barra {
+      height: 1px;
+      background: #ddd;
+      margin: 12px 0;
+    }
+
+    /* Botões */
+    .acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 4px 0;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.92rem;
+      white-space: nowrap;
+    }
+
+    .btn.roxo {
+      background: var(--roxo);
+      color: #fff;
+    }
+
+    .btn.cinza {
+      background: var(--cinza-btn);
+      color: #fff;
+    }
+
+    .btn.danger {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .btn i {
+      font-size: 1rem;
+    }
+
+    /* Cards */
+    .cards {
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #eee;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .card-titulo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+      color: #444;
+    }
+
+    .card-titulo small {
+      font-weight: 400;
+      font-size: 0.75rem;
+      color: #777;
+      margin-right: 8px;
+    }
+
+    .icone-remover {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: #999;
+      padding: 4px;
+    }
+
+    .icone-remover i {
+      font-size: 0.9rem;
+    }
+
+    .linha-nome {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0 6px;
+    }
+
+    .linha-nome label {
+      font-weight: 700;
+      min-width: 55px;
+    }
+
+    .linha-nome input {
+      flex: 1;
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      padding: 6px 0;
+      text-transform: uppercase;
+      outline: none;
+      background: transparent;
+      font-size: 0.95rem;
+    }
+
+    .linha-nome input:focus {
+      border-bottom-color: var(--roxo);
+    }
+
+    /* Grid 3 colunas estilo pré-fecho/ret */
+    .grid-sala {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr 1px 1fr;
+      gap: 10px;
+      align-items: stretch;
+      margin-top: 6px;
+    }
+
+    .grid-sala .divv {
+      width: 1px;
+      background: #e7e7ef;
+      height: 100%;
+    }
+
+    .col-sala {
+      display: flex;
+      flex-direction: column;
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    .col-sala h4 {
+      margin: 0 0 4px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #444;
+    }
+
+    .col-sala input {
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      padding: 6px 0;
+      text-align: center;
+      font-size: 0.95rem;
+      outline: none;
+      background: transparent;
+    }
+
+    .col-sala input:focus {
+      border-bottom-color: var(--roxo);
+    }
+
+    .resultado {
+      margin-top: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .resultado .valor {
+      font-weight: 800;
+    }
+
+    .verde {
+      color: var(--verde);
+    }
+
+    .vermelho {
+      color: var(--vermelho);
+    }
+
+    .neutro {
+      color: #555;
+    }
+
+    .total-geral {
+      margin-top: 18px;
+      font-weight: 900;
+      font-size: 1.05rem;
+      text-align: right;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+    }
+
+    .modal.aberta {
+      display: flex;
+    }
+
+    .modal .cx {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      width: min(900px, 95%);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .rel {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.25;
+      white-space: pre-wrap;
+    }
+
+    @media (max-width: 480px) {
+      main {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main>
+    <h1>Cálculo de Salas</h1>
+    <h2>Cálculo de Salas</h2>
+
+    <div class="linha">
+      <label>Data:</label>
+      <input id="dataDe" type="date" />
+      <span class="sub">De</span>
+      <input id="dataAte" type="date" />
+      <span class="sub">Até</span>
+    </div>
+
+    <div class="barra"></div>
+
+    <div class="acoes">
+      <button id="btnAdicionar" class="btn roxo">
+        <i class="fa-solid fa-plus"></i> Adicionar Sala
+      </button>
+
+      <button id="btnRelatorio" class="btn cinza">
+        <i class="fa-solid fa-file-lines"></i> Relatório
+      </button>
+
+      <button id="btnLimpar" class="btn danger">
+        <i class="fa-solid fa-trash"></i> Limpar Tudo
+      </button>
+    </div>
+
+    <div id="listaSalas" class="cards"></div>
+
+    <div id="totalGeral" class="total-geral"></div>
+  </main>
+
+  <!-- Modal -->
+  <div id="modalSalas" class="modal">
+    <div class="cx">
+      <header style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;">Relatório de Salas</h3>
+        <button id="btnFecharModal" class="btn cinza">Fechar</button>
+      </header>
+
+      <div id="relConteudo" class="rel"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+
+    const STORAGE_KEY = "calculo_salas_v1";
+    let salas = [];
+
+    function parseCentavos(v) {
+      if (!v) return 0;
+      const limpo = v.toString().replace(/\D/g, "");
+      if (!limpo) return 0;
+      return Number(limpo) / 100;
+    }
+
+    function formatarMoeda(v) {
+      return (Number(v) || 0).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        minimumFractionDigits: 2
+      });
+    }
+
+    // bruto /2 +10%, - despesas, + cartao*0.94
+    function calcularResultadoSala(sala) {
+      const bruto = parseCentavos(sala.bruto);
+      const despesas = parseCentavos(sala.despesas);
+      const cartao = parseCentavos(sala.cartao);
+
+      if (!bruto && !despesas && !cartao) return 0;
+
+      const metade = bruto / 2;
+      const com10 = metade * 1.10;
+      const aposDespesas = com10 - despesas;
+      const cartaoLiquido = cartao * 0.94;
+
+      return aposDespesas + cartaoLiquido;
+    }
+
+    function salvarNoStorage() {
+      const dataDe = document.getElementById("dataDe").value || "";
+      const dataAte = document.getElementById("dataAte").value || "";
+      const payload = { dataDe, dataAte, salas };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    function carregarDoStorage() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+
+      try {
+        const dados = JSON.parse(raw);
+        document.getElementById("dataDe").value = dados.dataDe || "";
+        document.getElementById("dataAte").value = dados.dataAte || "";
+        salas = Array.isArray(dados.salas) ? dados.salas : [];
+      } catch (e) {
+        console.error("Erro ao carregar storage:", e);
+      }
+    }
+
+    function atualizarTotalGeral() {
+      const elTotal = document.getElementById("totalGeral");
+      let total = 0;
+      salas.forEach((s) => {
+        total += calcularResultadoSala(s);
+      });
+
+      elTotal.textContent = "";
+      elTotal.className = "total-geral";
+
+      if (!salas.length) return;
+
+      const texto = "TOTAL GERAL: " + formatarMoeda(total);
+      elTotal.textContent = texto;
+
+      if (total < 0) {
+        elTotal.classList.add("vermelho");
+      } else if (total > 0) {
+        elTotal.classList.add("verde");
+      } else {
+        elTotal.classList.add("neutro");
+      }
+    }
+
+    function criarCardSala(sala, index) {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      card.innerHTML = `
+        <div class="card-titulo">
+          <span>Sala ${index + 1}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <small>preencha os valores e veja o resultado</small>
+            <button class="icone-remover" title="Remover sala">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="linha-nome">
+          <label>Nome:</label>
+          <input type="text" class="sala-nome" placeholder="NOME DA SALA">
+        </div>
+
+        <div class="grid-sala">
+          <div class="col-sala">
+            <h4>Bruto</h4>
+            <input type="tel" inputmode="numeric" class="sala-bruto" placeholder="0,00">
+          </div>
+          <div class="divv"></div>
+          <div class="col-sala">
+            <h4>Despesas</h4>
+            <input type="tel" inputmode="numeric" class="sala-despesas" placeholder="0,00">
+          </div>
+          <div class="divv"></div>
+          <div class="col-sala">
+            <h4>Cartão</h4>
+            <input type="tel" inputmode="numeric" class="sala-cartao" placeholder="0,00">
+          </div>
+        </div>
+
+        <div class="resultado">
+          Resultado: <span class="valor">R$ 0,00</span> <span class="status">(Neutro)</span>
+        </div>
+      `;
+
+      const nomeInput = card.querySelector(".sala-nome");
+      const brutoInput = card.querySelector(".sala-bruto");
+      const despesasInput = card.querySelector(".sala-despesas");
+      const cartaoInput = card.querySelector(".sala-cartao");
+      const btnRemover = card.querySelector(".icone-remover");
+      const valorSpan = card.querySelector(".resultado .valor");
+      const statusSpan = card.querySelector(".resultado .status");
+      const resultadoDiv = card.querySelector(".resultado");
+
+      // restaurar valores
+      if (sala.nome) nomeInput.value = sala.nome;
+      if (sala.bruto) brutoInput.value = sala.bruto;
+      if (sala.despesas) despesasInput.value = sala.despesas;
+      if (sala.cartao) cartaoInput.value = sala.cartao;
+
+      const atualizarResultado = () => {
+        salas[index].nome = (nomeInput.value || "").toUpperCase();
+        salas[index].bruto = brutoInput.value || "";
+        salas[index].despesas = despesasInput.value || "";
+        salas[index].cartao = cartaoInput.value || "";
+
+        // só números nos campos monetários
+        [brutoInput, despesasInput, cartaoInput].forEach(inp => {
+          const limpo = (inp.value || "").replace(/\D/g, "");
+          inp.value = limpo;
+        });
+
+        const res = calcularResultadoSala(salas[index]);
+        valorSpan.textContent = formatarMoeda(res);
+        resultadoDiv.classList.remove("verde", "vermelho", "neutro");
+
+        if (res < 0) {
+          resultadoDiv.classList.add("vermelho");
+          statusSpan.textContent = "(Prejuízo)";
+        } else if (res > 0) {
+          resultadoDiv.classList.add("verde");
+          statusSpan.textContent = "(Lucro)";
+        } else {
+          resultadoDiv.classList.add("neutro");
+          statusSpan.textContent = "(Neutro)";
+        }
+
+        atualizarTotalGeral();
+        salvarNoStorage();
+      };
+
+      nomeInput.addEventListener("input", () => {
+        nomeInput.value = nomeInput.value.toUpperCase();
+        atualizarResultado();
+      });
+
+      [brutoInput, despesasInput, cartaoInput].forEach(inp => {
+        inp.addEventListener("input", atualizarResultado);
+        inp.addEventListener("change", atualizarResultado);
+      });
+
+      btnRemover.addEventListener("click", () => {
+        if (!confirm("Remover esta sala?")) return;
+        salas.splice(index, 1);
+        renderizarSalas();
+        salvarNoStorage();
+      });
+
+      // cálculo inicial
+      atualizarResultado();
+
+      return card;
+    }
+
+    function renderizarSalas() {
+      const lista = document.getElementById("listaSalas");
+      lista.innerHTML = "";
+
+      salas.forEach((sala, idx) => {
+        const card = criarCardSala(sala, idx);
+        lista.appendChild(card);
+      });
+
+      atualizarTotalGeral();
+    }
+
+    function abrirModal() {
+      const modal = document.getElementById("modalSalas");
+      const rel = document.getElementById("relConteudo");
+      const dataDe = document.getElementById("dataDe").value || "___/___/____";
+      const dataAte = document.getElementById("dataAte").value || "___/___/____";
+
+      let texto = `Período: ${dataDe} até ${dataAte}\n\n`;
+      let total = 0;
+
+      salas.forEach((sala, idx) => {
+        const bruto = parseCentavos(sala.bruto);
+        const despesas = parseCentavos(sala.despesas);
+        const cartao = parseCentavos(sala.cartao);
+        const res = calcularResultadoSala(sala);
+        total += res;
+
+        texto += `Sala ${idx + 1} - ${sala.nome || "SEM NOME"}\n`;
+        texto += `  Bruto:    ${formatarMoeda(bruto)}\n`;
+        texto += `  Despesas: ${formatarMoeda(despesas)}\n`;
+        texto += `  Cartão:   ${formatarMoeda(cartao)}\n`;
+        texto += `  Resultado: ${formatarMoeda(res)}\n`;
+        texto += `----------------------------------------\n`;
+      });
+
+      texto += `TOTAL GERAL: ${formatarMoeda(total)}\n`;
+      rel.textContent = texto;
+      modal.classList.add("aberta");
+    }
+
+    function fecharModal() {
+      document.getElementById("modalSalas").classList.remove("aberta");
+    }
+
+    function limparTudo() {
+      if (!confirm("Deseja limpar todas as salas e datas?")) return;
+      salas = [];
+      document.getElementById("dataDe").value = "";
+      document.getElementById("dataAte").value = "";
+      renderizarSalas();
+      salvarNoStorage();
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      inicializarPagina("Cálculo de Salas", "operacao");
+
+      carregarDoStorage();
+      if (!salas.length) {
+        salas.push({ nome: "", bruto: "", despesas: "", cartao: "" });
+      }
+      renderizarSalas();
+
+      document.getElementById("dataDe").addEventListener("change", salvarNoStorage);
+      document.getElementById("dataAte").addEventListener("change", salvarNoStorage);
+
+      document.getElementById("btnAdicionar").addEventListener("click", () => {
+        salas.push({ nome: "", bruto: "", despesas: "", cartao: "" });
+        renderizarSalas();
+        salvarNoStorage();
+      });
+
+      document.getElementById("btnRelatorio").addEventListener("click", () => {
+        if (!salas.length) {
+          if (window.toast) toast.warn("Adicione pelo menos uma sala.");
+          return;
+        }
+        abrirModal();
+      });
+
+      document.getElementById("btnLimpar").addEventListener("click", limparTudo);
+      document.getElementById("btnFecharModal").addEventListener("click", fecharModal);
+      document.getElementById("modalSalas").addEventListener("click", (e) => {
+        if (e.target.id === "modalSalas") fecharModal();
+      });
+
+      atualizarTotalGeral();
+    });
+  </script>
+
+</body>
+
+</html>      font-weight: 600;
     }
 
     input[type="date"] {
