@@ -16,109 +16,140 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnFecharModal = document.getElementById("btnFecharModal");
   const relatorioConteudo = document.getElementById("relatorioConteudo");
 
-  carregarDoStorage(inputData, inputCliente, listaMaquinas, totalGeralEl);
-
-  if (!inputData.value) {
+  // Data atual (se não tiver nada salvo ainda)
+  if (inputData && !inputData.value) {
     const hoje = new Date();
-    const yyyy = hoje.getFullYear();
-    const mm = String(hoje.getMonth() + 1).padStart(2, "0");
-    const dd = String(hoje.getDate()).padStart(2, "0");
-    inputData.value = `${yyyy}-${mm}-${dd}`;
+    const dia = String(hoje.getDate()).padStart(2, "0");
+    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+    const ano = hoje.getFullYear();
+    inputData.value = `${dia}/${mes}/${ano}`;
   }
 
-  inputData.addEventListener("change", () =>
-    salvarNoStorage(inputData, inputCliente, listaMaquinas, totalGeralEl)
-  );
-  inputCliente.addEventListener("input", () =>
-    salvarNoStorage(inputData, inputCliente, listaMaquinas, totalGeralEl)
-  );
-
-  btnAdicionar.addEventListener("click", () => {
-    adicionarMaquina(listaMaquinas, totalGeralEl, inputData, inputCliente);
-    salvarNoStorage(inputData, inputCliente, listaMaquinas, totalGeralEl);
-  });
-
-  if (!listaMaquinas.children.length) {
-    adicionarMaquina(listaMaquinas, totalGeralEl, inputData, inputCliente);
+  // Eventos para salvar quando mudar data / cliente
+  if (inputData) {
+    inputData.addEventListener("input", salvarNoStorage);
+    inputData.addEventListener("change", salvarNoStorage);
+  }
+  if (inputCliente) {
+    inputCliente.addEventListener("input", salvarNoStorage);
+    inputCliente.addEventListener("change", salvarNoStorage);
   }
 
-  btnRelatorio.addEventListener("click", () => {
-    abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo, modal);
-  });
+  // Botão adicionar máquina
+  if (btnAdicionar) {
+    btnAdicionar.addEventListener("click", () => {
+      adicionarMaquina(listaMaquinas, totalGeralEl);
+      salvarNoStorage();
+      reposicionarBarraAcoes();
+    });
+  }
 
-  btnLimpar.addEventListener("click", () => {
-    if (!confirm("Deseja limpar todos os dados do Pré-Fecho?")) return;
-    inputCliente.value = "";
-    listaMaquinas.innerHTML = "";
-    contadorMaquinas = 0;
-    adicionarMaquina(listaMaquinas, totalGeralEl, inputData, inputCliente);
-    atualizarTotalGeral(listaMaquinas, totalGeralEl);
-    salvarNoStorage(inputData, inputCliente, listaMaquinas, totalGeralEl);
-  });
+  // Botão relatório
+  if (btnRelatorio) {
+    btnRelatorio.addEventListener("click", () => {
+      abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo, modal);
+    });
+  }
 
-  btnFecharModal.addEventListener("click", () => {
-    modal.classList.remove("aberta");
-  });
+  // Botão limpar tudo
+  if (btnLimpar) {
+    btnLimpar.addEventListener("click", () => {
+      limparTudo(listaMaquinas, totalGeralEl);
+    });
+  }
 
-  modal.addEventListener("click", (e) => {
-    if (e.target.id === "modalRelatorio") {
+  // Fechar modal
+  if (btnFecharModal) {
+    btnFecharModal.addEventListener("click", () => {
       modal.classList.remove("aberta");
-    }
-  });
+    });
+  }
 
-  atualizarTotalGeral(listaMaquinas, totalGeralEl);
+  // Fechar modal clicando no fundo
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.classList.remove("aberta");
+      }
+    });
+  }
+
+  // Carregar dados salvos (se existirem)
+  carregarDoStorage(listaMaquinas, totalGeralEl);
+
+  // Garante que a barra de ações fique logo após a lista de máquinas
+  reposicionarBarraAcoes();
 });
 
-// ============= Funções principais =============
+/* ===========================
+   Barra de ações abaixo da última máquina
+=========================== */
 
-function criarCardMaquina(numero, listaMaquinas, totalGeralEl, inputData, inputCliente) {
+function reposicionarBarraAcoes() {
+  const lista = document.getElementById("listaMaquinas");
+  const acoes = document.getElementById("acoesBar");
+  if (!lista || !acoes) return;
+
+  const main = lista.parentElement;
+  if (!main) return;
+
+  const proximo = lista.nextSibling;
+  if (proximo === acoes) return;
+
+  main.insertBefore(acoes, lista.nextSibling);
+}
+
+/* ===========================
+   Criação de Máquina
+=========================== */
+
+function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
+  contadorMaquinas++;
+
   const card = document.createElement("div");
   card.className = "card";
 
   card.innerHTML = `
-    <div class="card-header">
-      <span class="card-titulo">Máquina ${numero}</span>
-      <span class="card-dica">preencha os relógios e veja o resultado</span>
-      <button class="btn-remover" title="Remover máquina">
-        <i class="fa-solid fa-trash"></i>
-      </button>
+    <div class="card-titulo">
+      <span>Máquina ${contadorMaquinas}</span>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:8px;">
+        <small>preencha os relógios e veja o resultado</small>
+        <button type="button" class="btn-remover" title="Remover máquina"
+                style="border:none;background:transparent;color:#999;cursor:pointer;">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
     </div>
 
-    <div class="linha-campo">
-      <label>Selo:</label>
+    <div class="linha">
+      <label style="min-width:50px;">Selo:</label>
       <input type="text" class="inp-selo" placeholder="código da máquina">
     </div>
 
-    <div class="linha-campo">
-      <label>Jogo:</label>
+    <div class="linha">
+      <label style="min-width:50px;">Jogo:</label>
       <input type="text" class="inp-jogo" placeholder="tipo de jogo">
     </div>
 
-    <div class="grid-io">
-      <div class="col-io">
+    <div class="grid">
+      <div class="col">
         <h4>Entrada</h4>
-        <div class="linha-rel">
-          <span>Anterior</span>
-          <input type="tel" class="inp-entrada-anterior" inputmode="numeric">
-        </div>
-        <div class="linha-rel">
-          <span>Atual</span>
-          <input type="tel" class="inp-entrada-atual" inputmode="numeric">
+        <div class="linha2">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" class="entrada-anterior" placeholder="Anterior">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" class="entrada-atual" placeholder="Atual">
         </div>
         <div class="dif">
           Diferença: <span class="dif-entrada">R$ 0,00</span>
         </div>
       </div>
-      <div class="divisor-vertical"></div>
-      <div class="col-io">
+
+      <div class="divv"></div>
+
+      <div class="col">
         <h4>Saída</h4>
-        <div class="linha-rel">
-          <span>Anterior</span>
-          <input type="tel" class="inp-saida-anterior" inputmode="numeric">
-        </div>
-        <div class="linha-rel">
-          <span>Atual</span>
-          <input type="tel" class="inp-saida-atual" inputmode="numeric">
+        <div class="linha2">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" class="saida-anterior" placeholder="Anterior">
+          <input type="tel" inputmode="numeric" pattern="[0-9]*" class="saida-atual" placeholder="Atual">
         </div>
         <div class="dif">
           Diferença: <span class="dif-saida">R$ 0,00</span>
@@ -126,264 +157,132 @@ function criarCardMaquina(numero, listaMaquinas, totalGeralEl, inputData, inputC
       </div>
     </div>
 
-    <div class="resultado">
+    <div style="margin-top:8px;font-weight:700;">
       Resultado: <span class="resultado-maquina">R$ 0,00</span>
     </div>
   `;
 
-  const inpSelo = card.querySelector(".inp-selo");
-  const inpJogo = card.querySelector(".inp-jogo");
-  const inpEntAnt = card.querySelector(".inp-entrada-anterior");
-  const inpEntAtu = card.querySelector(".inp-entrada-atual");
-  const inpSaiAnt = card.querySelector(".inp-saida-anterior");
-  const inpSaiAtu = card.querySelector(".inp-saida-atual");
-  const difEntradaEl = card.querySelector(".dif-entrada");
-  const difSaidaEl = card.querySelector(".dif-saida");
-  const resultadoEl = card.querySelector(".resultado-maquina");
-  const btnRemover = card.querySelector(".btn-remover");
-
-  [inpSelo, inpJogo].forEach((inp) => {
-    inp.addEventListener("input", () => {
-      inp.value = inp.value.toUpperCase();
-      salvarNoStorage(inputData, inputCliente, listaMaquinas, totalGeralEl);
-    });
-  });
-
-  [inpEntAnt, inpEntAtu, inpSaiAnt, inpSaiAtu].forEach((inp) => {
-    inp.addEventListener("input", () => {
-      atualizarMaquina(
-        inpEntAnt,
-        inpEntAtu,
-        inpSaiAnt,
-        inpSaiAtu,
-        difEntradaEl,
-        difSaidaEl,
-        resultadoEl
-      );
-      atualizarTotalGeral(listaMaquinas, totalGeralEl);
-      salvarNoStorage(inputData, inputCliente, listaMaquinas, totalGeralEl);
-    });
-  });
-
-  btnRemover.addEventListener("click", () => {
-    if (!confirm("Remover esta máquina?")) return;
-    card.remove();
-    renumerarMaquinas(listaMaquinas);
-    atualizarTotalGeral(listaMaquinas, totalGeralEl);
-    salvarNoStorage(inputData, inputCliente, listaMaquinas, totalGeralEl);
-  });
-
-  return card;
-}
-
-function adicionarMaquina(listaMaquinas, totalGeralEl, inputData, inputCliente) {
-  contadorMaquinas++;
-  const card = criarCardMaquina(
-    contadorMaquinas,
-    listaMaquinas,
-    totalGeralEl,
-    inputData,
-    inputCliente
-  );
   listaMaquinas.appendChild(card);
-}
 
-function renumerarMaquinas(listaMaquinas) {
-  const cards = listaMaquinas.querySelectorAll(".card");
-  contadorMaquinas = 0;
-  cards.forEach((card) => {
-    contadorMaquinas++;
-    const titulo = card.querySelector(".card-titulo");
-    if (titulo) titulo.textContent = `Máquina ${contadorMaquinas}`;
-  });
-}
-
-// ============= Cálculos =============
-
-function parseRelogio(valor) {
-  if (!valor) return 0;
-  const limpo = valor.toString().replace(/\D/g, "");
-  if (!limpo) return 0;
-  return Number(limpo);
-}
-
-function diferencaEmReais(anterior, atual) {
-  if (!anterior && !atual) return 0;
-  const diff = parseRelogio(atual) - parseRelogio(anterior);
-  return diff / 100;
-}
-
-function formatarMoeda(v) {
-  return (Number(v) || 0).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    minimumFractionDigits: 2,
-  });
-}
-
-function atualizarMaquina(
-  inpEntAnt,
-  inpEntAtu,
-  inpSaiAnt,
-  inpSaiAtu,
-  difEntradaEl,
-  difSaidaEl,
-  resultadoEl
-) {
-  const difEntrada = diferencaEmReais(inpEntAnt.value, inpEntAtu.value);
-  const difSaida = diferencaEmReais(inpSaiAnt.value, inpSaiAtu.value);
-  const resultado = difEntrada - difSaida;
-
-  difEntradaEl.textContent = formatarMoeda(difEntrada);
-  difSaidaEl.textContent = formatarMoeda(difSaida);
-  resultadoEl.textContent = formatarMoeda(resultado);
-
-  difEntradaEl.className = "dif-entrada " + classeValorMonetario(difEntrada);
-  difSaidaEl.className = "dif-saida " + classeValorMonetario(-difSaida);
-  resultadoEl.className = "resultado-maquina " + classeValorMonetario(resultado);
-}
-
-function atualizarTotalGeral(listaMaquinas, totalGeralEl) {
-  let total = 0;
-  const resultados = listaMaquinas.querySelectorAll(".resultado-maquina");
-  resultados.forEach((el) => {
-    const texto = el.textContent || "";
-    const valor = parseFloat(
-      texto
-        .replace(/\./g, "")
-        .replace(",", ".")
-        .replace(/[^\d\-.]/g, "")
-    );
-    if (!isNaN(valor)) total += valor;
-  });
-
-  totalGeralEl.textContent = "TOTAL: " + formatarMoeda(total);
-  totalGeralEl.className = "total " + classeValorMonetario(total);
-}
-
-// ============= Storage =============
-
-function salvarNoStorage(inputData, inputCliente, listaMaquinas, totalGeralEl) {
-  const cards = listaMaquinas.querySelectorAll(".card");
-  const maquinas = [];
-
-  cards.forEach((card) => {
-    maquinas.push({
-      selo: card.querySelector(".inp-selo")?.value || "",
-      jogo: card.querySelector(".inp-jogo")?.value || "",
-      entAnt: card.querySelector(".inp-entrada-anterior")?.value || "",
-      entAtu: card.querySelector(".inp-entrada-atual")?.value || "",
-      saiAnt: card.querySelector(".inp-saida-anterior")?.value || "",
-      saiAtu: card.querySelector(".inp-saida-atual")?.value || "",
+  const btnRemover = card.querySelector(".btn-remover");
+  if (btnRemover) {
+    btnRemover.addEventListener("click", () => {
+      card.remove();
+      atualizarTotalGeral(totalGeralEl);
+      salvarNoStorage();
+      reposicionarBarraAcoes();
     });
-  });
+  }
 
-  const dados = {
-    data: inputData.value,
-    cliente: inputCliente.value,
-    maquinas,
-    totalTexto: totalGeralEl.textContent || "",
+  const seloInput = card.querySelector(".inp-selo");
+  const jogoInput = card.querySelector(".inp-jogo");
+  const entradaAnterior = card.querySelector(".entrada-anterior");
+  const entradaAtual = card.querySelector(".entrada-atual");
+  const saidaAnterior = card.querySelector(".saida-anterior");
+  const saidaAtual = card.querySelector(".saida-atual");
+  const spanDifEntrada = card.querySelector(".dif-entrada");
+  const spanDifSaida = card.querySelector(".dif-saida");
+  const spanResultado = card.querySelector(".resultado-maquina");
+
+  const sanitizarNumero = (el) => {
+    if (!el) return;
+    const soDigitos = (el.value || "").replace(/\D/g, "");
+    if (el.value !== soDigitos) el.value = soDigitos;
   };
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
-}
+  const atualizarCalculos = () => {
+    // Garante que só tenha dígitos
+    [entradaAnterior, entradaAtual, saidaAnterior, saidaAtual].forEach(sanitizarNumero);
 
-function carregarDoStorage(inputData, inputCliente, listaMaquinas, totalGeralEl) {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return;
+    const entAnt = parseNumero(entradaAnterior.value);
+    const entAt = parseNumero(entradaAtual.value);
+    const saiAnt = parseNumero(saidaAnterior.value);
+    const saiAt = parseNumero(saidaAtual.value);
 
-  try {
-    const dados = JSON.parse(raw);
-    inputData.value = dados.data || "";
-    inputCliente.value = dados.cliente || "";
-    listaMaquinas.innerHTML = "";
-    contadorMaquinas = 0;
+    // Diferenças brutas de relógio
+    const difEntradaBruta = entAt - entAnt;
+    const difSaidaBruta   = saiAt - saiAnt;
 
-    if (Array.isArray(dados.maquinas) && dados.maquinas.length) {
-      dados.maquinas.forEach((maq) => {
-        contadorMaquinas++;
-        const card = criarCardMaquina(
-          contadorMaquinas,
-          listaMaquinas,
-          totalGeralEl,
-          inputData,
-          inputCliente
-        );
-        listaMaquinas.appendChild(card);
+    // CONVERSÃO PARA REAIS (dois últimos dígitos = centavos)
+    // Entrada sempre POSITIVA
+    const entradaReais = Math.abs(difEntradaBruta) / 100;
 
-        card.querySelector(".inp-selo").value = maq.selo || "";
-        card.querySelector(".inp-jogo").value = maq.jogo || "";
-        card.querySelector(".inp-entrada-anterior").value = maq.entAnt || "";
-        card.querySelector(".inp-entrada-atual").value = maq.entAtu || "";
-        card.querySelector(".inp-saida-anterior").value = maq.saiAnt || "";
-        card.querySelector(".inp-saida-atual").value = maq.saiAtu || "";
+    // Saída sempre NEGATIVA
+    const saidaReais   = -Math.abs(difSaidaBruta) / 100;
 
-        const difEntradaEl = card.querySelector(".dif-entrada");
-        const difSaidaEl = card.querySelector(".dif-saida");
-        const resultadoEl = card.querySelector(".resultado-maquina");
+    // Resultado final da máquina
+    const resultado = entradaReais + saidaReais;
 
-        atualizarMaquina(
-          card.querySelector(".inp-entrada-anterior"),
-          card.querySelector(".inp-entrada-atual"),
-          card.querySelector(".inp-saida-anterior"),
-          card.querySelector(".inp-saida-atual"),
-          difEntradaEl,
-          difSaidaEl,
-          resultadoEl
-        );
-      });
-    }
+    // Diferenças exibidas em reais
+    spanDifEntrada.textContent = formatarMoeda(entradaReais);
+    spanDifSaida.textContent   = formatarMoeda(saidaReais);
 
-    if (dados.totalTexto) {
-      totalGeralEl.textContent = dados.totalTexto;
-      const valorMatch = dados.totalTexto.match(/([-\\d\\.,]+)/);
-      if (valorMatch) {
-        const valor = parseFloat(
-          valorMatch[1].replace(/\./g, "").replace(",", ".")
-        );
-        totalGeralEl.className = "total " + classeValorMonetario(valor);
-      }
-    } else {
-      atualizarTotalGeral(listaMaquinas, totalGeralEl);
-    }
-  } catch (e) {
-    console.error("Erro ao carregar dados do Pré-Fecho:", e);
+    // Resultado em reais com cor
+    spanResultado.textContent = formatarMoeda(resultado);
+    aplicarCorValor(spanResultado, resultado);
+
+    atualizarTotalGeral(totalGeralEl);
+    salvarNoStorage();
+  };
+
+  [entradaAnterior, entradaAtual, saidaAnterior, saidaAtual].forEach((inp) => {
+    inp.addEventListener("input", atualizarCalculos);
+    inp.addEventListener("change", atualizarCalculos);
+  });
+
+  [seloInput, jogoInput].forEach((inp) => {
+    if (!inp) return;
+    inp.addEventListener("input", salvarNoStorage);
+    inp.addEventListener("change", salvarNoStorage);
+  });
+
+  // Se veio do storage, preenche com os valores salvos
+  if (dadosMaquina) {
+    if (seloInput)        seloInput.value        = dadosMaquina.selo || "";
+    if (jogoInput)        jogoInput.value        = dadosMaquina.jogo || "";
+    if (entradaAnterior)  entradaAnterior.value  = dadosMaquina.entradaAnterior || "";
+    if (entradaAtual)     entradaAtual.value     = dadosMaquina.entradaAtual || "";
+    if (saidaAnterior)    saidaAnterior.value    = dadosMaquina.saidaAnterior || "";
+    if (saidaAtual)       saidaAtual.value       = dadosMaquina.saidaAtual || "";
+
+    atualizarCalculos();
   }
 }
 
-// ============= Relatório (MODAL 2×2) =============
+/* ===========================
+   TOTAL GERAL
+=========================== */
+
+function atualizarTotalGeral(totalGeralEl) {
+  let total = 0;
+
+  document.querySelectorAll(".resultado-maquina").forEach((span) => {
+    const valor = moedaParaNumero(span.textContent);
+    if (!isNaN(valor)) total += valor;
+  });
+
+  totalGeralEl.textContent = `TOTAL: ${formatarMoeda(total)}`;
+  aplicarCorValor(totalGeralEl, total);
+}
+
+/* ===========================
+   RELATÓRIO (MODAL) – COMPACTO
+=========================== */
 
 function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo, modal) {
   const data = inputData?.value || "";
   const cliente = (inputCliente?.value || "").trim().toUpperCase();
 
-  // texto do total já calculado no rodapé
-  const totalTexto = (totalGeralEl?.textContent || "").replace(/^TOTAL:\s*/i, "");
-  const clsTotal = classeValorMonetario(totalTexto);
-
   let html = "";
 
-  // Cabeçalho: data, cliente e TOTAL ao lado (com cor)
-  html += `
-    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;">
-      <div>
-        <div><strong>DATA:</strong> ${escapeHtml(data || "-")}</div>
-        <div><strong>CLIENTE:</strong> ${escapeHtml(cliente || "-")}</div>
-      </div>
-      <div style="font-weight:800;font-size:0.9rem;text-align:right;">
-        TOTAL: <span class="${clsTotal}">${escapeHtml(totalTexto || "R$ 0,00")}</span>
-      </div>
-    </div>
-    <hr style="margin:4px 0 6px;">
-  `;
+  html += `<div style="margin-bottom:4px;"><strong>DATA:</strong> ${escapeHtml(data)}</div>`;
+  html += `<div style="margin-bottom:6px;"><strong>CLIENTE:</strong> ${escapeHtml(cliente || "-")}</div>`;
+  html += `<hr style="margin:4px 0 6px;">`;
 
   const cards = document.querySelectorAll(".card");
   if (!cards.length) {
     html += `<div style="margin-top:4px;">Nenhuma máquina lançada.</div>`;
   } else {
-    // primeiro montamos o bloco de cada máquina
-    const blocos = [];
-
     cards.forEach((card, idx) => {
       const seloRaw = (card.querySelector(".inp-selo")?.value || "").trim();
       const jogoRaw = (card.querySelector(".inp-jogo")?.value || "").trim();
@@ -399,8 +298,8 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
       const clsSai = classeValorMonetario(difSaidaTxt);
       const clsRes = classeValorMonetario(resultadoTxt);
 
-      const bloco = `
-        <div style="flex:1; padding:2px 8px;">
+      html += `
+        <div class="bloco-maquina">
           <div><strong>MÁQUINA ${idx + 1}</strong></div>
           <div>SELO: ${escapeHtml(selo || "-")}</div>
           <div>JOGO: ${escapeHtml(jogo || "-")}</div>
@@ -409,48 +308,173 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
           <div>RESULTADO: <span class="${clsRes}">${escapeHtml(resultadoTxt)}</span></div>
         </div>
       `;
-      blocos.push(bloco);
     });
-
-    // agora organizamos 2 máquinas por linha, com linha vertical no meio
-    html += `<div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;">`;
-    for (let i = 0; i < blocos.length; i += 2) {
-      const bloco1 = blocos[i];
-      const bloco2 = blocos[i + 1] || "";
-
-      if (bloco2) {
-        html += `
-          <div style="display:flex;gap:8px;border-bottom:1px dashed #e0e0e0;padding:4px 0;">
-            ${bloco1}
-            <div style="width:1px;background:#e0e0e0;"></div>
-            ${bloco2}
-          </div>
-        `;
-      } else {
-        // apenas 1 máquina na última linha
-        html += `
-          <div style="display:flex;gap:8px;border-bottom:1px dashed #e0e0e0;padding:4px 0;">
-            ${bloco1}
-          </div>
-        `;
-      }
-    }
-    html += `</div>`;
   }
+
+  const totalTexto = totalGeralEl.textContent.replace(/^TOTAL:\s*/i, "");
+  const clsTotal = classeValorMonetario(totalTexto);
+
+  html += `
+    <hr style="margin:6px 0 4px;">
+    <div style="font-weight:800; font-size:0.95rem; text-align:right;">
+      TOTAL: <span class="${clsTotal}">${escapeHtml(totalTexto)}</span>
+    </div>
+  `;
 
   relatorioConteudo.innerHTML = html;
   modal.classList.add("aberta");
 }
 
-// ============= Helpers visuais =============
+/* ===========================
+   LIMPAR TUDO
+=========================== */
 
-function classeValorMonetario(valor) {
-  if (typeof valor === "string") {
-    const limpo = valor.replace(/\./g, "").replace(",", ".").replace(/[^\d\-.]/g, "");
-    const num = parseFloat(limpo);
-    if (!isNaN(num)) valor = num;
+function limparTudo(listaMaquinas, totalGeralEl) {
+  // Zera campos principais
+  const inputCliente = document.getElementById("cliente");
+  if (inputCliente) inputCliente.value = "";
+
+  const inputData = document.getElementById("data");
+  if (inputData) {
+    const hoje = new Date();
+    const dia = String(hoje.getDate()).padStart(2, "0");
+    const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+    const ano = hoje.getFullYear();
+    inputData.value = `${dia}/${mes}/${ano}`;
   }
-  const v = Number(valor) || 0;
+
+  // Remove máquinas
+  if (listaMaquinas) {
+    listaMaquinas.innerHTML = "";
+  }
+  contadorMaquinas = 0;
+
+  // Zera total
+  if (totalGeralEl) {
+    totalGeralEl.textContent = `TOTAL: ${formatarMoeda(0)}`;
+    totalGeralEl.classList.remove("positivo", "negativo");
+  }
+
+  // Limpa storage
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch (e) {
+    console.error("Erro ao limpar storage do pré-fecho:", e);
+  }
+
+  reposicionarBarraAcoes();
+}
+
+/* ===========================
+   Persistência em localStorage
+=========================== */
+
+function obterEstado() {
+  const data = document.getElementById("data")?.value || "";
+  const cliente = document.getElementById("cliente")?.value || "";
+
+  const maquinas = [];
+  document.querySelectorAll(".card").forEach((card) => {
+    maquinas.push({
+      selo: card.querySelector(".inp-selo")?.value || "",
+      jogo: card.querySelector(".inp-jogo")?.value || "",
+      entradaAnterior: card.querySelector(".entrada-anterior")?.value || "",
+      entradaAtual: card.querySelector(".entrada-atual")?.value || "",
+      saidaAnterior: card.querySelector(".saida-anterior")?.value || "",
+      saidaAtual: card.querySelector(".saida-atual")?.value || "",
+    });
+  });
+
+  return { data, cliente, maquinas };
+}
+
+function salvarNoStorage() {
+  try {
+    const dados = obterEstado();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+  } catch (e) {
+    console.error("Erro ao salvar pré-fecho no storage:", e);
+  }
+}
+
+function carregarDoStorage(listaMaquinas, totalGeralEl) {
+  try {
+    const bruto = localStorage.getItem(STORAGE_KEY);
+    if (!bruto) return;
+
+    const dados = JSON.parse(bruto);
+    if (!dados || typeof dados !== "object") return;
+
+    const inputData = document.getElementById("data");
+    const inputCliente = document.getElementById("cliente");
+
+    if (inputData && dados.data) inputData.value = dados.data;
+    if (inputCliente && dados.cliente) inputCliente.value = dados.cliente;
+
+    listaMaquinas.innerHTML = "";
+    contadorMaquinas = 0;
+
+    if (Array.isArray(dados.maquinas)) {
+      dados.maquinas.forEach((m) => {
+        adicionarMaquina(listaMaquinas, totalGeralEl, m);
+      });
+    }
+
+    atualizarTotalGeral(totalGeralEl);
+    reposicionarBarraAcoes();
+  } catch (e) {
+    console.error("Erro ao carregar pré-fecho do storage:", e);
+  }
+}
+
+/* ===========================
+   Helpers
+=========================== */
+
+function parseNumero(valor) {
+  if (!valor) return 0;
+  const limpo = valor
+    .toString()
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const n = parseFloat(limpo);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatarMoeda(n) {
+  return n.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function moedaParaNumero(txt) {
+  if (!txt) return 0;
+  const limpo = txt
+    .toString()
+    .replace(/[^0-9,-]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const n = parseFloat(limpo);
+  return isNaN(n) ? 0 : n;
+}
+
+function aplicarCorValor(el, valor) {
+  const LIMIAR = 0.005;
+  el.classList.remove("positivo", "negativo");
+
+  if (valor > LIMIAR) {
+    el.classList.add("positivo");
+  } else if (valor < -LIMIAR) {
+    el.classList.add("negativo");
+  }
+}
+
+function classeValorMonetario(txt) {
+  const v = moedaParaNumero(txt);
   const LIMIAR = 0.005;
   if (v > LIMIAR) return "positivo";
   if (v < -LIMIAR) return "negativo";
