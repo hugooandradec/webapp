@@ -5,178 +5,361 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pré-Fecho</title>
   <meta name="theme-color" content="#6a1b9a" />
-  <!-- Manifest do app Operação -->
+
   <link rel="manifest" href="../manifest.json" />
   <link rel="icon" href="../../common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-  <!-- Header/Navegação seguindo o modelo do Lançamento -->
-  <script type="module">
-    import { inicializarPagina } from "../../common/js/navegacao.js";
-    // Página interna do app-operacao → voltar leva para o MENU do Operação
-    inicializarPagina("Pré-Fecho", "operacao");
-  </script>
-
-  <!-- Toasts e lógica da tela -->
+  <!-- Toast -->
   <script defer src="../../common/js/toast.js"></script>
-  <script type="module" src="../js/preFecho.js"></script>
 
   <style>
-    :root{
-      --roxo:#6a1b9a;
-      --verde:#16a34a;
-      --vermelho:#dc2626;
+    :root {
+      --roxo: #6a1b9a;
+      --verde: #16a34a;
+      --vermelho: #dc2626;
+      --cinza-btn: #aaa;
+      --danger: #d9534f;
     }
-    html,body{
-      margin:0;
-      font-family:system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      background:#f8f8f8;
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f8f8f8;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      overflow-x: hidden;
     }
-    main{
+
+    main {
       max-width: 980px;
       margin: 0 auto;
       padding: 16px;
     }
-    /* título some porque já aparece no cabeçalho roxo */
-    h1{
-      display:none;
-    }
-    .linha{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      margin:10px 0;
-    }
-    label{
-      font-weight:700;
-      min-width: 90px;
-    }
-    input[type="text"]{
-      flex:1;
-      padding:10px 0;
-      border:none;
-      border-bottom:2px solid #dcdcdc;
-      background:transparent;
-      outline:none;
-    }
-    input[type="text"]:focus{
-      border-bottom-color:#6a1b9a;
-    }
-    .barra{
-      height:1px;
-      background:#e7e7ef;
-      margin:14px 0;
+
+    h1 { display: none; }
+
+    h2 {
+      color: var(--roxo);
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 1.5rem;
+      font-weight: 900;
     }
 
-    .btn{
-      padding:12px 14px;
-      border:none;
-      border-radius:10px;
-      font-weight:800;
-      cursor:pointer;
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      font-size:0.95rem;
-    }
-    .btn i{ font-size:1rem; }
-    .btn.roxo{ background:#6a1b9a; color:#fff; }
-    .btn.cinza{ background:#aaa; color:#fff; }
-
-    .acoes{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin:20px 0 10px;
-      padding:8px 0;
+    .linha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
     }
 
-    .cards{
-      display:grid;
-      gap:10px;
-    }
-    .card{
-      background:#fff;
-      border:1px solid #eee;
-      border-radius:12px;
-      padding:12px;
-    }
-    .card-titulo{
-      font-weight:800;
-      margin-bottom:8px;
-      color:#444;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
+    .linha label {
+      font-weight: 700;
+      min-width: 70px;
     }
 
-    .grid{
-      display:grid;
-      grid-template-columns:1fr 1px 1fr;
-      gap:10px;
-      align-items:center;
-      margin-top:6px;
-    }
-    .grid .divv{
-      width:1px;
-      background:#e7e7ef;
-      height:100%;
+    .campo-full {
+      flex: 1;
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      padding: 6px 0;
+      outline: none;
+      background: transparent;
+      font-size: 0.95rem;
     }
 
-    .linha2{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
-    }
-    .linha2 input{
-      width:100%;
-      padding:8px 0;
-      border:none;
-      border-bottom:2px solid #ddd;
-      text-align:center;
-      background:transparent;
-      outline:none;
+    .campo-full:focus {
+      border-bottom-color: var(--roxo);
     }
 
-    .total{
-      font-weight:900;
-      text-align:right;
-      margin:20px 0;
-      font-size:1.1rem;
-    }
-    .positivo{ color:var(--verde); }
-    .negativo{ color:var(--vermelho); }
-
-    /* Modal */
-    .modal{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.5);
-      display:none;
-      justify-content:center;
-      align-items:center;
-      z-index:50;
-    }
-    .modal.aberta{ display:flex; }
-    .modal .cx{
-      background:#fff;
-      border-radius:10px;
-      padding:16px;
-      width:min(900px, 95%);
-      max-height:85vh;
-      overflow:auto;
+    input[type="date"] {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #dcdcdc;
+      outline: none;
+      font-size: 0.95rem;
     }
 
-    .rel{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      white-space: normal;
-      font-size:0.85rem;
-      line-height:1.25;
+    .barra {
+      height: 1px;
+      background: #ddd;
+      margin: 12px 0;
     }
-    .rel .bloco-maquina{
-      padding:2px 0 4px;
-      margin:4px 0;
-      border-bottom:1px dashed #e0e0e0;
+
+    /* Botões */
+    .acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 4px 0;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.92rem;
+      white-space: nowrap;
+    }
+
+    .btn.roxo { background: var(--roxo); color: #fff; }
+    .btn.cinza { background: var(--cinza-btn); color: #fff; }
+    .btn.danger { background: var(--danger); color: #fff; }
+
+    .btn i { font-size: 1rem; }
+
+    /* Cards de máquina */
+    .cards { display: grid; gap: 12px; }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #eee;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .card-titulo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+      color: #444;
+    }
+
+    .card-titulo small {
+      font-weight: 400;
+      font-size: 0.75rem;
+      color: #777;
+      margin-right: 8px;
+    }
+
+    .icone-remover {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: #999;
+      padding: 4px;
+    }
+
+    .icone-remover i { font-size: 0.9rem; }
+
+    .linha-simples {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0 6px;
+    }
+
+    .linha-simples label {
+      font-weight: 700;
+      min-width: 55px;
+    }
+
+    .linha-simples input {
+      flex: 1;
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      padding: 6px 0;
+      outline: none;
+      background: transparent;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+
+    .linha-simples input:focus {
+      border-bottom-color: var(--roxo);
+    }
+
+    .grid-relogios {
+      display: grid;
+      grid-template-columns: 1fr 1px 1fr;
+      gap: 10px;
+      margin-top: 10px;
+      align-items: stretch;
+    }
+
+    .grid-relogios .divisor {
+      width: 1px;
+      background: #e7e7ef;
+    }
+
+    .col-relogio {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.85rem;
+    }
+
+    .col-relogio h4 {
+      margin: 0 0 4px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #444;
+    }
+
+    .sub-linha {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 4px;
+      font-size: 0.8rem;
+      color: #777;
+    }
+
+    .sub-linha span { flex: 1; text-align: center; }
+
+    .campo-relogio {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 2px;
+    }
+
+    .campo-relogio input {
+      flex: 1;
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      padding: 6px 0;
+      text-align: center;
+      outline: none;
+      background: transparent;
+      font-size: 0.95rem;
+    }
+
+    .campo-relogio input:focus {
+      border-bottom-color: var(--roxo);
+    }
+
+    .linha-dif {
+      margin-top: 6px;
+      font-size: 0.85rem;
+    }
+
+    .resultado {
+      margin-top: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .resultado .valor { font-weight: 800; }
+
+    .verde { color: var(--verde); }
+    .vermelho { color: var(--vermelho); }
+    .neutro { color: #555; }
+
+    .total-geral {
+      margin-top: 18px;
+      font-weight: 900;
+      font-size: 1.05rem;
+      text-align: right;
+    }
+
+    /* Modal do relatório */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+    }
+
+    .modal.aberta { display: flex; }
+
+    .modal .cx {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      width: min(900px, 95%);
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+
+    .rel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .rel-header .cliente {
+      text-transform: uppercase;
+    }
+
+    .rel-header .total span {
+      font-weight: 800;
+    }
+
+    .rel-data {
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+    }
+
+    .rel-grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .rel-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 0.86rem;
+    }
+
+    .rel-card .titulo {
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .rel-card .linha {
+      display: block;
+      margin: 2px 0;
+    }
+
+    .rel-card .linha strong {
+      font-weight: 700;
+    }
+
+    .rel-card .resultado {
+      margin-top: 6px;
+    }
+
+    @media (min-width: 640px) {
+      .rel-grid {
+        grid-template-columns: repeat(2, 1fr);
+        column-gap: 18px;
+      }
+
+      .rel-grid::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 1px;
+        background: #e0e0e0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      main { padding: 12px; }
     }
   </style>
 </head>
@@ -184,21 +367,21 @@
 <body>
   <main>
     <h1>Pré-Fecho</h1>
+    <h2>Pré-Fecho</h2>
 
     <div class="linha">
-      <label for="data">Data:</label>
-      <input id="data" type="text" readonly>
+      <label>Data:</label>
+      <input id="data" type="date" />
     </div>
 
     <div class="linha">
-      <label for="cliente">Cliente:</label>
-      <input id="cliente" type="text" placeholder="digite o nome do cliente / ponto">
+      <label>Cliente:</label>
+      <input id="cliente" type="text" class="campo-full" placeholder="digite o nome do cliente / ponto" />
     </div>
 
     <div class="barra"></div>
 
-    <!-- Barra de ações (JS reposiciona para ficar sempre abaixo da última máquina) -->
-    <div class="acoes" id="acoesBar">
+    <div class="acoes">
       <button id="btnAdicionar" class="btn roxo">
         <i class="fa-solid fa-plus"></i> Adicionar máquina
       </button>
@@ -207,30 +390,28 @@
         <i class="fa-solid fa-file-lines"></i> Visualizar relatório
       </button>
 
-      <button id="btnLimpar" class="btn cinza" style="background:#d9534f;">
+      <button id="btnLimpar" class="btn danger">
         <i class="fa-solid fa-trash"></i> Limpar Tudo
       </button>
     </div>
 
     <div id="listaMaquinas" class="cards"></div>
-    <div id="totalGeral" class="total positivo">TOTAL: R$ 0,00</div>
+
+    <div id="totalGeral" class="total-geral"></div>
   </main>
 
   <!-- Modal -->
-  <div id="modalRelatorio" class="modal">
+  <div id="modalPreFecho" class="modal">
     <div class="cx">
-      <header style="display:flex;justify-content:space-between;align-items:center;">
-        <h3>Relatório do Pré-Fecho</h3>
+      <header style="display:flex;justify-content:space-between;align-items:center; margin-bottom:8px;">
+        <h3 style="margin:0;">Relatório do Pré-Fecho</h3>
         <button id="btnFecharModal" class="btn cinza">Fechar</button>
       </header>
-      <div id="relatorioConteudo" class="rel"></div>
+
+      <div id="relConteudo"></div>
     </div>
   </div>
 
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("../../sw.js");
-    }
-  </script>
+  <script type="module" src="../js/preFecho.js"></script>
 </body>
 </html>
