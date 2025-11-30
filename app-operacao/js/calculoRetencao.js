@@ -7,6 +7,7 @@ let retContador = 0;
 // cores para resumo
 const COR_ENTRADA = "#1b8f2e"; // verde
 const COR_SAIDA = "#c0392b";   // vermelho
+const COR_RETENCAO = "#4aa3ff"; // azul claro
 
 // ===============================
 //   HELPERS
@@ -43,6 +44,14 @@ function dataHojeISO() {
   const mm = String(hoje.getMonth() + 1).padStart(2, "0");
   const yyyy = hoje.getFullYear();
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatarDataBR(iso) {
+  if (!iso) return "___/___/____";
+  const partes = iso.split("-");
+  if (partes.length !== 3) return iso;
+  const [ano, mes, dia] = partes;
+  return `${dia}/${mes}/${ano}`;
 }
 
 // limpa qualquer toast visível, independente da lib
@@ -292,11 +301,11 @@ function adicionarMaquina(lista, dadosIniciais = null) {
     const sStr = formatarMoeda(saidaNum);
     const rStr = formatarPercentual(ret);
 
-    // Entrada em verde, Saída em vermelho
+    // Entrada em verde, Saída em vermelho, Retenção em azul claro
     textoResumo.innerHTML =
       `E: <span style="color:${COR_ENTRADA};">${eStr}</span>` +
       ` | S: <span style="color:${COR_SAIDA};">${sStr}</span>` +
-      ` | Ret: ${rStr}`;
+      ` | Ret: <span style="color:${COR_RETENCAO};">${rStr}</span>`;
 
     salvarRetencao();
     atualizarLinhaTotal();
@@ -376,7 +385,7 @@ function carregarRetencao(lista) {
 }
 
 // ===============================
-//   TOTAL GERAL
+//   TOTAL GERAL (linha inferior da tela)
 // ===============================
 //
 // Aqui usamos só a retenção média (único <span> dentro da #linhaTotal).
@@ -420,15 +429,25 @@ function atualizarLinhaTotal() {
 // ===============================
 //   RELATÓRIO
 // ===============================
+//
+// - Data em formato BR
+// - Entrada em verde, Saída em vermelho, Retenção em azul claro
+// - Sem RESULTADO por máquina
+// - Final com "Ret. Média: XX,XX%"
+// 
 function criarRelatorioRetencao(lista, inputData, inputPonto) {
-  const data = inputData?.value || "___/___/____";
+  const dataISO = inputData?.value || "";
+  const dataBR = formatarDataBR(dataISO);
   const ponto = inputPonto?.value || "-";
 
-  let texto = "";
-  texto += `DATA: ${data}\n`;
-  texto += `PONTO: ${ponto || "-"}\n\n`;
+  const linhas = [];
 
-  let total = 0;
+  linhas.push(`DATA: ${dataBR}`);
+  linhas.push(`PONTO: ${ponto || "-"}`);
+  linhas.push(""); // linha em branco
+
+  let somaRet = 0;
+  let contRet = 0;
 
   lista.querySelectorAll(".card").forEach((card, idx) => {
     const selo = card.querySelector(".ret-selo")?.value || "-";
@@ -439,27 +458,40 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
     const saidaNum = parseNumeroCentavos(
       card.querySelector(".ret-saida")?.value
     );
-    const diff = entradaNum - saidaNum;
     const ret =
       entradaNum > 0
         ? ((entradaNum - saidaNum) / entradaNum) * 100
         : 0;
 
-    total += diff;
+    if (entradaNum > 0) {
+      somaRet += ret;
+      contRet++;
+    }
 
-    texto += `MÁQUINA ${idx + 1}\n`;
-    texto += `SELO: ${selo || "-"}\n`;
-    texto += `JOGO: ${jogo || "-"}\n`;
-    texto += `E: ${formatarMoeda(entradaNum)}\n`;
-    texto += `S: ${formatarMoeda(saidaNum)}\n`;
-    texto += `RET: ${formatarPercentual(ret)}\n`;
-    texto += `RESULTADO: ${formatarMoeda(diff)}\n`;
-    texto += `----------------------------------------\n\n`;
+    linhas.push(`MÁQUINA ${idx + 1}`);
+    linhas.push(`SELO: ${selo || "-"}`);
+    linhas.push(`JOGO: ${jogo || "-"}`);
+    linhas.push(
+      `E: <span class="valor-entrada">${formatarMoeda(entradaNum)}</span>`
+    );
+    linhas.push(
+      `S: <span class="valor-saida">${formatarMoeda(saidaNum)}</span>`
+    );
+    linhas.push(
+      `RET: <span class="valor-retencao">${formatarPercentual(ret)}</span>`
+    );
+    linhas.push("----------------------------------------");
+    linhas.push("");
   });
 
-  texto += `TOTAL: ${formatarMoeda(total)}\n`;
+  const retMedia = contRet ? somaRet / contRet : 0;
+  linhas.push(
+    `Ret. Média: <span class="valor-ret-media">${formatarPercentual(
+      retMedia
+    )}</span>`
+  );
 
-  return texto.replace(/\n/g, "<br>");
+  return linhas.join("<br>");
 }
 
 // ===============================
