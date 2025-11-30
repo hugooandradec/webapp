@@ -414,17 +414,20 @@ function atualizarLinhaTotal() {
   });
 
   const span = linhaTotal.querySelector("span");
-  if (span) {
-    span.textContent = contRet
-      ? formatarPercentual(somaRet / contRet)
-      : "0.00%";
-  }
-
-  linhaTotal.classList.remove("verde", "vermelho", "neutro");
-  if (!contRet) linhaTotal.classList.add("neutro");
-  else if (somaRet / contRet >= 0) linhaTotal.classList.add("verde");
-  else linhaTotal.classList.add("vermelho");
+if (span) {
+  span.textContent = contRet
+    ? formatarPercentual(somaRet / contRet)
+    : "0.00%";
 }
+
+// Ret. Média sempre com título preto e valor azul
+linhaTotal.style.color = "#000"; // preto
+
+if (span) {
+  span.style.color = "#4aa3ff"; // azul claro
+}
+
+
 
 // ===============================
 //   RELATÓRIO
