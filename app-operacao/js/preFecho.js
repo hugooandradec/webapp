@@ -1,5 +1,5 @@
 // preFecho.js
-// Script do Pré-Fecho com persistência em localStorage
+// Script do Pré-Fecho com persistência em localStorage + OCR dos prints
 
 const STORAGE_KEY = "preFecho_dados_v1";
 let contadorMaquinas = 0;
@@ -16,6 +16,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnFecharModal = document.getElementById("btnFecharModal");
   const relatorioConteudo = document.getElementById("relatorioConteudo");
 
+  const btnImportar = document.getElementById("btnImportar");
+  const inputPrint = document.getElementById("inputPrintPre");
+
   // Data atual (se não tiver nada salvo ainda)
   if (inputData && !inputData.value) {
     const hoje = new Date();
@@ -31,7 +34,10 @@ document.addEventListener("DOMContentLoaded", () => {
     inputData.addEventListener("change", salvarNoStorage);
   }
   if (inputCliente) {
-    inputCliente.addEventListener("input", salvarNoStorage);
+    inputCliente.addEventListener("input", () => {
+      inputCliente.value = inputCliente.value.toUpperCase();
+      salvarNoStorage();
+    });
     inputCliente.addEventListener("change", salvarNoStorage);
   }
 
@@ -55,6 +61,17 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnLimpar) {
     btnLimpar.addEventListener("click", () => {
       limparTudo(listaMaquinas, totalGeralEl);
+    });
+  }
+
+  // Botão importar print (OCR)
+  if (btnImportar && inputPrint) {
+    btnImportar.addEventListener("click", () => inputPrint.click());
+    inputPrint.addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      await importarPrintPre(file, listaMaquinas, totalGeralEl, inputCliente);
+      inputPrint.value = "";
     });
   }
 
@@ -232,14 +249,17 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
 
   [seloInput, jogoInput].forEach((inp) => {
     if (!inp) return;
-    inp.addEventListener("input", salvarNoStorage);
+    inp.addEventListener("input", () => {
+      inp.value = inp.value.toUpperCase();
+      salvarNoStorage();
+    });
     inp.addEventListener("change", salvarNoStorage);
   });
 
-  // Se veio do storage, preenche com os valores salvos
+  // Se veio do storage ou do OCR, preenche com os valores salvos
   if (dadosMaquina) {
-    if (seloInput)        seloInput.value        = dadosMaquina.selo || "";
-    if (jogoInput)        jogoInput.value        = dadosMaquina.jogo || "";
+    if (seloInput)        seloInput.value        = (dadosMaquina.selo || "").toUpperCase();
+    if (jogoInput)        jogoInput.value        = (dadosMaquina.jogo || "").toUpperCase();
     if (entradaAnterior)  entradaAnterior.value  = dadosMaquina.entradaAnterior || "";
     if (entradaAtual)     entradaAtual.value     = dadosMaquina.entradaAtual || "";
     if (saidaAnterior)    saidaAnterior.value    = dadosMaquina.saidaAnterior || "";
@@ -428,6 +448,157 @@ function carregarDoStorage(listaMaquinas, totalGeralEl) {
 }
 
 /* ===========================
+   OCR – Importar print (mesma lógica do Retenção)
+   - Cliente: linha "CLIENTE: ..."
+   - Cabeçalho máquina: "1-1E033 (Seven America)" etc
+   - (E) e (S): pega SEMPRE o número depois do hífen
+   - Entrada -> ENTRADA ANTERIOR
+   - Saída   -> SAÍDA ANTERIOR
+=========================== */
+
+async function importarPrintPre(file, listaMaquinas, totalGeralEl, inputCliente) {
+  if (!window.Tesseract) {
+    alert("Biblioteca de OCR (Tesseract.js) não carregada.");
+    return;
+  }
+
+  try {
+    if (window.toast) toast.info("Lendo imagem, aguarde...");
+  } catch (e) {}
+
+  let texto = "";
+  try {
+    const { data } = await Tesseract.recognize(file, "por+eng", {
+      logger: (m) => console.log("[OCR Pré-Fecho]", m),
+    });
+    texto = (data && data.text) ? data.text : "";
+  } catch (e) {
+    console.error("Erro no OCR (Pré-Fecho):", e);
+    limparToast();
+    alert("Não foi possível ler a imagem.");
+    return;
+  }
+
+  console.log("Texto OCR bruto (pré-fecho):\n", texto);
+
+  const linhas = texto
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  console.log("Linhas OCR normalizadas (pré-fecho):", linhas);
+
+  // ===== Cliente =====
+  const linhaCliente = linhas.find((l) =>
+    l.toUpperCase().startsWith("CLIENTE")
+  );
+  if (linhaCliente && inputCliente) {
+    const idx = linhaCliente.indexOf(":");
+    let nome = idx >= 0 ? linhaCliente.slice(idx + 1) : linhaCliente;
+    nome = nome.trim();
+    if (nome) {
+      inputCliente.value = nome.toUpperCase();
+    }
+  }
+
+  const maquinasEncontradas = [];
+
+  // ===== Máquinas (1-1E033 (...), 2-1B158 (...)) =====
+  for (let i = 0; i < linhas.length; i++) {
+    const linha = linhas[i];
+    const linhaUpper = linha.toUpperCase();
+
+    const cabecalhoMatch = linhaUpper.match(
+      /\b\d+\s*[-–]\s*([A-Z0-9]{2}\d{3})\b/
+    );
+    if (!cabecalhoMatch) continue;
+
+    let selo = cabecalhoMatch[1].toUpperCase();
+
+    // Corrige OCR: "1E033" -> "IE033", "1B158" -> "IB158"
+    if (selo[0] === "1") {
+      selo = "I" + selo.slice(1);
+    }
+
+    // jogo entre parênteses
+    let jogo = "";
+    const firstPar = linha.indexOf("(");
+    const lastPar = linha.lastIndexOf(")");
+    if (firstPar >= 0 && lastPar > firstPar) {
+      jogo = linha.slice(firstPar + 1, lastPar).trim().toUpperCase();
+    }
+
+    if (maquinasEncontradas.some((m) => m.selo === selo)) continue;
+
+    let entradaAtualOCR = "";
+    let saidaAtualOCR = "";
+
+    // procura (E) e (S) nas próximas linhas
+    for (let j = i + 1; j < Math.min(i + 8, linhas.length); j++) {
+      const l2 = linhas[j];
+      const l2Norm = l2.toUpperCase().replace(/\s+/g, "");
+
+      const isLinhaE = l2Norm.includes("(E)") || l2Norm.startsWith("E)");
+      const isLinhaS = l2Norm.includes("(S)") || l2Norm.startsWith("S)");
+
+      if (!entradaAtualOCR && isLinhaE) {
+        const m = l2.match(/[-–]\s*([\d.,]+)/);
+        if (m) entradaAtualOCR = m[1].replace(/\D/g, "");
+      }
+
+      if (!saidaAtualOCR && isLinhaS) {
+        const m2 = l2.match(/[-–]\s*([\d.,]+)/);
+        if (m2) saidaAtualOCR = m2[1].replace(/\D/g, "");
+      }
+
+      if (entradaAtualOCR && saidaAtualOCR) break;
+    }
+
+    if (entradaAtualOCR || saidaAtualOCR) {
+      maquinasEncontradas.push({
+        selo,
+        jogo,
+        entrada: entradaAtualOCR,
+        saida: saidaAtualOCR,
+      });
+    }
+  }
+
+  console.log("Máquinas encontradas no OCR (pré-fecho):", maquinasEncontradas);
+
+  if (!maquinasEncontradas.length) {
+    limparToast();
+    alert(
+      "Não consegui identificar máquinas no print.\n" +
+      "Confere se o selo está no formato AA999 e se existem linhas com (E) e (S) usando hífen."
+    );
+    return;
+  }
+
+  // Limpa máquinas atuais e recria com base no OCR
+  listaMaquinas.innerHTML = "";
+  contadorMaquinas = 0;
+
+  maquinasEncontradas.forEach((m) => {
+    adicionarMaquina(listaMaquinas, totalGeralEl, {
+      selo: m.selo,
+      jogo: m.jogo,
+      // No pré-fecho, os números do print vão para ANTERIOR,
+      // e você preenche o ATUAL na hora do recolhe.
+      entradaAnterior: m.entrada || "",
+      entradaAtual: "",
+      saidaAnterior: m.saida || "",
+      saidaAtual: "",
+    });
+  });
+
+  atualizarTotalGeral(totalGeralEl);
+  salvarNoStorage();
+  reposicionarBarraAcoes();
+  limparToast();
+}
+
+/* ===========================
    Helpers
 =========================== */
 
@@ -488,4 +659,16 @@ function escapeHtml(s) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function limparToast() {
+  try {
+    if (window.toast?.dismissAll) window.toast.dismissAll();
+    else if (window.toast?.clearAll) window.toast.clearAll();
+  } catch (e) {}
+  try {
+    document
+      .querySelectorAll(".toast, .toast-container, [id*='toast']")
+      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+  } catch (e) {}
 }
