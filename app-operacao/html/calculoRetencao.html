@@ -11,16 +11,11 @@
   <link rel="icon" href="../../common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-  <!-- Cabeçalho padrão -->
-  <script type="module">
-    import { inicializarPagina } from "../../common/js/navegacao.js";
-    inicializarPagina("Cálculo de Retenção", "operacao");
-  </script>
+  <!-- OCR (Tesseract.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
 
   <!-- Toast -->
   <script defer src="../../common/js/toast.js"></script>
-
-  <!-- Script da página -->
   <script type="module" src="../js/calculoRetencao.js"></script>
 
   <style>
@@ -28,13 +23,20 @@
       --roxo: #6a1b9a;
       --verde: #16a34a;
       --vermelho: #dc2626;
+      --cinza-btn: #aaa;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     html,
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      padding: 0;
       background: #f8f8f8;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      overflow-x: hidden;
     }
 
     main {
@@ -43,9 +45,16 @@
       padding: 16px;
     }
 
-    /* título some porque já aparece no cabeçalho roxo */
     h1 {
       display: none;
+    }
+
+    h2 {
+      color: var(--roxo);
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 1.5rem;
+      font-weight: 900;
     }
 
     .linha {
@@ -55,35 +64,44 @@
       margin: 10px 0;
     }
 
-    label {
+    .linha label {
       font-weight: 700;
-      min-width: 90px;
+      min-width: 70px;
     }
 
-    input[type="text"],
-    input[type="date"] {
-      flex: 1;
-      padding: 10px 0;
-      border: none;
-      border-bottom: 2px solid #dcdcdc;
-      background: transparent;
+    .linha span.sub {
+      font-size: 0.8rem;
+      color: #666;
+      font-weight: 600;
+    }
+
+    input[type="date"],
+    input[type="text"] {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #dcdcdc;
       outline: none;
-      text-transform: uppercase;
-    }
-
-    input[type="text"]:focus,
-    input[type="date"]:focus {
-      border-bottom-color: var(--roxo);
+      font-size: 0.95rem;
+      width: 100%;
     }
 
     .barra {
       height: 1px;
-      background: #e7e7ef;
-      margin: 14px 0;
+      background: #ddd;
+      margin: 12px 0;
+    }
+
+    /* Botões */
+    .acoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 4px 0;
     }
 
     .btn {
-      padding: 12px 14px;
+      padding: 10px 16px;
       border: none;
       border-radius: 10px;
       font-weight: 800;
@@ -91,115 +109,164 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
+      white-space: nowrap;
+    }
+
+    .btn.roxo {
+      background: var(--roxo);
+      color: #fff;
+    }
+
+    .btn.cinza {
+      background: var(--cinza-btn);
+      color: #fff;
     }
 
     .btn i {
       font-size: 1rem;
     }
 
-    .btn.roxo {
-      background: #6a1b9a;
-      color: #fff;
-    }
-
-    .btn.cinza {
-      background: #aaa;
-      color: #fff;
-    }
-
-    .btn.perigo {
-      background: #d9534f;
-      color: #fff;
-    }
-
-    .acoes {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin: 20px 0 10px;
-      padding: 8px 0;
-    }
-
+    /* Cards */
     .cards {
       display: grid;
-      gap: 10px;
+      gap: 12px;
     }
 
     .card {
       background: #fff;
-      border: 1px solid #eee;
       border-radius: 12px;
+      border: 1px solid #eee;
       padding: 12px;
+      overflow: hidden;
     }
 
     .card-titulo {
-      font-weight: 800;
-      margin-bottom: 8px;
-      color: #444;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+      color: #444;
     }
 
     .card-titulo small {
       font-weight: 400;
       font-size: 0.75rem;
       color: #777;
+      margin-right: 8px;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1px 1fr;
-      gap: 10px;
-      align-items: center;
-      margin-top: 6px;
-    }
-
-    .grid .divv {
-      width: 1px;
-      background: #e7e7ef;
-      height: 100%;
-    }
-
-    .col h4 {
-      margin: 0 0 4px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      text-align: center;
-      color: #444;
-    }
-
-    .col input[type="tel"],
-    .col input[type="number"] {
-      width: 100%;
-      padding: 8px 0;
+    .icone-remover {
       border: none;
-      border-bottom: 2px solid #ddd;
-      text-align: center;
       background: transparent;
-      outline: none;
+      cursor: pointer;
+      color: #999;
+      padding: 4px;
     }
 
-    .col input[type="tel"]:focus,
-    .col input[type="number"]:focus {
+    .icone-remover i {
+      font-size: 0.9rem;
+    }
+
+    .linha-nome {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0 6px;
+    }
+
+    .linha-nome label {
+      font-weight: 700;
+      min-width: 55px;
+    }
+
+    .linha-nome input {
+      flex: 1;
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      padding: 6px 0;
+      text-transform: uppercase;
+      outline: none;
+      background: transparent;
+      font-size: 0.95rem;
+    }
+
+    .linha-nome input:focus {
       border-bottom-color: var(--roxo);
     }
 
-    .resultado-resumo {
+    .linha2 {
+      display: flex;
+      gap: 16px;
       margin-top: 8px;
+    }
+
+    .col {
+      flex: 1;
+    }
+
+    .col label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .col input {
+      width: 100%;
+      border: none;
+      border-bottom: 2px solid #dcdcdc;
+      padding: 6px 0;
+      outline: none;
+      background: transparent;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
+    .col input:focus {
+      border-bottom-color: var(--roxo);
+    }
+
+    .resumo {
+      margin-top: 10px;
       font-weight: 700;
       font-size: 0.9rem;
+    }
+
+    .resumo span {
+      font-weight: 800;
     }
 
     .verde {
       color: var(--verde);
-      font-weight: 700;
     }
 
     .vermelho {
       color: var(--vermelho);
-      font-weight: 700;
+    }
+
+    .neutro {
+      color: #555;
+    }
+
+    .total-linha {
+      margin-top: 16px;
+      font-weight: 900;
+      font-size: 1rem;
+      text-align: right;
+    }
+
+    .total-linha span {
+      font-weight: 900;
+    }
+
+    .total-linha.verde {
+      color: var(--verde);
+    }
+
+    .total-linha.vermelho {
+      color: var(--vermelho);
     }
 
     /* Modal */
@@ -219,7 +286,7 @@
 
     .modal .cx {
       background: #fff;
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 16px;
       width: min(900px, 95%);
       max-height: 85vh;
@@ -227,54 +294,65 @@
     }
 
     .rel {
-      font-family: ui-monospace, Menlo, Consolas;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
       font-size: 0.9rem;
       line-height: 1.25;
+      white-space: pre-wrap;
     }
 
-    .bloco-ret {
-      padding: 6px 0;
-      margin: 6px 0;
-      border-bottom: 1px dashed #ddd;
+    @media (max-width: 480px) {
+      main {
+        padding: 12px;
+      }
     }
   </style>
 </head>
 
 <body>
-    <main>
+
+  <main>
     <h1>Cálculo de Retenção</h1>
+    <h2>Cálculo de Retenção</h2>
 
     <div class="linha">
-      <label for="data">Data:</label>
-      <input id="data" type="date">
+      <label>Data:</label>
+      <input id="data" type="date" />
     </div>
 
     <div class="linha">
-      <label for="ponto">Ponto:</label>
-      <input id="ponto" type="text" placeholder="NOME DO PONTO / LOCAL">
+      <label>Ponto:</label>
+      <input id="ponto" type="text" placeholder="NOME DO PONTO / LOCAL" />
     </div>
 
     <div class="barra"></div>
 
-    <!-- LISTA DAS MÁQUINAS -->
-    <div id="listaMaquinas" class="cards"></div>
-
-    <!-- BOTÕES – AGORA FICAM SEMPRE ABAIXO DA ÚLTIMA MÁQUINA -->
     <div class="acoes">
       <button id="btnAdicionar" class="btn roxo">
         <i class="fa-solid fa-plus"></i> Adicionar máquina
+      </button>
+
+      <button id="btnImportar" class="btn cinza">
+        <i class="fa-solid fa-image"></i> Importar print
       </button>
 
       <button id="btnRelatorio" class="btn cinza">
         <i class="fa-solid fa-file-lines"></i> Relatório
       </button>
 
-      <button id="btnLimpar" class="btn perigo">
+      <button id="btnLimpar" class="btn cinza" style="background:#d9534f;">
         <i class="fa-solid fa-trash"></i> Limpar Tudo
       </button>
     </div>
-  </main>
 
+    <!-- input de upload para OCR -->
+    <input type="file" id="inputPrintRet" accept="image/*" style="display:none;" />
+
+    <div id="listaMaquinas" class="cards"></div>
+
+    <div id="linhaTotal" class="total-linha">
+      TOTAL: <span>R$ 0,00</span> | Ret média: <span>0.00%</span>
+    </div>
+  </main>
 
   <!-- Modal -->
   <div id="modalRet" class="modal">
@@ -287,6 +365,7 @@
       <div id="relConteudo" class="rel"></div>
     </div>
   </div>
+
 </body>
 
 </html>
