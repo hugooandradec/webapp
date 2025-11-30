@@ -262,28 +262,32 @@
       text-align: right;
     }
 
-    /* Modal */
-    .modal {
+    /* Modal — fullscreen, igual Retenção / Lançamento */
+    #modalSalas {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, .45);
+      background: rgba(0, 0, 0, .7);
       display: none;
       justify-content: center;
       align-items: center;
-      z-index: 50;
+      padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+      z-index: 1000;
     }
 
-    .modal.aberta {
-      display: flex;
+    #modalSalas.aberta {
+      display: flex !important;
     }
 
-    .modal .cx {
+    #modalSalas .cx {
       background: #fff;
-      border-radius: 12px;
+      border-radius: 8px;
+      width: min(96vw, 520px);
+      max-height: 88dvh;
+      overflow: auto;
+      position: relative;
       padding: 16px;
-      width: min(900px, 95%);
-      max-height: 85vh;
-      overflow-y: auto;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .25);
+      -webkit-overflow-scrolling: touch;
     }
 
     .rel {
@@ -293,7 +297,21 @@
       white-space: pre-wrap;
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 600px) {
+      #modalSalas {
+        padding: 0;
+        align-items: stretch;
+      }
+
+      #modalSalas .cx {
+        width: 100vw;
+        height: 100svh;
+        max-height: 100svh;
+        border-radius: 0;
+        padding: 12px;
+        box-shadow: none;
+      }
+
       main {
         padding: 12px;
       }
@@ -313,13 +331,12 @@
     <h2>Cálculo de Salas</h2>
 
     <div class="linha">
-  <label>Data:</label>
-  <input id="dataDe" type="date" />
+      <label>Data:</label>
+      <input id="dataDe" type="date" />
 
-  <span class="sub">Até</span>
-  <input id="dataAte" type="date" />
-</div>
-
+      <span class="sub">Até</span>
+      <input id="dataAte" type="date" />
+    </div>
 
     <div class="barra"></div>
 
@@ -354,6 +371,7 @@
     </div>
   </div>
 
+  <!-- JS inline original mantido -->
   <script type="module">
     import { inicializarPagina } from "../../common/js/navegacao.js";
 
@@ -389,30 +407,21 @@
     }
 
     // bruto / 2 + 10% em cima da metade - despesas = valor1
-// cartão - 8% (taxa) = valor2
-// valor1 - valor2 = lucro final
-function calcularResultadoSala(sala) {
-  const bruto    = parseCentavos(sala.bruto);
-  const despesas = parseCentavos(sala.despesas);
-  const cartao   = parseCentavos(sala.cartao);
+    // cartão - 8% (taxa) = valor2
+    // valor1 - valor2 = lucro final
+    function calcularResultadoSala(sala) {
+      const bruto = parseCentavos(sala.bruto);
+      const despesas = parseCentavos(sala.despesas);
+      const cartao = parseCentavos(sala.cartao);
 
-  if (!bruto && !despesas && !cartao) return 0;
+      if (!bruto && !despesas && !cartao) return 0;
 
-  // metade do bruto
-  const metade = bruto / 2;
-
-  // adiciona 10% em cima da metade
-  const com10 = metade * 1.10;
-
-  // valor1 = metade + 10% - despesas
-  const valor1 = com10 - despesas;
-
-  // valor2 = taxa do cartão (8% do valor do cartão)
-  const valor2 = cartao * 0.08;
-
-  // lucro final
-  return valor1 - valor2;
-}
+      const metade = bruto / 2;
+      const com10 = metade * 1.10;
+      const valor1 = com10 - despesas;
+      const valor2 = cartao * 0.08;
+      return valor1 - valor2;
+    }
 
     function salvarNoStorage() {
       const dataDe = document.getElementById("dataDe").value || "";
@@ -508,7 +517,6 @@ function calcularResultadoSala(sala) {
       const statusSpan = card.querySelector(".resultado .status");
       const resultadoDiv = card.querySelector(".resultado");
 
-      // restaurar valores
       if (sala.nome) nomeInput.value = sala.nome;
       if (sala.bruto) { brutoInput.value = sala.bruto; formatarInputMonetario(brutoInput); }
       if (sala.despesas) { despesasInput.value = sala.despesas; formatarInputMonetario(despesasInput); }
@@ -561,7 +569,6 @@ function calcularResultadoSala(sala) {
         salvarNoStorage();
       });
 
-      // cálculo inicial
       atualizarResultado();
 
       return card;
