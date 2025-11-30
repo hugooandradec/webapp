@@ -233,25 +233,41 @@ function adicionarMaquina(lista, dadosIniciais = null) {
       </div>
     </div>
 
-    <div class="linha-flex" style="display:flex;gap:16px;margin-bottom:10px;">
-      <div class="col" style="flex:1;">
-        <label>Selo:</label>
-        <input type="text" class="ret-selo" placeholder="CÓDIGO DA MÁQUINA">
+    <div class="card-corpo-compacto">
+      <!-- LINHA 1: SELO | JOGO -->
+      <div class="linha-compacta">
+        <div class="campo-inline campo-esq">
+          <div class="campo-label">Selo:</div>
+          <div class="campo-input">
+            <input type="text" class="ret-selo input-linha" placeholder="CÓDIGO DA MÁQUINA">
+          </div>
+        </div>
+        <div class="campo-inline">
+          <div class="campo-label">Jogo:</div>
+          <div class="campo-input">
+            <input type="text" class="ret-jogo input-linha" placeholder="TIPO DE JOGO">
+          </div>
+        </div>
       </div>
-      <div class="col" style="flex:1;">
-        <label>Jogo:</label>
-        <input type="text" class="ret-jogo" placeholder="TIPO DE JOGO">
-      </div>
-    </div>
 
-    <div class="linha-flex" style="display:flex;gap:16px;margin-bottom:10px;">
-      <div class="col" style="flex:1;">
-        <label>E:</label>
-        <input type="tel" inputmode="numeric" class="ret-entrada" placeholder="valor de entrada">
-      </div>
-      <div class="col" style="flex:1;">
-        <label>S:</label>
-        <input type="tel" inputmode="numeric" class="ret-saida" placeholder="valor de saída">
+      <!-- LINHA 2: E | S -->
+      <div class="linha-compacta">
+        <div class="campo-inline campo-esq">
+          <div class="campo-label">E:</div>
+          <div class="campo-input">
+            <input type="tel" inputmode="numeric"
+              class="ret-entrada input-linha input-pequeno"
+              placeholder="0">
+          </div>
+        </div>
+        <div class="campo-inline">
+          <div class="campo-label">S:</div>
+          <div class="campo-input">
+            <input type="tel" inputmode="numeric"
+              class="ret-saida input-linha input-pequeno"
+              placeholder="0">
+          </div>
+        </div>
       </div>
     </div>
 
@@ -292,7 +308,6 @@ function adicionarMaquina(lista, dadosIniciais = null) {
     const sStr = formatarMoeda(saidaNum);
     const rStr = formatarPercentual(ret);
 
-    // Entrada em verde, Saída em vermelho
     textoResumo.innerHTML =
       `E: <span style="color:${COR_ENTRADA};">${eStr}</span>` +
       ` | S: <span style="color:${COR_SAIDA};">${sStr}</span>` +
@@ -323,6 +338,7 @@ function adicionarMaquina(lista, dadosIniciais = null) {
   lista.appendChild(card);
   atualizarResumo();
 }
+
 
 // ===============================
 //   SALVAR / CARREGAR
