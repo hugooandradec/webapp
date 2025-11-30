@@ -37,12 +37,12 @@ function formatarReais(valor) {
   });
 }
 
-function dataHojeBR() {
+function dataHojeISO() {
   const hoje = new Date();
   const dd = String(hoje.getDate()).padStart(2, "0");
   const mm = String(hoje.getMonth() + 1).padStart(2, "0");
   const yyyy = hoje.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 // ===============================
@@ -534,7 +534,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // se a data estiver vazia, preenche com a data de hoje
   if (inputData && !inputData.value) {
-    inputData.value = dataHojeBR();
+    inputData.value = dataHojeISO();
     salvarRetencao();
   }
 });
