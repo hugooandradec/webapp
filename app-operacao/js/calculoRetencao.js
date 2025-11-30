@@ -4,6 +4,10 @@ import { inicializarPagina } from "../../common/js/navegacao.js";
 const STORAGE_KEY = "calculo_retencao_v1";
 let retContador = 0;
 
+// cores para resumo
+const COR_ENTRADA = "#1b8f2e"; // verde
+const COR_SAIDA = "#c0392b";   // vermelho
+
 // ===============================
 //   HELPERS
 // ===============================
@@ -33,13 +37,25 @@ function formatarReais(valor) {
   });
 }
 
+function dataHojeBR() {
+  const hoje = new Date();
+  const dd = String(hoje.getDate()).padStart(2, "0");
+  const mm = String(hoje.getMonth() + 1).padStart(2, "0");
+  const yyyy = hoje.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 // ===============================
 //   IMPORTAR PRINT (OCR - RETENÇÃO)
-//   Regras:
-//   - Selo: sempre 2 letras + 3 dígitos (ex: IE033)
-//   - Sempre existe bloco com (E) e (S)
-//   - Em cada linha, pegamos SEMPRE o número após o "-"
 // ===============================
+//
+// Regras:
+// - Selo: linha no formato "1 - IE033 (...)", "2- IB158 (...)" etc
+//         usamos regex:  ^numero - SELO
+// - Sempre existem blocos com (E) e (S)
+// - Em cada bloco, pegamos o número após o hífen (valor ATUAL)
+// - Cliente: linha que começa com "Cliente:" -> nome do ponto
+//
 async function importarPrintRet(file, lista) {
   if (!window.Tesseract) {
     alert("Biblioteca de OCR (Tesseract.js) não carregada.");
@@ -69,25 +85,42 @@ async function importarPrintRet(file, lista) {
     .map(l => l.trim())
     .filter(l => l.length);
 
+  // =====================
+  // Cliente -> ponto
+  // =====================
+  const linhaCliente = linhas.find(l => l.toUpperCase().startsWith("CLIENTE"));
+  if (linhaCliente) {
+    const idx = linhaCliente.indexOf(":");
+    let nome = idx >= 0 ? linhaCliente.slice(idx + 1) : linhaCliente;
+    nome = nome.trim();
+    if (nome) {
+      const inputPonto = document.getElementById("ponto");
+      if (inputPonto) {
+        inputPonto.value = nome.toUpperCase();
+      }
+    }
+  }
+
   const maquinasEncontradas = [];
 
+  // =====================
+  // Máquinas (cabecalho "1 - IE033", "2- IB158"...)
+  // =====================
   for (let i = 0; i < linhas.length; i++) {
     const linha = linhas[i];
+    const linhaUpper = linha.toUpperCase();
 
-    // --- DETECÇÃO DO SELO ---
-    // Ex.: "1 - IE033 (Seven America)"
-    // Limpamos tudo que não é letra/número e procuramos AA999
-    const linhaClean = linha.toUpperCase().replace(/[^A-Z0-9]/g, "");
-    const seloMatch = linhaClean.match(/([A-Z]{2}\d{3})/);
-    if (!seloMatch) continue;
+    // Ex.: "1- IE033 (Seven America)" ou "2 - IB158 (HL)"
+    const cabecalhoMatch = linhaUpper.match(/^\s*\d+\s*[-–]\s*([A-Z]{2}\d{3})\b/);
+    if (!cabecalhoMatch) continue;
 
-    const selo = seloMatch[1].toUpperCase();
+    const selo = cabecalhoMatch[1].toUpperCase();
 
-    // --- PROCURA (E) E (S) NAS PRÓXIMAS LINHAS ---
     let entradaAtual = "";
     let saidaAtual = "";
 
-    for (let j = i + 1; j < Math.min(i + 10, linhas.length); j++) {
+    // procura (E) e (S) nas linhas seguintes, até no máximo umas 8 linhas
+    for (let j = i + 1; j < Math.min(i + 8, linhas.length); j++) {
       const l2 = linhas[j];
       const l2Norm = l2.toUpperCase().replace(/\s+/g, "");
 
@@ -95,7 +128,6 @@ async function importarPrintRet(file, lista) {
       const isLinhaS = l2Norm.includes("(S)") || l2Norm.startsWith("S)");
 
       if (!entradaAtual && isLinhaE) {
-        // pega o número que vem DEPOIS do hífen (atual)
         const m = l2.match(/[-–]\s*([\d.,]+)/);
         if (m) entradaAtual = m[1].replace(/\D/g, "");
       }
@@ -108,7 +140,6 @@ async function importarPrintRet(file, lista) {
       if (entradaAtual && saidaAtual) break;
     }
 
-    // se achou pelo menos uma leitura, considera a máquina
     if (entradaAtual || saidaAtual) {
       maquinasEncontradas.push({
         selo,
@@ -214,7 +245,12 @@ function adicionarMaquina(lista, dadosIniciais = null) {
     const sStr = formatarMoeda(saidaNum);
     const rStr = formatarPercentual(ret);
 
-    textoResumo.textContent = `E: ${eStr} | S: ${sStr} | Ret: ${rStr}`;
+    // Entrada em verde, Saída em vermelho
+    textoResumo.innerHTML =
+      `E: <span style="color:${COR_ENTRADA};">${eStr}</span>` +
+      ` | S: <span style="color:${COR_SAIDA};">${sStr}</span>` +
+      ` | Ret: ${rStr}`;
+
     salvarRetencao();
     atualizarLinhaTotal();
   };
@@ -295,6 +331,10 @@ function carregarRetencao(lista) {
 // ===============================
 //   TOTAL GERAL
 // ===============================
+//
+// Aqui vamos deixar **só a retenção média**.
+// O span[0] fica vazio, o span[1] mostra a média.
+//
 function atualizarLinhaTotal() {
   const lista = document.getElementById("listaMaquinas");
   const linhaTotal = document.getElementById("linhaTotal");
@@ -323,7 +363,9 @@ function atualizarLinhaTotal() {
   const spans = linhaTotal.querySelectorAll("span");
 
   if (spans.length >= 2) {
-    spans[0].textContent = formatarMoeda(soma);
+    // não mostra mais o TOTAL em R$
+    spans[0].textContent = "";
+    // mostra só a retenção média
     spans[1].textContent = contRet
       ? formatarPercentual(somaRet / contRet)
       : "0.00%";
@@ -470,5 +512,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // carrega do storage
   carregarRetencao(lista);
+
+  // se a data estiver vazia, preenche com a data de hoje
+  if (inputData && !inputData.value) {
+    inputData.value = dataHojeBR();
+    salvarRetencao();
+  }
 });
