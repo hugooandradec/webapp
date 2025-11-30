@@ -261,36 +261,32 @@
       font-weight: 900;
     }
 
-    .total-linha.verde {
-      color: var(--verde);
-    }
-
-    .total-linha.vermelho {
-      color: var(--vermelho);
-    }
-
-    /* Modal */
-    .modal {
+    /* Modal — fullscreen, igual ao Lançamento */
+    #modalRet {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, .45);
+      background: rgba(0, 0, 0, .7);
       display: none;
       justify-content: center;
       align-items: center;
-      z-index: 50;
+      padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+      z-index: 1000;
     }
 
-    .modal.aberta {
-      display: flex;
+    #modalRet.aberta {
+      display: flex !important;
     }
 
-    .modal .cx {
+    #modalRet .cx {
       background: #fff;
-      border-radius: 12px;
+      border-radius: 8px;
+      width: min(96vw, 520px);
+      max-height: 88dvh;
+      overflow: auto;
+      position: relative;
       padding: 16px;
-      width: min(900px, 95%);
-      max-height: 85vh;
-      overflow-y: auto;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .25);
+      -webkit-overflow-scrolling: touch;
     }
 
     .rel {
@@ -317,7 +313,21 @@
       font-weight: 700;
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 600px) {
+      #modalRet {
+        padding: 0;
+        align-items: stretch;
+      }
+
+      #modalRet .cx {
+        width: 100vw;
+        height: 100svh;
+        max-height: 100svh;
+        border-radius: 0;
+        padding: 12px;
+        box-shadow: none;
+      }
+
       main {
         padding: 12px;
       }
@@ -367,7 +377,7 @@
     <div id="listaMaquinas" class="cards"></div>
 
     <div id="linhaTotal" class="total-linha">
-      Ret média: <span>0.00%</span>
+      Ret. Média: <span>0.00%</span>
     </div>
   </main>
 
