@@ -17,6 +17,9 @@
     inicializarPagina("Pré-Fecho", "operacao");
   </script>
 
+  <!-- OCR (Tesseract.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
+
   <!-- Toasts e lógica da tela -->
   <script defer src="../../common/js/toast.js"></script>
   <script type="module" src="../js/preFecho.js"></script>
@@ -226,6 +229,10 @@
         <i class="fa-solid fa-plus"></i> Adicionar máquina
       </button>
 
+      <button id="btnImportar" class="btn cinza">
+        <i class="fa-solid fa-image"></i> Importar print
+      </button>
+
       <button id="btnRelatorio" class="btn cinza">
         <i class="fa-solid fa-file-lines"></i> Visualizar relatório
       </button>
@@ -238,6 +245,9 @@
     <div id="listaMaquinas" class="cards"></div>
     <div id="totalGeral" class="total positivo">TOTAL: R$ 0,00</div>
   </main>
+
+  <!-- input de upload para OCR -->
+  <input type="file" id="inputPrintPre" accept="image/*" style="display:none;" />
 
   <!-- Modal -->
   <div id="modalRelatorio" class="modal">
