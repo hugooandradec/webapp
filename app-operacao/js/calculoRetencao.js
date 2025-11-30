@@ -49,11 +49,11 @@ function dataHojeBR() {
 //   IMPORTAR PRINT (OCR - RETENÇÃO)
 // ===============================
 //
-// Regras:
-// - Selo: linha no formato "1 - IE033 (...)", "2- IB158 (...)" etc
-//         usamos regex:  ^numero - SELO
-// - Sempre existem blocos com (E) e (S)
-// - Em cada bloco, pegamos o número após o hífen (valor ATUAL)
+// Regras específicas do teu print:
+// - Linha de cabeçalho da máquina: "1-1E033 (Seven America)", "2-1B158 (HL)" etc.
+//   → número da máquina + "-" + selo
+// - OCR costuma ler "IE033" como "1E033", "IB158" como "1B158"
+// - Em (E) e (S), pegamos SEMPRE o número após o hífen (valor ATUAL)
 // - Cliente: linha que começa com "Cliente:" -> nome do ponto
 //
 async function importarPrintRet(file, lista) {
@@ -83,10 +83,12 @@ async function importarPrintRet(file, lista) {
   const linhas = texto
     .split(/\r?\n/)
     .map(l => l.trim())
-    .filter(l => l.length);
+    .filter(Boolean);
+
+  console.log("Linhas OCR normalizadas:", linhas);
 
   // =====================
-  // Cliente -> ponto
+  // Cliente -> ponto (nome maiúsculo)
   // =====================
   const linhaCliente = linhas.find(l => l.toUpperCase().startsWith("CLIENTE"));
   if (linhaCliente) {
@@ -104,22 +106,33 @@ async function importarPrintRet(file, lista) {
   const maquinasEncontradas = [];
 
   // =====================
-  // Máquinas (cabecalho "1 - IE033", "2- IB158"...)
+  // Máquinas (ex.: "1-1E033 (...)", "2-1B158 (...)")
   // =====================
   for (let i = 0; i < linhas.length; i++) {
     const linha = linhas[i];
     const linhaUpper = linha.toUpperCase();
 
-    // Ex.: "1- IE033 (Seven America)" ou "2 - IB158 (HL)"
-    const cabecalhoMatch = linhaUpper.match(/^\s*\d+\s*[-–]\s*([A-Z]{2}\d{3})\b/);
+    // Procura padrão: número da máquina + hífen + selo (2 chars + 3 dígitos)
+    // Ex.: "1-1E033", "2-1B158"
+    const cabecalhoMatch = linhaUpper.match(/\b\d+\s*[-–]\s*([A-Z0-9]{2}\d{3})\b/);
     if (!cabecalhoMatch) continue;
 
-    const selo = cabecalhoMatch[1].toUpperCase();
+    let selo = cabecalhoMatch[1].toUpperCase();
+
+    // Corrige erro típico do OCR: "1E033" -> "IE033", "1B158" -> "IB158"
+    if (selo[0] === "1") {
+      selo = "I" + selo.slice(1);
+    }
+
+    // Evita repetir mesma máquina caso OCR duplique
+    if (maquinasEncontradas.some(m => m.selo === selo)) {
+      continue;
+    }
 
     let entradaAtual = "";
     let saidaAtual = "";
 
-    // procura (E) e (S) nas linhas seguintes, até no máximo umas 8 linhas
+    // procura (E) e (S) nas linhas seguintes (até umas 8 linhas depois)
     for (let j = i + 1; j < Math.min(i + 8, linhas.length); j++) {
       const l2 = linhas[j];
       const l2Norm = l2.toUpperCase().replace(/\s+/g, "");
@@ -128,6 +141,7 @@ async function importarPrintRet(file, lista) {
       const isLinhaS = l2Norm.includes("(S)") || l2Norm.startsWith("S)");
 
       if (!entradaAtual && isLinhaE) {
+        // pega o número que vem DEPOIS do hífen -> valor ATUAL
         const m = l2.match(/[-–]\s*([\d.,]+)/);
         if (m) entradaAtual = m[1].replace(/\D/g, "");
       }
@@ -150,6 +164,8 @@ async function importarPrintRet(file, lista) {
     }
   }
 
+  console.log("Máquinas encontradas no OCR:", maquinasEncontradas);
+
   if (!maquinasEncontradas.length) {
     alert(
       "Não consegui identificar máquinas no print.\n" +
@@ -165,6 +181,7 @@ async function importarPrintRet(file, lista) {
 
   salvarRetencao();
 }
+
 
 // ===============================
 //   ADICIONAR MÁQUINA
