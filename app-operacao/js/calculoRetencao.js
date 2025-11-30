@@ -74,27 +74,34 @@ async function importarPrintRet(file, lista) {
   for (let i = 0; i < linhas.length; i++) {
     const linha = linhas[i];
 
-    // procura um selo no formato AA999 (duas letras + 3 dígitos)
-    const seloMatch = linha.match(/([A-Z]{2}\d{3})/i);
+    // --- DETECÇÃO DO SELO ---
+    // Ex.: "1 - IE033 (Seven America)"
+    // Limpamos tudo que não é letra/número e procuramos AA999
+    const linhaClean = linha.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const seloMatch = linhaClean.match(/([A-Z]{2}\d{3})/);
     if (!seloMatch) continue;
 
     const selo = seloMatch[1].toUpperCase();
 
-    // procura nas próximas linhas as linhas de (E) e (S)
+    // --- PROCURA (E) E (S) NAS PRÓXIMAS LINHAS ---
     let entradaAtual = "";
     let saidaAtual = "";
 
     for (let j = i + 1; j < Math.min(i + 10, linhas.length); j++) {
       const l2 = linhas[j];
+      const l2Norm = l2.toUpperCase().replace(/\s+/g, "");
 
-      if (!entradaAtual && l2.includes("(E)")) {
-        // pega o número que vem DEPOIS do hífen
-        const m = l2.match(/-\s*([\d.,]+)/);
+      const isLinhaE = l2Norm.includes("(E)") || l2Norm.startsWith("E)");
+      const isLinhaS = l2Norm.includes("(S)") || l2Norm.startsWith("S)");
+
+      if (!entradaAtual && isLinhaE) {
+        // pega o número que vem DEPOIS do hífen (atual)
+        const m = l2.match(/[-–]\s*([\d.,]+)/);
         if (m) entradaAtual = m[1].replace(/\D/g, "");
       }
 
-      if (!saidaAtual && l2.includes("(S)")) {
-        const m2 = l2.match(/-\s*([\d.,]+)/);
+      if (!saidaAtual && isLinhaS) {
+        const m2 = l2.match(/[-–]\s*([\d.,]+)/);
         if (m2) saidaAtual = m2[1].replace(/\D/g, "");
       }
 
