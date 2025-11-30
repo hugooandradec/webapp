@@ -52,7 +52,8 @@ function limparToast() {
     else if (window.toast?.clearAll) window.toast.clearAll();
     else if (window.toast?.clear) window.toast.clear();
   } catch (e) {}
-  // plano B: remove elementos visuais de toast da tela
+
+  // plano B: some com qualquer coisa visual de toast
   try {
     document
       .querySelectorAll(".toast, .toast-container, [id*='toast']")
@@ -65,7 +66,7 @@ function limparToast() {
 // ===============================
 //
 // Regras específicas do teu print:
-// - Linha de cabeçalho da máquina: "1-1E033 (Seven America)", "2-1B158 (HL)" etc.
+// - Linha de cabeçalho da máquina: "1-IE033 (Seven America)", "2-IB158 (HL)" etc.
 //   → número da máquina + "-" + selo
 // - OCR costuma ler "IE033" como "1E033", "IB158" como "1B158"
 // - Em (E) e (S), pegamos SEMPRE o número após o hífen (valor ATUAL)
@@ -124,14 +125,13 @@ async function importarPrintRet(file, lista) {
   const maquinasEncontradas = [];
 
   // =====================
-  // Máquinas (ex.: "1-1E033 (...)", "2-1B158 (...)")
+  // Máquinas (ex.: "1-IE033 (...)", "2-IB158 (...)")
   // =====================
   for (let i = 0; i < linhas.length; i++) {
     const linha = linhas[i];
     const linhaUpper = linha.toUpperCase();
 
-    // Procura padrão: número da máquina + hífen + selo (2 chars + 3 dígitos)
-    // Ex.: "1-1E033", "2-1B158"
+    // número da máquina + hífen + selo (2 letras/números + 3 dígitos)
     const cabecalhoMatch = linhaUpper.match(
       /\b\d+\s*[-–]\s*([A-Z0-9]{2}\d{3})\b/
     );
@@ -144,7 +144,7 @@ async function importarPrintRet(file, lista) {
       selo = "I" + selo.slice(1);
     }
 
-    // Captura o jogo entre o primeiro "(" e o último ")"
+    // Jogo: tudo que estiver entre o primeiro "(" e o último ")"
     let jogo = "";
     const firstPar = linha.indexOf("(");
     const lastPar = linha.lastIndexOf(")");
@@ -198,7 +198,7 @@ async function importarPrintRet(file, lista) {
     limparToast();
     alert(
       "Não consegui identificar máquinas no print.\n" +
-        "Confere se o selo está no formato AA999 e se existem linhas com (E) e (S) usando hífen."
+      "Confere se o selo está no formato AA999 e se existem linhas com (E) e (S) usando hífen."
     );
     return;
   }
@@ -213,7 +213,7 @@ async function importarPrintRet(file, lista) {
 }
 
 // ===============================
-//   ADICIONAR MÁQUINA
+//   ADICIONAR MÁQUINA (layout compacto)
 // ===============================
 function adicionarMaquina(lista, dadosIniciais = null) {
   retContador++;
@@ -238,15 +238,11 @@ function adicionarMaquina(lista, dadosIniciais = null) {
       <div class="linha-compacta">
         <div class="campo-inline campo-esq">
           <div class="campo-label">Selo:</div>
-          <div class="campo-input">
-            <input type="text" class="ret-selo input-linha" placeholder="CÓDIGO DA MÁQUINA">
-          </div>
+          <input type="text" class="ret-selo input-linha">
         </div>
         <div class="campo-inline">
           <div class="campo-label">Jogo:</div>
-          <div class="campo-input">
-            <input type="text" class="ret-jogo input-linha" placeholder="TIPO DE JOGO">
-          </div>
+          <input type="text" class="ret-jogo input-linha">
         </div>
       </div>
 
@@ -254,19 +250,11 @@ function adicionarMaquina(lista, dadosIniciais = null) {
       <div class="linha-compacta">
         <div class="campo-inline campo-esq">
           <div class="campo-label">E:</div>
-          <div class="campo-input">
-            <input type="tel" inputmode="numeric"
-              class="ret-entrada input-linha input-pequeno"
-              placeholder="0">
-          </div>
+          <input type="tel" inputmode="numeric" class="ret-entrada input-linha input-pequeno">
         </div>
         <div class="campo-inline">
           <div class="campo-label">S:</div>
-          <div class="campo-input">
-            <input type="tel" inputmode="numeric"
-              class="ret-saida input-linha input-pequeno"
-              placeholder="0">
-          </div>
+          <input type="tel" inputmode="numeric" class="ret-saida input-linha input-pequeno">
         </div>
       </div>
     </div>
@@ -339,7 +327,6 @@ function adicionarMaquina(lista, dadosIniciais = null) {
   atualizarResumo();
 }
 
-
 // ===============================
 //   SALVAR / CARREGAR
 // ===============================
@@ -392,11 +379,8 @@ function carregarRetencao(lista) {
 }
 
 // ===============================
-//   TOTAL GERAL
+//   TOTAL GERAL  (só Ret média)
 // ===============================
-//
-// Aqui usamos só a retenção média (único <span> dentro da #linhaTotal).
-//
 function atualizarLinhaTotal() {
   const lista = document.getElementById("listaMaquinas");
   const linhaTotal = document.getElementById("linhaTotal");
@@ -421,15 +405,15 @@ function atualizarLinhaTotal() {
   });
 
   const span = linhaTotal.querySelector("span");
+  const media = contRet ? somaRet / contRet : 0;
+
   if (span) {
-    span.textContent = contRet
-      ? formatarPercentual(somaRet / contRet)
-      : "0.00%";
+    span.textContent = formatarPercentual(media);
   }
 
   linhaTotal.classList.remove("verde", "vermelho", "neutro");
   if (!contRet) linhaTotal.classList.add("neutro");
-  else if (somaRet / contRet >= 0) linhaTotal.classList.add("verde");
+  else if (media >= 0) linhaTotal.classList.add("verde");
   else linhaTotal.classList.add("vermelho");
 }
 
