@@ -45,6 +45,15 @@ function dataHojeISO() {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// limpa qualquer toast visível, independente da lib
+function limparToast() {
+  try {
+    if (window.toast?.dismissAll) window.toast.dismissAll();
+    else if (window.toast?.clearAll) window.toast.clearAll();
+    else if (window.toast?.clear) window.toast.clear();
+  } catch (e) {}
+}
+
 // ===============================
 //   IMPORTAR PRINT (OCR - RETENÇÃO)
 // ===============================
@@ -74,12 +83,7 @@ async function importarPrintRet(file, lista) {
     texto = (data && data.text) ? data.text : "";
   } catch (e) {
     console.error("Erro no OCR:", e);
-
-    // remove a mensagem de carregamento
-    try {
-      if (toast) toast.clear();
-    } catch (err) {}
-
+    limparToast();
     alert("Não foi possível ler a imagem.");
     return;
   }
@@ -134,6 +138,11 @@ async function importarPrintRet(file, lista) {
       selo = "I" + selo.slice(1);
     }
 
+    // Captura o jogo entre parênteses, ex: (Seven America) ou (HL)
+    let jogo = "";
+    const jogoMatch = linha.match(/\(([^)]+)\)/);
+    if (jogoMatch) jogo = jogoMatch[1].trim().toUpperCase();
+
     // Evita repetir mesma máquina caso OCR duplique
     if (maquinasEncontradas.some((m) => m.selo === selo)) {
       continue;
@@ -167,7 +176,7 @@ async function importarPrintRet(file, lista) {
     if (entradaAtual || saidaAtual) {
       maquinasEncontradas.push({
         selo,
-        jogo: "",
+        jogo,
         entrada: entradaAtual,
         saida: saidaAtual
       });
@@ -177,11 +186,7 @@ async function importarPrintRet(file, lista) {
   console.log("Máquinas encontradas no OCR:", maquinasEncontradas);
 
   if (!maquinasEncontradas.length) {
-    // se não achou nenhuma, limpa o toast também
-    try {
-      if (toast) toast.clear();
-    } catch (e) {}
-
+    limparToast();
     alert(
       "Não consegui identificar máquinas no print.\n" +
         "Confere se o selo está no formato AA999 e se existem linhas com (E) e (S) usando hífen."
@@ -195,11 +200,7 @@ async function importarPrintRet(file, lista) {
   maquinasEncontradas.forEach((m) => adicionarMaquina(lista, m));
 
   salvarRetencao();
-
-  // remove a mensagem de "Lendo imagem..."
-  try {
-    if (toast) toast.clear();
-  } catch (e) {}
+  limparToast();
 }
 
 // ===============================
@@ -223,23 +224,24 @@ function adicionarMaquina(lista, dadosIniciais = null) {
       </div>
     </div>
 
-    <div class="linha-nome">
-      <label>Selo:</label>
-      <input type="text" class="ret-selo" placeholder="CÓDIGO DA MÁQUINA">
+    <div class="linha-flex" style="display:flex;gap:16px;margin-bottom:10px;">
+      <div class="col" style="flex:1;">
+        <label>Selo:</label>
+        <input type="text" class="ret-selo" placeholder="CÓDIGO DA MÁQUINA">
+      </div>
+      <div class="col" style="flex:1;">
+        <label>Jogo:</label>
+        <input type="text" class="ret-jogo" placeholder="TIPO DE JOGO">
+      </div>
     </div>
 
-    <div class="linha-nome">
-      <label>Jogo:</label>
-      <input type="text" class="ret-jogo" placeholder="TIPO DE JOGO">
-    </div>
-
-    <div class="linha2">
-      <div class="col">
-        <label>Entrada</label>
+    <div class="linha-flex" style="display:flex;gap:16px;margin-bottom:10px;">
+      <div class="col" style="flex:1;">
+        <label>E:</label>
         <input type="tel" inputmode="numeric" class="ret-entrada" placeholder="valor de entrada">
       </div>
-      <div class="col">
-        <label>Saída</label>
+      <div class="col" style="flex:1;">
+        <label>S:</label>
         <input type="tel" inputmode="numeric" class="ret-saida" placeholder="valor de saída">
       </div>
     </div>
@@ -368,8 +370,7 @@ function carregarRetencao(lista) {
 //   TOTAL GERAL
 // ===============================
 //
-// Aqui vamos deixar só a retenção média.
-// O span[0] fica vazio, o span[1] mostra a média.
+// Aqui usamos só a retenção média (span[1]).
 //
 function atualizarLinhaTotal() {
   const lista = document.getElementById("listaMaquinas");
@@ -399,7 +400,7 @@ function atualizarLinhaTotal() {
   const spans = linhaTotal.querySelectorAll("span");
 
   if (spans.length >= 2) {
-    // não mostra mais o TOTAL em R$
+    // não mostra mais TOTAL em R$
     spans[0].textContent = "";
     // mostra só a retenção média
     spans[1].textContent = contRet
