@@ -76,18 +76,19 @@ async function importarPrintRet(file, lista) {
     console.error("Erro no OCR:", e);
 
     // remove a mensagem de carregamento
-    try { if (toast) toast.clear(); } catch (err) {}
+    try {
+      if (toast) toast.clear();
+    } catch (err) {}
 
     alert("Não foi possível ler a imagem.");
     return;
   }
 
-
   console.log("Texto OCR bruto (retencao):\n", texto);
 
   const linhas = texto
     .split(/\r?\n/)
-    .map(l => l.trim())
+    .map((l) => l.trim())
     .filter(Boolean);
 
   console.log("Linhas OCR normalizadas:", linhas);
@@ -95,7 +96,9 @@ async function importarPrintRet(file, lista) {
   // =====================
   // Cliente -> ponto (nome maiúsculo)
   // =====================
-  const linhaCliente = linhas.find(l => l.toUpperCase().startsWith("CLIENTE"));
+  const linhaCliente = linhas.find((l) =>
+    l.toUpperCase().startsWith("CLIENTE")
+  );
   if (linhaCliente) {
     const idx = linhaCliente.indexOf(":");
     let nome = idx >= 0 ? linhaCliente.slice(idx + 1) : linhaCliente;
@@ -119,7 +122,9 @@ async function importarPrintRet(file, lista) {
 
     // Procura padrão: número da máquina + hífen + selo (2 chars + 3 dígitos)
     // Ex.: "1-1E033", "2-1B158"
-    const cabecalhoMatch = linhaUpper.match(/\b\d+\s*[-–]\s*([A-Z0-9]{2}\d{3})\b/);
+    const cabecalhoMatch = linhaUpper.match(
+      /\b\d+\s*[-–]\s*([A-Z0-9]{2}\d{3})\b/
+    );
     if (!cabecalhoMatch) continue;
 
     let selo = cabecalhoMatch[1].toUpperCase();
@@ -130,7 +135,7 @@ async function importarPrintRet(file, lista) {
     }
 
     // Evita repetir mesma máquina caso OCR duplique
-    if (maquinasEncontradas.some(m => m.selo === selo)) {
+    if (maquinasEncontradas.some((m) => m.selo === selo)) {
       continue;
     }
 
@@ -172,9 +177,14 @@ async function importarPrintRet(file, lista) {
   console.log("Máquinas encontradas no OCR:", maquinasEncontradas);
 
   if (!maquinasEncontradas.length) {
+    // se não achou nenhuma, limpa o toast também
+    try {
+      if (toast) toast.clear();
+    } catch (e) {}
+
     alert(
       "Não consegui identificar máquinas no print.\n" +
-      "Confere se o selo está no formato AA999 e se existem linhas com (E) e (S) usando hífen."
+        "Confere se o selo está no formato AA999 e se existem linhas com (E) e (S) usando hífen."
     );
     return;
   }
@@ -187,12 +197,10 @@ async function importarPrintRet(file, lista) {
   salvarRetencao();
 
   // remove a mensagem de "Lendo imagem..."
-try { 
-  if (toast) toast.clear(); 
-} catch (e) {}
-
+  try {
+    if (toast) toast.clear();
+  } catch (e) {}
 }
-
 
 // ===============================
 //   ADICIONAR MÁQUINA
@@ -360,7 +368,7 @@ function carregarRetencao(lista) {
 //   TOTAL GERAL
 // ===============================
 //
-// Aqui vamos deixar **só a retenção média**.
+// Aqui vamos deixar só a retenção média.
 // O span[0] fica vazio, o span[1] mostra a média.
 //
 function atualizarLinhaTotal() {
