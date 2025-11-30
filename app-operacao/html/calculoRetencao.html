@@ -69,12 +69,6 @@
       min-width: 70px;
     }
 
-    .linha span.sub {
-      font-size: 0.8rem;
-      color: #666;
-      font-weight: 600;
-    }
-
     input[type="date"],
     input[type="text"] {
       padding: 6px 10px;
@@ -83,6 +77,7 @@
       outline: none;
       font-size: 0.95rem;
       width: 100%;
+      background: #fff;
     }
 
     .barra {
@@ -147,7 +142,7 @@
       align-items: center;
       font-weight: 800;
       font-size: 0.95rem;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       color: #444;
     }
 
@@ -170,22 +165,23 @@
       font-size: 0.9rem;
     }
 
-    /* LAYOUT COMPACTO DO CARD */
+    /* ===== Layout compacto do card ===== */
+
     .card-corpo-compacto {
       margin-top: 4px;
     }
 
     .linha-compacta {
       display: flex;
-      gap: 24px;
-      margin-bottom: 4px;
-      align-items: baseline;
+      gap: 25px;
+      margin-bottom: 6px;
+      align-items: center;
     }
 
     .campo-inline {
       flex: 1;
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 6px;
     }
 
@@ -195,28 +191,31 @@
       margin-right: 16px;
     }
 
-    .campo-inline label {
+    .campo-label {
       font-weight: 700;
       white-space: nowrap;
       min-width: max-content;
     }
 
+    /* inputs internos só com linha */
     .input-linha {
-      flex: 1;
+      width: 100%;
       border: none;
-      border-bottom: 2px solid #dcdcdc;
-      padding: 4px 0;
-      text-transform: uppercase;
-      outline: none;
-      background: transparent;
+      border-bottom: 1px solid #aaa;
+      padding: 3px 2px;
       font-size: 0.95rem;
+      background: transparent;
+      outline: none;
     }
 
     .input-linha:focus {
       border-bottom-color: var(--roxo);
     }
 
-    /* Resumo */
+    .input-pequeno {
+      max-width: 120px;
+    }
+
     .resumo {
       margin-top: 8px;
       font-weight: 700;
@@ -296,13 +295,17 @@
 
       .linha-compacta {
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
       }
 
       .campo-esq {
         border-right: none;
         padding-right: 0;
         margin-right: 0;
+      }
+
+      .input-pequeno {
+        max-width: 100%;
       }
     }
   </style>
@@ -349,7 +352,7 @@
 
     <div id="listaMaquinas" class="cards"></div>
 
-    <div id="linhaTotal" class="total-linha">
+    <div id="linhaTotal" class="total-linha neutro">
       Ret média: <span>0.00%</span>
     </div>
   </main>
