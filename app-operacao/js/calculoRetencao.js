@@ -34,7 +34,11 @@ function formatarReais(valor) {
 }
 
 // ===============================
-//   IMPORTAR PRINT (OCR - TESTE)
+//   IMPORTAR PRINT (OCR - RETENÇÃO)
+//   Regras:
+//   - Selo: sempre 2 letras + 3 dígitos (ex: IE033)
+//   - Sempre existe bloco com (E) e (S)
+//   - Em cada linha, pegamos SEMPRE o número após o "-"
 // ===============================
 async function importarPrintRet(file, lista) {
   if (!window.Tesseract) {
@@ -49,7 +53,7 @@ async function importarPrintRet(file, lista) {
   let texto = "";
   try {
     const { data } = await Tesseract.recognize(file, "por+eng", {
-      logger: m => console.log("[OCR]", m)
+      logger: (m) => console.log("[OCR]", m)
     });
     texto = (data && data.text) ? data.text : "";
   } catch (e) {
@@ -60,21 +64,59 @@ async function importarPrintRet(file, lista) {
 
   console.log("Texto OCR bruto (retencao):\n", texto);
 
-  // tenta achar linhas do tipo: CODIGO 123456 654321
-  const regexLinha = /([A-Z0-9]{2,8})\s+(\d{4,})\s+(\d{4,})/g;
+  const linhas = texto
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l.length);
+
   const maquinasEncontradas = [];
-  let match;
-  while ((match = regexLinha.exec(texto)) !== null) {
-    maquinasEncontradas.push({
-      selo: match[1].toUpperCase(),
-      jogo: "",
-      entrada: match[2],
-      saida: match[3]
-    });
+
+  for (let i = 0; i < linhas.length; i++) {
+    const linha = linhas[i];
+
+    // procura um selo no formato AA999 (duas letras + 3 dígitos)
+    const seloMatch = linha.match(/([A-Z]{2}\d{3})/i);
+    if (!seloMatch) continue;
+
+    const selo = seloMatch[1].toUpperCase();
+
+    // procura nas próximas linhas as linhas de (E) e (S)
+    let entradaAtual = "";
+    let saidaAtual = "";
+
+    for (let j = i + 1; j < Math.min(i + 10, linhas.length); j++) {
+      const l2 = linhas[j];
+
+      if (!entradaAtual && l2.includes("(E)")) {
+        // pega o número que vem DEPOIS do hífen
+        const m = l2.match(/-\s*([\d.,]+)/);
+        if (m) entradaAtual = m[1].replace(/\D/g, "");
+      }
+
+      if (!saidaAtual && l2.includes("(S)")) {
+        const m2 = l2.match(/-\s*([\d.,]+)/);
+        if (m2) saidaAtual = m2[1].replace(/\D/g, "");
+      }
+
+      if (entradaAtual && saidaAtual) break;
+    }
+
+    // se achou pelo menos uma leitura, considera a máquina
+    if (entradaAtual || saidaAtual) {
+      maquinasEncontradas.push({
+        selo,
+        jogo: "",
+        entrada: entradaAtual,
+        saida: saidaAtual
+      });
+    }
   }
 
   if (!maquinasEncontradas.length) {
-    alert("Não consegui identificar máquinas no print. Veja o console para o texto detectado e me manda o print pra ajustarmos o parser.");
+    alert(
+      "Não consegui identificar máquinas no print.\n" +
+      "Confere se o selo está no formato AA999 e se existem linhas com (E) e (S) usando hífen."
+    );
     return;
   }
 
@@ -170,7 +212,7 @@ function adicionarMaquina(lista, dadosIniciais = null) {
     atualizarLinhaTotal();
   };
 
-  [inputEntrada, inputSaida].forEach(inp => {
+  [inputEntrada, inputSaida].forEach((inp) => {
     inp.addEventListener("input", () => {
       inp.value = (inp.value || "").replace(/\D/g, "");
       atualizarResumo();
@@ -202,7 +244,7 @@ function salvarRetencao() {
   if (!lista) return;
 
   const maquinas = [];
-  lista.querySelectorAll(".card").forEach(card => {
+  lista.querySelectorAll(".card").forEach((card) => {
     const selo = card.querySelector(".ret-selo")?.value || "";
     const jogo = card.querySelector(".ret-jogo")?.value || "";
     const entrada = card.querySelector(".ret-entrada")?.value || "";
@@ -230,7 +272,7 @@ function carregarRetencao(lista) {
     lista.innerHTML = "";
 
     if (Array.isArray(dados.maquinas) && dados.maquinas.length) {
-      dados.maquinas.forEach(m => adicionarMaquina(lista, m));
+      dados.maquinas.forEach((m) => adicionarMaquina(lista, m));
     } else {
       adicionarMaquina(lista);
     }
@@ -255,24 +297,29 @@ function atualizarLinhaTotal() {
   let somaRet = 0;
   let contRet = 0;
 
-  lista.querySelectorAll(".card").forEach(card => {
-    const entrada = parseNumeroCentavos(card.querySelector(".ret-entrada")?.value);
-    const saida = parseNumeroCentavos(card.querySelector(".ret-saida")?.value);
+  lista.querySelectorAll(".card").forEach((card) => {
+    const entrada = parseNumeroCentavos(
+      card.querySelector(".ret-entrada")?.value
+    );
+    const saida = parseNumeroCentavos(
+      card.querySelector(".ret-saida")?.value
+    );
     let ret = 0;
     if (entrada > 0) {
       ret = ((entrada - saida) / entrada) * 100;
-      soma += (entrada - saida);
+      soma += entrada - saida;
       somaRet += ret;
       contRet++;
     }
   });
 
-  const spanValor = linhaTotal.querySelector("span:nth-child(1)");
   const spans = linhaTotal.querySelectorAll("span");
 
   if (spans.length >= 2) {
     spans[0].textContent = formatarMoeda(soma);
-    spans[1].textContent = contRet ? formatarPercentual(somaRet / contRet) : "0.00%";
+    spans[1].textContent = contRet
+      ? formatarPercentual(somaRet / contRet)
+      : "0.00%";
   }
 
   linhaTotal.classList.remove("verde", "vermelho", "neutro");
@@ -297,10 +344,17 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
   lista.querySelectorAll(".card").forEach((card, idx) => {
     const selo = card.querySelector(".ret-selo")?.value || "-";
     const jogo = card.querySelector(".ret-jogo")?.value || "-";
-    const entradaNum = parseNumeroCentavos(card.querySelector(".ret-entrada")?.value);
-    const saidaNum = parseNumeroCentavos(card.querySelector(".ret-saida")?.value);
+    const entradaNum = parseNumeroCentavos(
+      card.querySelector(".ret-entrada")?.value
+    );
+    const saidaNum = parseNumeroCentavos(
+      card.querySelector(".ret-saida")?.value
+    );
     const diff = entradaNum - saidaNum;
-    const ret = entradaNum > 0 ? ((entradaNum - saidaNum) / entradaNum) * 100 : 0;
+    const ret =
+      entradaNum > 0
+        ? ((entradaNum - saidaNum) / entradaNum) * 100
+        : 0;
 
     total += diff;
 
@@ -373,11 +427,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (btnLimpar) {
-    btnLimpar.addEventListener("click", () => limparTudo(lista, inputData, inputPonto));
+    btnLimpar.addEventListener("click", () =>
+      limparTudo(lista, inputData, inputPonto)
+    );
   }
 
   if (btnFecharModal && modal) {
-    btnFecharModal.addEventListener("click", () => modal.classList.remove("aberta"));
+    btnFecharModal.addEventListener("click", () =>
+      modal.classList.remove("aberta")
+    );
     modal.addEventListener("click", (e) => {
       if (e.target.id === "modalRet") modal.classList.remove("aberta");
     });
