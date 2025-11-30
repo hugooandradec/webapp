@@ -52,6 +52,12 @@ function limparToast() {
     else if (window.toast?.clearAll) window.toast.clearAll();
     else if (window.toast?.clear) window.toast.clear();
   } catch (e) {}
+  // plano B: remove elementos visuais de toast da tela
+  try {
+    document
+      .querySelectorAll(".toast, .toast-container, [id*='toast']")
+      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+  } catch (e) {}
 }
 
 // ===============================
@@ -138,10 +144,13 @@ async function importarPrintRet(file, lista) {
       selo = "I" + selo.slice(1);
     }
 
-    // Captura o jogo entre parênteses, ex: (Seven America) ou (HL)
+    // Captura o jogo entre o primeiro "(" e o último ")"
     let jogo = "";
-    const jogoMatch = linha.match(/\(([^)]+)\)/);
-    if (jogoMatch) jogo = jogoMatch[1].trim().toUpperCase();
+    const firstPar = linha.indexOf("(");
+    const lastPar = linha.lastIndexOf(")");
+    if (firstPar >= 0 && lastPar > firstPar) {
+      jogo = linha.slice(firstPar + 1, lastPar).trim().toUpperCase();
+    }
 
     // Evita repetir mesma máquina caso OCR duplique
     if (maquinasEncontradas.some((m) => m.selo === selo)) {
@@ -370,14 +379,13 @@ function carregarRetencao(lista) {
 //   TOTAL GERAL
 // ===============================
 //
-// Aqui usamos só a retenção média (span[1]).
+// Aqui usamos só a retenção média (único <span> dentro da #linhaTotal).
 //
 function atualizarLinhaTotal() {
   const lista = document.getElementById("listaMaquinas");
   const linhaTotal = document.getElementById("linhaTotal");
   if (!lista || !linhaTotal) return;
 
-  let soma = 0;
   let somaRet = 0;
   let contRet = 0;
 
@@ -388,30 +396,25 @@ function atualizarLinhaTotal() {
     const saida = parseNumeroCentavos(
       card.querySelector(".ret-saida")?.value
     );
-    let ret = 0;
+
     if (entrada > 0) {
-      ret = ((entrada - saida) / entrada) * 100;
-      soma += entrada - saida;
+      const ret = ((entrada - saida) / entrada) * 100;
       somaRet += ret;
       contRet++;
     }
   });
 
-  const spans = linhaTotal.querySelectorAll("span");
-
-  if (spans.length >= 2) {
-    // não mostra mais TOTAL em R$
-    spans[0].textContent = "";
-    // mostra só a retenção média
-    spans[1].textContent = contRet
+  const span = linhaTotal.querySelector("span");
+  if (span) {
+    span.textContent = contRet
       ? formatarPercentual(somaRet / contRet)
       : "0.00%";
   }
 
   linhaTotal.classList.remove("verde", "vermelho", "neutro");
-  if (soma < 0) linhaTotal.classList.add("vermelho");
-  else if (soma > 0) linhaTotal.classList.add("verde");
-  else linhaTotal.classList.add("neutro");
+  if (!contRet) linhaTotal.classList.add("neutro");
+  else if (somaRet / contRet >= 0) linhaTotal.classList.add("verde");
+  else linhaTotal.classList.add("vermelho");
 }
 
 // ===============================
