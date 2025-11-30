@@ -147,7 +147,7 @@
       align-items: center;
       font-weight: 800;
       font-size: 0.95rem;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
       color: #444;
     }
 
@@ -170,66 +170,55 @@
       font-size: 0.9rem;
     }
 
-    .linha-nome {
+    /* LAYOUT COMPACTO DO CARD */
+    .card-corpo-compacto {
+      margin-top: 4px;
+    }
+
+    .linha-compacta {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 4px 0 6px;
+      gap: 24px;
+      margin-bottom: 4px;
+      align-items: baseline;
     }
 
-    .linha-nome label {
+    .campo-inline {
+      flex: 1;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .campo-esq {
+      border-right: 1px solid #ddd;
+      padding-right: 16px;
+      margin-right: 16px;
+    }
+
+    .campo-inline label {
       font-weight: 700;
-      min-width: 55px;
+      white-space: nowrap;
+      min-width: max-content;
     }
 
-    .linha-nome input {
+    .input-linha {
       flex: 1;
       border: none;
       border-bottom: 2px solid #dcdcdc;
-      padding: 6px 0;
+      padding: 4px 0;
       text-transform: uppercase;
       outline: none;
       background: transparent;
       font-size: 0.95rem;
     }
 
-    .linha-nome input:focus {
+    .input-linha:focus {
       border-bottom-color: var(--roxo);
     }
 
-    .linha2 {
-      display: flex;
-      gap: 16px;
-      margin-top: 8px;
-    }
-
-    .col {
-      flex: 1;
-    }
-
-    .col label {
-      display: block;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .col input {
-      width: 100%;
-      border: none;
-      border-bottom: 2px solid #dcdcdc;
-      padding: 6px 0;
-      outline: none;
-      background: transparent;
-      text-align: center;
-      font-size: 0.95rem;
-    }
-
-    .col input:focus {
-      border-bottom-color: var(--roxo);
-    }
-
+    /* Resumo */
     .resumo {
-      margin-top: 10px;
+      margin-top: 8px;
       font-weight: 700;
       font-size: 0.9rem;
     }
@@ -303,6 +292,17 @@
     @media (max-width: 480px) {
       main {
         padding: 12px;
+      }
+
+      .linha-compacta {
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .campo-esq {
+        border-right: none;
+        padding-right: 0;
+        margin-right: 0;
       }
     }
   </style>
