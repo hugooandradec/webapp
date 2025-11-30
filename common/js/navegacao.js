@@ -18,13 +18,11 @@ function getRootPath() {
 const ROOT = getRootPath();
 
 // ===== mapeamento de páginas -> rotas de permissão =====
-// só coloquei as páginas da operação que têm regra específica
 const ROTAS_POR_PAGINA = {
   "preFecho.html":        "operacao-preFecho",
   "calculoRetencao.html": "operacao-retencao",
   "calculoSalas.html":    "operacao-salas",
   "lancamento.html":      "operacao-lancamento"
-  // se criar novas páginas restritas, é só adicionar aqui
 };
 
 // ===== backend (com fallback) =====
@@ -36,7 +34,7 @@ export function getURLBackend() {
   );
 }
 
-// ===== status com retry (lida melhor com cold start do Render) =====
+// ===== status com retry (cold start Render) =====
 export async function isOnline() {
   const url = `${getURLBackend()}/health`;
 
@@ -49,25 +47,23 @@ export async function isOnline() {
 
   try {
     if (await tentar()) return true;
-    await new Promise(r => setTimeout(r, 1500)); // cold start retry
+    await new Promise((r) => setTimeout(r, 1500));
     return await tentar();
   } catch {
     return false;
   }
 }
 
-// ===== auth helpers (agora integrados com auth.js) =====
+// ===== auth helpers =====
 function getUser() {
   return getCurrentUser();
 }
 
 function canAccess(appKey) {
-  // delega pro auth.js (que já trata admin, apps etc.)
   return authCanAccess(appKey);
 }
 
 function logout() {
-  // só limpa o usuário; o redirect a gente faz aqui com ROOT certo
   localStorage.removeItem("usuarioLogado");
   window.location.replace(`${ROOT}login.html`);
 }
@@ -75,7 +71,7 @@ function logout() {
 // ===== detecção de "menu" por URL =====
 function isMenuURL(appKey) {
   const p = location.pathname.toLowerCase();
-  if (appKey === "operacao")  return p.endsWith("/app-operacao/html/menu.html");
+  if (appKey === "operacao") return p.endsWith("/app-operacao/html/menu.html");
   if (appKey === "erp")       return p.endsWith("/app-erp/html/menu.html");
   return false;
 }
@@ -90,11 +86,7 @@ function montarHeader(titulo, appKey, backHref, isMenuPageFlag) {
   const u = getUser();
   const onlineDotId = "online-dot";
 
-  // decidir destino do "voltar":
-  // - Se estou no MENU do app → voltar para app-selector
-  // - Senão (página interna) → voltar para o MENU do app
   let hrefVoltar;
-
   if (typeof backHref === "string" && backHref) {
     hrefVoltar = backHref;
   } else {
@@ -139,11 +131,21 @@ function montarHeader(titulo, appKey, backHref, isMenuPageFlag) {
   })();
 }
 
-// ===== PWA SW (melhor esforço) =====
+// ===== PWA SW (a partir da raiz /webapp/) =====
 function registrarServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
-  const swPath = `${ROOT}sw.js`; // registra a partir da raiz do site
-  navigator.serviceWorker.register(swPath).catch(() => {});
+
+  const swPath = `${ROOT}sw.js`; // ex.: /webapp/sw.js
+  console.log("[SW] registrando:", swPath);
+
+  navigator.serviceWorker
+    .register(swPath)
+    .then((reg) => {
+      console.log("[SW] registrado com escopo:", reg.scope);
+    })
+    .catch((err) => {
+      console.warn("[SW] falha ao registrar:", err);
+    });
 }
 
 // ===== API pública =====
@@ -152,8 +154,6 @@ function registrarServiceWorker() {
  * @param {string} titulo - texto do título no header
  * @param {"erp"|"operacao"|string} appKey - qual app a página pertence
  * @param {{backHref?: string, isMenuPage?: boolean}} options
- *   - backHref: sobrescreve o destino do "voltar"
- *   - isMenuPage: marca explicitamente que a página atual é um MENU (volta para o app-selector)
  */
 export async function inicializarPagina(titulo, appKey, options = {}) {
   const user = getUser();
@@ -162,18 +162,15 @@ export async function inicializarPagina(titulo, appKey, options = {}) {
     return;
   }
 
-  // checa se pode usar o módulo (operacao / erp / base etc.)
   if (!canAccess(appKey)) {
     window.location.replace(`${ROOT}app-selector.html`);
     return;
   }
 
-  // ===== checagem de rota/página (pré-fecho, retenção, salas, lançamento) =====
   const pagina = window.location.pathname.split("/").pop().split("?")[0];
   const routeKey = ROTAS_POR_PAGINA[pagina];
 
   if (routeKey && !canAccessRoute(routeKey)) {
-    // se não tiver permissão pra essa rota, manda pro menu do app
     const destino = menuPath(appKey) || `${ROOT}app-selector.html`;
     window.location.replace(destino);
     return;
@@ -182,5 +179,7 @@ export async function inicializarPagina(titulo, appKey, options = {}) {
   montarHeader(titulo, appKey, options.backHref, options.isMenuPage);
   registrarServiceWorker();
 
-  try { console.info("Console visual ativado."); } catch {}
+  try {
+    console.info("Console visual ativado.");
+  } catch {}
 }
