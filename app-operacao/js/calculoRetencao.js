@@ -74,9 +74,14 @@ async function importarPrintRet(file, lista) {
     texto = (data && data.text) ? data.text : "";
   } catch (e) {
     console.error("Erro no OCR:", e);
+
+    // remove a mensagem de carregamento
+    try { if (toast) toast.clear(); } catch (err) {}
+
     alert("Não foi possível ler a imagem.");
     return;
   }
+
 
   console.log("Texto OCR bruto (retencao):\n", texto);
 
@@ -180,6 +185,12 @@ async function importarPrintRet(file, lista) {
   maquinasEncontradas.forEach((m) => adicionarMaquina(lista, m));
 
   salvarRetencao();
+
+  // remove a mensagem de "Lendo imagem..."
+try { 
+  if (toast) toast.clear(); 
+} catch (e) {}
+
 }
 
 
