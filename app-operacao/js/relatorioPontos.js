@@ -13,11 +13,71 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnDescartar").onclick = descartarExtracao;
 
   document.getElementById("btnGerarSemanal").onclick = gerarRelatorioSemanal;
-  document.getElementById("btnGerarConsolidado").onclick = gerarRelatorioConsolidado;
+  document.getElementById("btnGerarConsolidado").onclick =
+    gerarRelatorioConsolidado;
   document.getElementById("btnDesfazer").onclick = desfazerUltimo;
 
   document.getElementById("fecharModal").onclick = fecharModal;
+
+  const selPontoSem = document.getElementById("selectPontoSemanal");
+  if (selPontoSem) selPontoSem.addEventListener("change", carregarSemanas);
 });
+
+/* ===== HELPERS GERAIS ===== */
+
+function parseMoedaBR(str) {
+  if (!str) return 0;
+  const limpo = str
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const n = parseFloat(limpo);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatarMoedaBR(valor) {
+  return (Number(valor) || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2
+  });
+}
+
+function gerarSlugPonto(nome) {
+  return (nome || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-+|-+$)/g, "");
+}
+
+function formatarDataISO(d) {
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
+function formatarDataBR(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+// calcula segunda e domingo da semana do fechamento (segunda–domingo)
+function calcularPeriodoSemana(dataFechamento) {
+  const diaSemana = dataFechamento.getDay(); // 0 = dom, 1 = seg...
+  const diffSegunda = (diaSemana + 6) % 7; // distância até segunda
+  const dtInicio = new Date(dataFechamento);
+  dtInicio.setDate(dtInicio.getDate() - diffSegunda);
+  const dtFim = new Date(dtInicio);
+  dtFim.setDate(dtInicio.getDate() + 6);
+  return {
+    inicio: formatarDataISO(dtInicio),
+    fim: formatarDataISO(dtFim)
+  };
+}
 
 /* ===== STORAGE ===== */
 const KEY = "relatorioPontos_registros";
@@ -45,44 +105,181 @@ async function processarPrint() {
 
   extracaoAtual = extrairRelatorioDoOcr(texto);
 
+  if (!extracaoAtual || !extracaoAtual.maquinas?.length) {
+    alert(
+      "Não foi possível interpretar o print automaticamente. Confira o OCR."
+    );
+    return;
+  }
+
   mostrarExtracaoNaTela(extracaoAtual);
 }
 
 /* ===== OCR (placeholder) ===== */
 async function extrairTextoOCR(file) {
-  // Aqui depois você me manda 1 print e 1 texto OCR para calibrarmos.
-  return "TEXTO_DE_EXEMPLO";
+  // TODO: integrar com OCR real (backend / API externa)
+  console.warn(
+    "extrairTextoOCR ainda é placeholder. Integre com OCR real depois."
+  );
+  // por enquanto, você pode colar o texto manualmente aqui pra testes
+  return "";
 }
 
 /* ===== 2. EXTRAIR DADOS DO TEXTO ===== */
 function extrairRelatorioDoOcr(texto) {
-  // 💜 Aqui será configurado quando você me mandar o OCR real.
+  texto = (texto || "").replace(/\r/g, "");
+  const linhas = texto
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
+
+  // ===== Cliente / Ponto =====
+  let pontoNome = "PONTO DESCONHECIDO";
+  const linhaCliente = linhas.find(l => l.toLowerCase().startsWith("cliente"));
+  if (linhaCliente) {
+    const partes = linhaCliente.split(":");
+    if (partes[1]) {
+      pontoNome = partes[1].trim();
+    }
+  }
+  const pontoExibicao = pontoNome.toUpperCase();
+  const pontoChave = gerarSlugPonto(pontoExibicao);
+
+  // ===== Data do fechamento =====
+  let dataFechamentoISO = null;
+  let dataFechamentoDate = new Date();
+  const linhaData = linhas.find(l => l.toLowerCase().startsWith("data"));
+  if (linhaData) {
+    const m = linhaData.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (m) {
+      let [_, d, mo, y] = m;
+      let anoNum = parseInt(y, 10);
+      if (anoNum < 100) anoNum += 2000; // 25 -> 2025
+      const dt = new Date(anoNum, parseInt(mo, 10) - 1, parseInt(d, 10));
+      if (!isNaN(dt.getTime())) {
+        dataFechamentoDate = dt;
+        dataFechamentoISO = formatarDataISO(dt);
+      }
+    }
+  }
+  if (!dataFechamentoISO) {
+    dataFechamentoISO = formatarDataISO(dataFechamentoDate);
+  }
+
+  // ===== Período da semana (segunda a domingo) =====
+  const periodo = calcularPeriodoSemana(dataFechamentoDate);
+
+  // ===== Máquinas =====
+  const maquinas = [];
+  let atual = null;
+
+  linhas.forEach(l => {
+    // Cabeçalho da máquina: "1 - IE033   (Seven America)"
+    const cab = l.match(/^\d+\s*-\s*([A-Za-z]{2}\d{3})\s*\(([^)]+)\)/);
+    if (cab) {
+      if (atual) maquinas.push(atual);
+
+      const selo = cab[1].toUpperCase();
+      const jogo = cab[2].trim().toUpperCase();
+
+      atual = {
+        selo,
+        jogo,
+        entrada: 0,
+        saida: 0,
+        sobra: 0
+      };
+      return;
+    }
+
+    if (!atual) return;
+
+    // Linha de Entrada: "(E) xxxx - yyyy = R$ 1.503,00"
+    if (l.toUpperCase().startsWith("(E)")) {
+      const m = l.match(/R\$\s*([\d\.,]+)/i);
+      if (m) atual.entrada = parseMoedaBR(m[1]);
+      return;
+    }
+
+    // Linha de Saída: "(S) xxxx - yyyy = R$ 1.318,85"
+    if (l.toUpperCase().startsWith("(S)")) {
+      const m = l.match(/R\$\s*([\d\.,]+)/i);
+      if (m) atual.saida = parseMoedaBR(m[1]);
+      return;
+    }
+
+    // Linha de Total / Sobra: "(Total) 1503.00 - 1318.85 = R$ 184,15"
+    if (l.toLowerCase().startsWith("(total")) {
+      const m = l.match(/R\$\s*([\d\.,]+)/i);
+      if (m) atual.sobra = parseMoedaBR(m[1]);
+      return;
+    }
+  });
+
+  if (atual) maquinas.push(atual);
+
+  // ===== Totais do ponto =====
+  let totalEntrada = 0;
+  let totalSaida = 0;
+  let totalSobra = 0;
+
+  maquinas.forEach(m => {
+    totalEntrada += m.entrada;
+    totalSaida += m.saida;
+    totalSobra += m.sobra;
+  });
+
   return {
-    pontoChave: "exemplo",
-    pontoExibicao: "Exemplo",
-    periodo: { inicio: "2025-11-24", fim: "2025-11-30" },
-    dataFechamento: "2025-11-30",
-    maquinas: [
-      { selo: "IE188", entrada: 1000, saida: 500, sobra: 500 }
-    ],
-    totais: { entrada: 1000, saida: 500, sobra: 500 }
+    pontoChave,
+    pontoExibicao,
+    periodo, // { inicio: 'YYYY-MM-DD', fim: 'YYYY-MM-DD' }
+    dataFechamento: dataFechamentoISO,
+    maquinas,
+    totais: {
+      entrada: totalEntrada,
+      saida: totalSaida,
+      sobra: totalSobra
+    }
   };
 }
 
 /* ===== 3. MOSTRAR PRÉ-VISUALIZAÇÃO ===== */
 function mostrarExtracaoNaTela(data) {
+  if (!data) return;
+
   document.getElementById("previewExtracao").style.display = "block";
+
+  const htmlMaquinas = data.maquinas
+    .map(
+      m => `
+    <div style="margin-bottom:10px;">
+      <b>${m.selo}</b> — ${m.jogo}<br>
+      Entrada: ${formatarMoedaBR(m.entrada)} |
+      Saída: ${formatarMoedaBR(m.saida)} |
+      Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
+    </div>
+  `
+    )
+    .join("");
+
+  const periodoTexto = `${formatarDataBR(
+    data.periodo.inicio
+  )} até ${formatarDataBR(data.periodo.fim)}`;
+
   document.getElementById("dadosExtraidos").innerHTML = `
     <strong>Ponto:</strong> ${data.pontoExibicao}<br>
-    <strong>Período:</strong> ${data.periodo.inicio} até ${data.periodo.fim}<br><br>
+    <strong>Data do fechamento:</strong> ${formatarDataBR(
+      data.dataFechamento
+    )}<br>
+    <strong>Período da semana:</strong> ${periodoTexto}<br><br>
+
+    <strong>Totais do ponto:</strong><br>
+    Entrada: ${formatarMoedaBR(data.totais.entrada)}<br>
+    Saída: ${formatarMoedaBR(data.totais.saida)}<br>
+    Sobra: <b>${formatarMoedaBR(data.totais.sobra)}</b><br><br>
+
     <strong>Máquinas:</strong><br>
-    ${data.maquinas.map(m => `
-      <div>
-        <b>${m.selo}</b> – Entrada: R$ ${m.entrada.toFixed(2)} |
-        Saída: R$ ${m.saida.toFixed(2)} |
-        Sobra: R$ ${m.sobra.toFixed(2)}
-      </div>
-    `).join("")}
+    ${htmlMaquinas}
   `;
 }
 
@@ -122,6 +319,7 @@ function carregarPontosNosSelects() {
   const selects = ["selectPontoSemanal", "selectPontoConsolidado"];
   selects.forEach(id => {
     const select = document.getElementById(id);
+    if (!select) return;
     select.innerHTML = `<option value="">Selecione</option>`;
     pontos.forEach(p => {
       const item = registros.find(r => r.pontoChave === p);
@@ -145,7 +343,9 @@ function carregarSemanas() {
 
   selectSemana.innerHTML = "";
   registros.forEach(r => {
-    const periodo = `${r.periodo.inicio} até ${r.periodo.fim}`;
+    const periodo = `${formatarDataBR(r.periodo.inicio)} até ${formatarDataBR(
+      r.periodo.fim
+    )}`;
     selectSemana.innerHTML += `<option value="${r.id}">${periodo}</option>`;
   });
 }
@@ -195,7 +395,12 @@ function consolidarRegistros(lista) {
 
     r.maquinas.forEach(m => {
       if (!maquinas[m.selo]) {
-        maquinas[m.selo] = { selo: m.selo, entrada: 0, saida: 0, sobra: 0 };
+        maquinas[m.selo] = {
+          selo: m.selo,
+          entrada: 0,
+          saida: 0,
+          sobra: 0
+        };
       }
       maquinas[m.selo].entrada += m.entrada;
       maquinas[m.selo].saida += m.saida;
@@ -216,19 +421,23 @@ function montarHtmlRelatorio(r, titulo) {
     <h2>${r.pontoExibicao} — ${titulo}</h2>
 
     <h3>Totais do Ponto</h3>
-    Entrada: R$ ${r.totais.entrada.toFixed(2)}<br>
-    Saída: R$ ${r.totais.saida.toFixed(2)}<br>
-    Sobra: <b>R$ ${r.totais.sobra.toFixed(2)}</b><br><br>
+    Entrada: ${formatarMoedaBR(r.totais.entrada)}<br>
+    Saída: ${formatarMoedaBR(r.totais.saida)}<br>
+    Sobra: <b>${formatarMoedaBR(r.totais.sobra)}</b><br><br>
 
     <h3>Máquinas</h3>
-    ${r.maquinas.map(m => `
+    ${r.maquinas
+      .map(
+        m => `
       <div style="margin-bottom:8px;">
-        <b>${m.selo}</b> —
-        Entrada: R$ ${m.entrada.toFixed(2)} |
-        Saída: R$ ${m.saida.toFixed(2)} |
-        Sobra: R$ ${m.sobra.toFixed(2)}
+        <b>${m.selo}</b> — 
+        Entrada: ${formatarMoedaBR(m.entrada)} |
+        Saída: ${formatarMoedaBR(m.saida)} |
+        Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
       </div>
-    `).join("")}
+    `
+      )
+      .join("")}
   `;
 }
 
