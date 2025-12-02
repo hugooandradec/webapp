@@ -15,12 +15,21 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnGerarSemanal").onclick = gerarRelatorioSemanal;
   document.getElementById("btnGerarConsolidado").onclick =
     gerarRelatorioConsolidado;
-  document.getElementById("btnDesfazer").onclick = desfazerUltimo;
+
+  const btnRemover = document.getElementById("btnRemoverFechamento");
+  if (btnRemover) btnRemover.onclick = removerFechamentoSelecionado;
 
   document.getElementById("fecharModal").onclick = fecharModal;
 
   const selPontoSem = document.getElementById("selectPontoSemanal");
   if (selPontoSem) selPontoSem.addEventListener("change", carregarSemanas);
+
+  const modalRel = document.getElementById("modalRelatorio");
+  if (modalRel) {
+    modalRel.addEventListener("click", (e) => {
+      if (e.target.id === "modalRelatorio") fecharModal();
+    });
+  }
 
   // restaura extração em andamento (caso a página tenha sido recarregada)
   restaurarExtracaoAtual();
@@ -46,6 +55,10 @@ function formatarMoedaBR(valor) {
   });
 }
 
+function formatarPercent(valor) {
+  return (Number(valor) || 0).toFixed(2) + "%";
+}
+
 function gerarSlugPonto(nome) {
   return (nome || "")
     .normalize("NFD")
@@ -66,6 +79,12 @@ function formatarDataBR(iso) {
   if (!iso) return "";
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
+}
+
+function formatarDataBRCurta(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y.slice(2)}`;
 }
 
 // calcula segunda e domingo da semana do fechamento (segunda–domingo)
@@ -164,6 +183,47 @@ function restaurarExtracaoAtual() {
   }
 }
 
+/* ===== DUPLICIDADE DE FECHAMENTO ===== */
+
+function gerarAssinaturaMaquinas(listaMaquinas) {
+  const arr = (listaMaquinas || []).map((m) => ({
+    selo: (m.selo || "").toUpperCase(),
+    entrada: Number(m.entrada) || 0,
+    saida: Number(m.saida) || 0
+  }));
+
+  arr.sort((a, b) => {
+    if (a.selo < b.selo) return -1;
+    if (a.selo > b.selo) return 1;
+    if (a.entrada !== b.entrada) return a.entrada - b.entrada;
+    return a.saida - b.saida;
+  });
+
+  return arr.map((m) => `${m.selo}|${m.entrada}|${m.saida}`).join(";");
+}
+
+function ehFechamentoDuplicado(novo, registros) {
+  const assinaturaNovo = gerarAssinaturaMaquinas(novo.maquinas);
+
+  return registros.some((r) => {
+    if (!r || !r.maquinas) return false;
+    if (r.pontoChave !== novo.pontoChave) return false;
+
+    // mesma semana (segunda–domingo)
+    if (r.periodo && novo.periodo) {
+      if (
+        r.periodo.inicio !== novo.periodo.inicio ||
+        r.periodo.fim !== novo.periodo.fim
+      ) {
+        return false;
+      }
+    }
+
+    const assinaturaExistente = gerarAssinaturaMaquinas(r.maquinas);
+    return assinaturaExistente === assinaturaNovo;
+  });
+}
+
 /* ===== 1. PROCESSAR PRINT ===== */
 let extracaoAtual = null;
 
@@ -232,7 +292,7 @@ async function extrairTextoOCR(file) {
     const { data } = await Tesseract.recognize(file, "por+eng", {
       logger: (m) => console.log("[OCR Relatório de Pontos]", m)
     });
-    texto = (data && data.text) ? data.text : "";
+    texto = data && data.text ? data.text : "";
   } catch (err) {
     console.error("Erro no OCR (Relatório de Pontos):", err);
     alert("Não foi possível ler a imagem.");
@@ -311,7 +371,7 @@ function extrairRelatorioDoOcr(texto) {
       let jogoBruto = "";
 
       if (cabComNumero) {
-        numero = cabComNumero[1];    // "1", "2", ...
+        numero = cabComNumero[1]; // "1", "2", ...
         seloBruto = cabComNumero[2]; // "1E033", "1B158"...
         jogoBruto = cabComNumero[3];
       } else {
@@ -392,9 +452,7 @@ function mostrarExtracaoNaTela(data) {
   const htmlMaquinas = data.maquinas
     .map((m) => {
       const prefixo =
-        m.numero != null && m.numero !== ""
-          ? `${m.numero} - `
-          : "";
+        m.numero != null && m.numero !== "" ? `${m.numero} - ` : "";
       return `
         <div style="margin-bottom:10px;">
           <b>${prefixo}${m.selo}</b> — ${m.jogo}<br>
@@ -432,6 +490,15 @@ function aprovarFechamento() {
   if (!extracaoAtual) return;
 
   const registros = getRegistros();
+
+  if (ehFechamentoDuplicado(extracaoAtual, registros)) {
+    alert(
+      "Este fechamento já parece ter sido importado para esta semana.\n" +
+        "Não será salvo novamente."
+    );
+    return;
+  }
+
   registros.push({
     ...extracaoAtual,
     id: Date.now(),
@@ -500,7 +567,10 @@ function carregarSemanas() {
 function gerarRelatorioSemanal() {
   const id = Number(document.getElementById("selectSemana").value);
   const registro = getRegistros().find((r) => r.id === id);
-  if (!registro) return;
+  if (!registro) {
+    alert("Selecione uma semana para gerar o relatório.");
+    return;
+  }
 
   const html = montarHtmlRelatorio(registro, "Relatório Semanal");
 
@@ -601,59 +671,212 @@ function consolidarRegistros(lista) {
 
 /* ===== 8. HTML DO MODAL ===== */
 function montarHtmlRelatorio(r, titulo) {
+  if (!r) return "";
+
+  const periodoHtml =
+    r.periodo && r.periodo.inicio && r.periodo.fim
+      ? `<div class="rel-periodo">${formatarDataBRCurta(
+          r.periodo.inicio
+        )} - ${formatarDataBRCurta(r.periodo.fim)}</div>`
+      : "";
+
+  const htmlMaquinas = (r.maquinas || [])
+    .map((m) => {
+      const prefixo =
+        m.numero != null && m.numero !== "" ? `${m.numero} - ` : "";
+      const jogo = m.jogo ? ` - ${m.jogo}` : "";
+      return `
+        <div class="linha-maquina">
+          <b>${prefixo}${m.selo}${jogo}</b><br>
+          Entrada: <span class="valor-entrada">${formatarMoedaBR(
+            m.entrada
+          )}</span> |
+          Saída: <span class="valor-saida">${formatarMoedaBR(
+            m.saida
+          )}</span> |
+          Sobra: <span class="valor-sobra">${formatarMoedaBR(
+            m.sobra
+          )}</span>
+        </div>
+      `;
+    })
+    .join("");
+
+  let resumoHtml = "";
+
+  // Indicadores só fazem sentido no relatório semanal (tem período)
+  if (r.periodo && r.maquinas && r.maquinas.length) {
+    const totalEntrada = r.totais?.entrada || 0;
+    const totalSaida = r.totais?.saida || 0;
+    const totalSobra = r.totais?.sobra || 0;
+
+    const maquinas = r.maquinas;
+
+    const maisEntrada = maquinas.reduce(
+      (acc, m) =>
+        acc == null || (m.entrada || 0) > (acc.entrada || 0) ? m : acc,
+      null
+    );
+    const menosEntrada = maquinas.reduce(
+      (acc, m) =>
+        acc == null || (m.entrada || 0) < (acc.entrada || 0) ? m : acc,
+      null
+    );
+    const maisSaida = maquinas.reduce(
+      (acc, m) => (acc == null || (m.saida || 0) > (acc.saida || 0) ? m : acc),
+      null
+    );
+    const menosSaida = maquinas.reduce(
+      (acc, m) => (acc == null || (m.saida || 0) < (acc.saida || 0) ? m : acc),
+      null
+    );
+    const maisSobra = maquinas.reduce(
+      (acc, m) => (acc == null || (m.sobra || 0) > (acc.sobra || 0) ? m : acc),
+      null
+    );
+    const menosSobra = maquinas.reduce(
+      (acc, m) => (acc == null || (m.sobra || 0) < (acc.sobra || 0) ? m : acc),
+      null
+    );
+
+    const pct = (val, total) =>
+      total ? ((Number(val) || 0) / total) * 100 : 0;
+
+    const linhaStat = (rotulo, m, campo, total, tipo) => {
+      if (!m) return "";
+      const valor = m[campo] || 0;
+      const porcent = pct(valor, total);
+      const jogoLabel = m.jogo ? ` - ${m.jogo}` : "";
+      const classe =
+        tipo === "entrada"
+          ? "valor-entrada"
+          : tipo === "saida"
+          ? "valor-saida"
+          : "valor-sobra";
+      const labelCampo =
+        tipo === "entrada"
+          ? "Entrada"
+          : tipo === "saida"
+          ? "Saída"
+          : "Sobra";
+      return `
+        <div class="linha-indicador">
+          <strong>${rotulo}:</strong>
+          <span> ${m.selo}${jogoLabel} — ${labelCampo}: <span class="${classe}">${formatarMoedaBR(
+        valor
+      )}</span> (${formatarPercent(porcent)} do total)</span>
+        </div>
+      `;
+    };
+
+    resumoHtml = `
+      <hr class="rel-sep">
+      <h3 class="rel-subtitulo">Indicadores da Semana</h3>
+      ${linhaStat(
+        "Máquina que mais jogou",
+        maisEntrada,
+        "entrada",
+        totalEntrada,
+        "entrada"
+      )}
+      ${linhaStat(
+        "Máquina que menos jogou",
+        menosEntrada,
+        "entrada",
+        totalEntrada,
+        "entrada"
+      )}
+      ${linhaStat(
+        "Máquina que mais pagou",
+        maisSaida,
+        "saida",
+        totalSaida,
+        "saida"
+      )}
+      ${linhaStat(
+        "Máquina que menos pagou",
+        menosSaida,
+        "saida",
+        totalSaida,
+        "saida"
+      )}
+      ${linhaStat(
+        "Máquina que mais sobrou",
+        maisSobra,
+        "sobra",
+        totalSobra,
+        "sobra"
+      )}
+      ${linhaStat(
+        "Máquina que menos sobrou",
+        menosSobra,
+        "sobra",
+        totalSobra,
+        "sobra"
+      )}
+    `;
+  }
+
   return `
-    <h2>${r.pontoExibicao} — ${titulo}</h2>
+    <h2 class="rel-titulo">${r.pontoExibicao} — ${titulo}</h2>
+    ${periodoHtml}
 
-    <h3>Totais do Ponto</h3>
-    Entrada: ${formatarMoedaBR(r.totais.entrada)}<br>
-    Saída: ${formatarMoedaBR(r.totais.saida)}<br>
-    Sobra: <b>${formatarMoedaBR(r.totais.sobra)}</b><br><br>
+    <div class="rel-totais">
+      <strong>Totais do Ponto</strong><br>
+      Entrada: <span class="valor-entrada">${formatarMoedaBR(
+        r.totais.entrada
+      )}</span><br>
+      Saída: <span class="valor-saida">${formatarMoedaBR(
+        r.totais.saida
+      )}</span><br>
+      Sobra: <span class="valor-sobra">${formatarMoedaBR(
+        r.totais.sobra
+      )}</span>
+    </div>
 
-    <h3>Máquinas</h3>
-    ${r.maquinas
-      .map((m) => {
-        const prefixo =
-          m.numero != null && m.numero !== ""
-            ? `${m.numero} - `
-            : "";
-        return `
-          <div style="margin-bottom:8px;">
-            <b>${prefixo}${m.selo}</b> — 
-            Entrada: ${formatarMoedaBR(m.entrada)} |
-            Saída: ${formatarMoedaBR(m.saida)} |
-            Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
-          </div>
-        `;
-      })
-      .join("")}
+    <div class="rel-maquinas">
+      <strong>Máquinas</strong><br>
+      ${htmlMaquinas}
+    </div>
+
+    ${resumoHtml}
   `;
 }
 
-/* ===== 9. DESFAZER ===== */
-function desfazerUltimo() {
-  const ponto = document.getElementById("selectPontoConsolidado").value;
-  if (!ponto) return;
+/* ===== 9. REMOVER FECHAMENTO SELECIONADO ===== */
+function removerFechamentoSelecionado() {
+  const id = Number(document.getElementById("selectSemana").value);
+  if (!id) {
+    alert("Selecione um fechamento (semana) para remover.");
+    return;
+  }
 
-  let registros = getRegistros().filter((r) => r.pontoChave === ponto);
-  if (registros.length === 0) return;
+  const registros = getRegistros();
+  const idx = registros.findIndex((r) => r.id === id);
+  if (idx === -1) {
+    alert("Fechamento não encontrado.");
+    return;
+  }
 
-  registros.sort((a, b) => new Date(b.periodo.fim) - new Date(a.periodo.fim));
+  const ok = confirm("Tem certeza que deseja remover este fechamento?");
+  if (!ok) return;
 
-  const ultimo = registros[0];
+  registros.splice(idx, 1);
+  salvarRegistros(registros);
+  alert("Fechamento removido.");
 
-  const todos = getRegistros().filter((r) => r.id !== ultimo.id);
-  salvarRegistros(todos);
-
-  alert("Último fechamento removido.");
   carregarPontosNosSelects();
 }
 
 /* ===== 10. MODAL ===== */
 function abrirModal(html) {
-  document.getElementById("modalConteudo").innerHTML = html;
-  document.getElementById("modalRelatorio").style.display = "flex";
+  const conteudo = document.getElementById("modalConteudo");
+  if (conteudo) conteudo.innerHTML = html;
+  const modal = document.getElementById("modalRelatorio");
+  if (modal) modal.classList.add("aberta");
 }
 
 function fecharModal() {
-  document.getElementById("modalRelatorio").style.display = "none";
+  const modal = document.getElementById("modalRelatorio");
+  if (modal) modal.classList.remove("aberta");
 }
