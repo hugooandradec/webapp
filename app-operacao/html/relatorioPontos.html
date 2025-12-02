@@ -11,17 +11,17 @@
   <link rel="icon" href="../../common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-  <!-- OCR (Tesseract.js) -->
+  <!-- OCR -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
 
   <!-- Toast -->
   <script defer src="../../common/js/toast.js"></script>
 
-  <!-- JS global de navegação -->
+  <!-- Navegação -->
   <script type="module" src="../../common/js/navegacao.js"></script>
 
-  <!-- JS da página -->
-  <script type="module" src="../js/relatorioPontos.js?v=2"></script>
+  <!-- Script da página -->
+  <script type="module" src="../js/relatorioPontos.js?v=3"></script>
 
   <style>
     :root {
@@ -36,13 +36,11 @@
       box-sizing: border-box;
     }
 
-    html,
     body {
       margin: 0;
       padding: 0;
       background: #f8f8f8;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      overflow-x: hidden;
     }
 
     main {
@@ -51,16 +49,12 @@
       padding: 16px;
     }
 
-    h1 {
-      display: none;
-    }
-
     h2 {
-      color: var(--roxo);
       text-align: center;
+      color: var(--roxo);
       margin-bottom: 16px;
-      font-size: 1.5rem;
       font-weight: 900;
+      font-size: 1.5rem;
     }
 
     .secao {
@@ -73,33 +67,31 @@
 
     .secao h3 {
       margin: 0 0 10px;
-      font-size: 1.2rem;
       color: var(--roxo);
       font-weight: 800;
+      font-size: 1.2rem;
     }
 
     label {
       font-weight: 700;
+      margin-top: 8px;
       display: block;
-      margin-top: 6px;
     }
 
-    input[type="file"],
-    input[type="number"],
+    input,
     select,
     textarea {
       width: 100%;
-      margin-top: 4px;
       padding: 6px 4px;
+      margin-top: 4px;
       border: none;
       border-bottom: 2px solid #ccc;
       background: transparent;
-      font-size: 15px;
       outline: none;
+      font-size: 15px;
     }
 
-    input[type="file"]:focus,
-    input[type="number"]:focus,
+    input:focus,
     select:focus,
     textarea:focus {
       border-bottom-color: var(--roxo);
@@ -108,13 +100,13 @@
     .btn {
       width: 100%;
       padding: 12px;
-      border: none;
       border-radius: 10px;
-      margin-top: 14px;
+      border: none;
       font-size: 15px;
       font-weight: 800;
+      margin-top: 14px;
       cursor: pointer;
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
@@ -130,7 +122,7 @@
       color: #333;
     }
 
-    /* Modal — mesmo padrão do Retenção */
+    /* === MODAL — padrão igual Retenção === */
     #modalRelatorio {
       position: fixed;
       inset: 0;
@@ -151,83 +143,86 @@
       border-radius: 8px;
       width: min(96vw, 720px);
       max-height: 88dvh;
-      overflow: auto;
-      position: relative;
+      overflow-y: auto;
       padding: 16px;
       box-shadow: 0 16px 40px rgba(0, 0, 0, .25);
-      -webkit-overflow-scrolling: touch;
     }
 
     #modalRelatorio header {
       display: flex;
       justify-content: flex-end;
-      align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
 
     #fecharModal {
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: none;
+      padding: 6px 14px;
       background: var(--cinza-btn);
-      color: #fff;
+      border: none;
+      border-radius: 8px;
       font-weight: 700;
+      color: #fff;
       cursor: pointer;
-      font-size: 0.9rem;
     }
+
+    /* ========== RELATÓRIO COMPACTO ========== */
 
     #modalConteudo {
       font-family: ui-monospace, Menlo, Consolas, monospace;
-      font-size: 0.9rem;
-      line-height: 1.35;
+      font-size: 0.92rem;
+      line-height: 1.25;
       white-space: pre-wrap;
+      padding: 6px 10px;
     }
 
-    /* Estilo interno do relatório */
+    #modalConteudo br+br {
+      display: none; /* remove espaçamentos duplicados */
+    }
+
     .rel-titulo {
-      margin: 0 0 4px;
+      margin: 0;
+      padding: 0;
       text-align: center;
-      color: var(--roxo);
-      font-size: 1.1rem;
       font-weight: 900;
+      font-size: 1rem;
+      color: var(--roxo);
     }
 
     .rel-periodo {
       text-align: center;
-      font-size: 0.9rem;
+      font-size: .85rem;
+      margin-bottom: 10px;
       color: #555;
-      margin-bottom: 12px;
     }
 
     .rel-totais {
-      margin-bottom: 16px;
-      font-size: 0.95rem;
+      margin: 6px 0;
+      font-size: .9rem;
     }
 
     .rel-maquinas {
-      margin-top: 8px;
-      font-size: 0.95rem;
+      margin: 8px 0;
+      font-size: .9rem;
     }
 
     .linha-maquina {
-      margin-bottom: 6px;
+      margin: 2px 0;
     }
 
     .rel-sep {
       border: none;
       border-top: 1px solid #ddd;
-      margin: 12px 0;
+      margin: 10px 0;
     }
 
     .rel-subtitulo {
-      margin: 0 0 6px;
-      font-size: 1rem;
-      color: #333;
+      margin: 4px 0;
+      font-size: .95rem;
+      font-weight: bold;
     }
 
     .linha-indicador {
-      font-size: 0.9rem;
-      margin-bottom: 4px;
+      margin: 2px 0;
+      font-size: .88rem;
     }
 
     .valor-entrada {
@@ -253,30 +248,24 @@
 
       #modalRelatorio .cx {
         width: 100vw;
-        height: 100svh;
-        max-height: 100svh;
+        height: 100vh;
         border-radius: 0;
         padding: 12px;
         box-shadow: none;
-      }
-
-      main {
-        padding: 12px;
       }
     }
   </style>
 </head>
 
 <body>
-
   <main>
 
-    <h1>Relatório de Pontos</h1>
     <h2>Relatório de Pontos</h2>
 
-    <!-- SEÇÃO: Importar Print -->
+    <!-- Importação -->
     <div class="secao">
       <h3>Importar Print</h3>
+
       <input type="file" id="inputPrint" accept="image/*" />
       <button class="btn roxo" id="btnProcessarPrint">Processar Print</button>
 
@@ -289,7 +278,7 @@
       </div>
     </div>
 
-    <!-- SEÇÃO: Relatório Semanal -->
+    <!-- Relatório Semanal -->
     <div class="secao">
       <h3>Relatórios Semanais</h3>
 
@@ -307,7 +296,7 @@
       <button class="btn cinza" id="btnRemoverFechamento">Remover fechamento</button>
     </div>
 
-    <!-- SEÇÃO: Consolidado -->
+    <!-- Consolidado -->
     <div class="secao">
       <h3>Relatório Consolidado</h3>
 
@@ -318,7 +307,6 @@
 
       <label for="inputQtdSemanas">Quantas semanas?</label>
       <input id="inputQtdSemanas" type="number" min="1" step="1" value="4" />
-      <small>(digite a quantidade de semanas que deseja consolidar)</small>
 
       <button class="btn roxo" id="btnGerarConsolidado">Gerar Relatório</button>
     </div>
@@ -326,7 +314,7 @@
   </main>
 
   <!-- Modal -->
-  <div id="modalRelatorio" class="modal">
+  <div id="modalRelatorio">
     <div class="cx">
       <header>
         <button id="fecharModal">Fechar</button>
