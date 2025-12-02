@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Relatório de Pontos</title>
+
+<!-- JS Global -->
+<script src="../../common/js/navegacao.js?v=1"></script>
+<script src="../js/relatorioPontos.js?v=1" defer></script>
+
+<style>
+  body {
+    margin: 0;
+    background: #f4f4f4;
+    font-family: Arial, sans-serif;
+  }
+
+  /* Cabeçalho padrão */
+  header {
+    background: #6a1b9a;
+    color: white;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .usuario-area {
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Container geral */
+  .container {
+    padding: 15px;
+    max-width: 480px;
+    margin: auto;
+  }
+
+  .secao {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 0 8px #00000022;
+  }
+
+  .secao h2 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #6a1b9a;
+  }
+
+  input[type="file"],
+  textarea,
+  select {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+  }
+
+  textarea {
+    height: 120px;
+    resize: vertical;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .btn-roxo {
+    background: #6a1b9a;
+    color: white;
+  }
+
+  .btn-cinza {
+    background: #dcdcdc;
+  }
+
+  /* Modal tela cheia */
+  #modalRelatorio {
+    position: fixed;
+    inset: 0;
+    background: white;
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+  }
+
+  #modalRelatorio header {
+    background: #6a1b9a;
+    color: white;
+    padding: 12px;
+    font-size: 20px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  #modalConteudo {
+    padding: 15px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+  }
+
+  #fecharModal {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+  }
+</style>
+</head>
+
+<body>
+<header id="headerGlobal">
+  <!-- Cabeçalho será preenchido pelo inicializarPagina() -->
+</header>
+
+<div class="container">
+
+  <!-- IMPORTAR PRINT -->
+  <div class="secao">
+    <h2>Importar Print</h2>
+    <input type="file" id="inputPrint" accept="image/*" />
+    <button class="btn btn-roxo" id="btnProcessarPrint">Processar Print</button>
+
+    <div id="previewExtracao" style="display:none; margin-top:15px;">
+      <h3>Pré-visualização</h3>
+      <div id="dadosExtraidos"></div>
+
+      <button class="btn btn-roxo" id="btnAprovar">Aprovar e Salvar</button>
+      <button class="btn btn-cinza" id="btnDescartar">Descartar</button>
+    </div>
+  </div>
+
+  <!-- CONSULTAR FECHAMENTOS -->
+  <div class="secao">
+    <h2>Relatórios Semanais</h2>
+
+    <label>Ponto:</label>
+    <select id="selectPontoSemanal"></select>
+
+    <label>Semana:</label>
+    <select id="selectSemana"></select>
+
+    <button class="btn btn-roxo" id="btnGerarSemanal">Gerar Relatório Semanal</button>
+  </div>
+
+  <!-- CONSOLIDADO 2-4-8 SEMANAS -->
+  <div class="secao">
+    <h2>Relatório Consolidado</h2>
+
+    <label>Ponto:</label>
+    <select id="selectPontoConsolidado"></select>
+
+    <label>Quantas semanas?</label>
+    <select id="selectQtdSemanas">
+      <option value="2">2 semanas</option>
+      <option value="4">4 semanas</option>
+      <option value="8">8 semanas</option>
+    </select>
+
+    <button class="btn btn-roxo" id="btnGerarConsolidado">Gerar Relatório</button>
+
+    <button class="btn btn-cinza" id="btnDesfazer">
+      Desfazer último fechamento aprovado
+    </button>
+  </div>
+
+</div>
+
+<!-- MODAL TELA CHEIA -->
+<div id="modalRelatorio">
+  <header>
+    <span>Relatório</span>
+    <button id="fecharModal">✕</button>
+  </header>
+  <div id="modalConteudo"></div>
+</div>
+
+</body>
+</html>
