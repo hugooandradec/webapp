@@ -1,527 +1,205 @@
-// js/relatorioPontos.js
-import { inicializarPagina } from "../../common/js/navegacao.js";
+// ===========================================
+//  RELATÓRIO DE PONTOS - VERSÃO COMPLETA
+//  Feito pela Cah, do jeitinho que você pediu ❤️
+// ===========================================
 
-/* ===== INIT ===== */
-document.addEventListener("DOMContentLoaded", () => {
-  // mesma lógica das outras telas do app Operação
-  inicializarPagina("Relatório de Pontos", "operacao");
+// ====== FORMATADORES ======
 
-  carregarPontosNosSelects();
-
-  document.getElementById("btnProcessarPrint").onclick = processarPrint;
-  document.getElementById("btnAprovar").onclick = aprovarFechamento;
-  document.getElementById("btnDescartar").onclick = descartarExtracao;
-
-  document.getElementById("btnGerarSemanal").onclick = gerarRelatorioSemanal;
-  document.getElementById("btnGerarConsolidado").onclick =
-    gerarRelatorioConsolidado;
-  document.getElementById("btnDesfazer").onclick = desfazerUltimo;
-
-  document.getElementById("fecharModal").onclick = fecharModal;
-
-  const selPontoSem = document.getElementById("selectPontoSemanal");
-  if (selPontoSem) selPontoSem.addEventListener("change", carregarSemanas);
-});
-
-/* ===== HELPERS GERAIS ===== */
-
-function parseMoedaBR(str) {
-  if (!str) return 0;
-  const limpo = str
-    .replace(/[^\d,.-]/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-  const n = parseFloat(limpo);
-  return isNaN(n) ? 0 : n;
+function limparTexto(txt) {
+  return (txt || "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function formatarMoedaBR(valor) {
-  return (Number(valor) || 0).toLocaleString("pt-BR", {
+function paraMaiusculo(txt) {
+  return limparTexto(txt).toUpperCase();
+}
+
+function formatarMoeda(valor) {
+  return Number(valor || 0).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2
   });
 }
 
-function gerarSlugPonto(nome) {
-  return (nome || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-+|-+$)/g, "");
-}
+// ====== PERÍODO DA SEMANA ======
 
-function formatarDataISO(d) {
-  const ano = d.getFullYear();
-  const mes = String(d.getMonth() + 1).padStart(2, "0");
-  const dia = String(d.getDate()).padStart(2, "0");
-  return `${ano}-${mes}-${dia}`;
-}
+function calcularPeriodoSemana(dataStr) {
+  // data vem no formato DD/MM/YYYY
+  const [d, m, y] = dataStr.split("/").map(n => parseInt(n));
+  const data = new Date(y, m - 1, d);
 
-function formatarDataBR(iso) {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
+  const diaSemana = data.getDay(); // 0=Dom, 1=Seg, ..., 6=Sab
 
-// calcula segunda e domingo da semana do fechamento (segunda–domingo)
-function calcularPeriodoSemana(dataFechamento) {
-  const diaSemana = dataFechamento.getDay(); // 0 = dom, 1 = seg...
-  const diffSegunda = (diaSemana + 6) % 7; // distância até segunda
-  const dtInicio = new Date(dataFechamento);
-  dtInicio.setDate(dtInicio.getDate() - diffSegunda);
-  const dtFim = new Date(dtInicio);
-  dtFim.setDate(dtInicio.getDate() + 6);
+  // Ajusta para começar na segunda
+  const segunda = new Date(data);
+  segunda.setDate(data.getDate() - ((diaSemana + 6) % 7));
+
+  const domingo = new Date(segunda);
+  domingo.setDate(segunda.getDate() + 6);
+
+  const fmt = dt =>
+    `${String(dt.getDate()).padStart(2, "0")}/${String(
+      dt.getMonth() + 1
+    ).padStart(2, "0")}/${dt.getFullYear()}`;
+
   return {
-    inicio: formatarDataISO(dtInicio),
-    fim: formatarDataISO(dtFim)
+    inicio: fmt(segunda),
+    fim: fmt(domingo)
   };
 }
 
-/* Helper para limpar toasts, igual outras telas */
-function limparToast() {
-  try {
-    if (window.toast?.dismissAll) window.toast.dismissAll();
-    else if (window.toast?.clearAll) window.toast.clearAll();
-  } catch (e) {}
-  try {
-    document
-      .querySelectorAll(".toast, .toast-container, [id*='toast']")
-      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
-  } catch (e) {}
+// ====== NORMALIZA SEL0 (igual retenção) ======
+//
+// Formato final: LLNNN (duas letras + três números)
+// Remove prefixos tipo "1-" e corrige tudo pra maiúsculo
+//
+function normalizarSelo(seloBruto) {
+  if (!seloBruto) return "";
+
+  let txt = seloBruto.toUpperCase().trim();
+
+  // remove prefixos tipo "1-" ou "2-"
+  txt = txt.replace(/^\d+\-/, "");
+
+  // extrai duas letras + três números
+  const padrao = /([A-Z]{2})(\d{3})/;
+  const achou = txt.match(padrao);
+
+  if (achou) return `${achou[1]}${achou[2]}`;
+
+  return txt; // fallback
 }
 
-/* ===== STORAGE ===== */
-const KEY = "relatorioPontos_registros";
+// ====== EXTRAI VALOR APÓS '= R$' ======
+function extrairValorRS(linha) {
+  const achou = linha.match(/=\s*R\$\s*([\d\.,]+)/i);
+  if (!achou) return 0;
 
-function getRegistros() {
-  return JSON.parse(localStorage.getItem(KEY) || "[]");
+  return parseFloat(
+    achou[1]
+      .replace(/\./g, "")
+      .replace(",", ".")
+  ) || 0;
 }
 
-function salvarRegistros(lista) {
-  localStorage.setItem(KEY, JSON.stringify(lista));
-}
+// ====== PROCESSA MÁQUINA ======
+function processarBlocoMaquina(bloco) {
+  // bloco contém: selo + linhas E/S/Total
+  const linhas = bloco.split("\n").map(l => l.trim()).filter(Boolean);
 
-/* ===== 1. PROCESSAR PRINT ===== */
-let extracaoAtual = null;
+  const primeira = linhas[0];
+  const seloBruto = primeira.split(" ")[0];
+  const jogoBruto = primeira.replace(seloBruto, "").replace(/[()]/g, "").trim();
 
-async function processarPrint() {
-  const file = document.getElementById("inputPrint").files[0];
-  if (!file) {
-    alert("Escolha um print primeiro.");
-    return;
-  }
-
-  const texto = await extrairTextoOCR(file);
-
-  console.log("=== OCR RELATÓRIO DE PONTOS (BRUTO) ===");
-  console.log(texto);
-
-  // Se o OCR devolveu literalmente nada ou quase nada
-  if (!texto || texto.trim().length < 10) {
-    alert("O OCR não conseguiu ler o print (texto vazio ou muito curto).");
-    const preview = document.getElementById("previewExtracao");
-    const dados = document.getElementById("dadosExtraidos");
-    if (preview && dados) {
-      preview.style.display = "block";
-      dados.innerText = "[OCR não retornou texto útil]\n\n" + (texto || "");
-    }
-    return;
-  }
-
-  extracaoAtual = extrairRelatorioDoOcr(texto);
-
-  // Se não achou nenhuma máquina, vamos mostrar o texto cru pra debug
-  if (!extracaoAtual || !extracaoAtual.maquinas?.length) {
-    alert(
-      "Não consegui identificar as máquinas automaticamente.\n" +
-      "Vou mostrar o texto cru do OCR na tela. Copia isso pra mim depois, por favor."
-    );
-
-    const preview = document.getElementById("previewExtracao");
-    const dados = document.getElementById("dadosExtraidos");
-    if (preview && dados) {
-      preview.style.display = "block";
-      dados.innerText = texto;
-    }
-    extracaoAtual = null;
-    return;
-  }
-
-  // Se deu certo, segue o fluxo normal
-  mostrarExtracaoNaTela(extracaoAtual);
-}
-
-
-// OCR LOCAL — igual Retenção / Pré-Fecho (Tesseract no navegador)
-async function extrairTextoOCR(file) {
-  if (!window.Tesseract) {
-    alert("Biblioteca de OCR (Tesseract.js) não carregada.");
-    return "";
-  }
-
-  try {
-    if (window.toast) toast.info("Lendo imagem, aguarde...");
-  } catch (e) {}
-
-  let texto = "";
-  try {
-    const { data } = await Tesseract.recognize(file, "por+eng", {
-      logger: (m) => console.log("[OCR Relatório de Pontos]", m)
-    });
-    texto = (data && data.text) ? data.text : "";
-  } catch (err) {
-    console.error("Erro no OCR (Relatório de Pontos):", err);
-    alert("Não foi possível ler a imagem.");
-    texto = "";
-  }
-
-  limparToast();
-  return texto;
-}
-
-/* ===== 2. EXTRAIR DADOS DO TEXTO ===== */
-function extrairRelatorioDoOcr(texto) {
-  texto = (texto || "").replace(/\r/g, "");
-  const linhas = texto
-    .split("\n")
-    .map(l => l.trim())
-    .filter(l => l.length > 0);
-
-  // ===== Cliente / Ponto =====
-  let pontoNome = "PONTO DESCONHECIDO";
-  const linhaCliente = linhas.find(l => l.toLowerCase().startsWith("cliente"));
-  if (linhaCliente) {
-    const partes = linhaCliente.split(":");
-    if (partes[1]) {
-      pontoNome = partes[1].trim();
-    }
-  }
-  const pontoExibicao = pontoNome.toUpperCase();
-  const pontoChave = gerarSlugPonto(pontoExibicao);
-
-  // ===== Data do fechamento =====
-  let dataFechamentoISO = null;
-  let dataFechamentoDate = new Date();
-  const linhaData = linhas.find(l => l.toLowerCase().startsWith("data"));
-  if (linhaData) {
-    const m = linhaData.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-    if (m) {
-      let [_, d, mo, y] = m;
-      let anoNum = parseInt(y, 10);
-      if (anoNum < 100) anoNum += 2000; // 25 -> 2025
-      const dt = new Date(anoNum, parseInt(mo, 10) - 1, parseInt(d, 10));
-      if (!isNaN(dt.getTime())) {
-        dataFechamentoDate = dt;
-        dataFechamentoISO = formatarDataISO(dt);
-      }
-    }
-  }
-  if (!dataFechamentoISO) {
-    dataFechamentoISO = formatarDataISO(dataFechamentoDate);
-  }
-
-  // ===== Período da semana (segunda a domingo) =====
-  const periodo = calcularPeriodoSemana(dataFechamentoDate);
-
-  // ===== Máquinas =====
-  const maquinas = [];
-  let atual = null;
+  let entrada = 0;
+  let saida = 0;
+  let sobra = 0;
 
   linhas.forEach(l => {
-    // Cabeçalho da máquina: "1 - IE033   (Seven America)"
-    const cab = l.match(/^\d+\s*-\s*([A-Za-z]{2}\d{3})\s*\(([^)]+)\)/);
-    if (cab) {
-      if (atual) maquinas.push(atual);
-
-      const selo = cab[1].toUpperCase();
-      const jogo = cab[2].trim().toUpperCase();
-
-      atual = {
-        selo,
-        jogo,
-        entrada: 0,
-        saida: 0,
-        sobra: 0
-      };
-      return;
-    }
-
-    if (!atual) return;
-
-    // Linha de Entrada: "(E) xxxx - yyyy = R$ 1.503,00"
-    if (l.toUpperCase().startsWith("(E)")) {
-      const m = l.match(/R\$\s*([\d\.,]+)/i);
-      if (m) atual.entrada = parseMoedaBR(m[1]);
-      return;
-    }
-
-    // Linha de Saída: "(S) xxxx - yyyy = R$ 1.318,85"
-    if (l.toUpperCase().startsWith("(S)")) {
-      const m = l.match(/R\$\s*([\d\.,]+)/i);
-      if (m) atual.saida = parseMoedaBR(m[1]);
-      return;
-    }
-
-    // Linha de Total / Sobra: "(Total) 1503.00 - 1318.85 = R$ 184,15"
-    if (l.toLowerCase().startsWith("(total")) {
-      const m = l.match(/R\$\s*([\d\.,]+)/i);
-      if (m) atual.sobra = parseMoedaBR(m[1]);
-      return;
-    }
-  });
-
-  if (atual) maquinas.push(atual);
-
-  // ===== Totais do ponto =====
-  let totalEntrada = 0;
-  let totalSaida = 0;
-  let totalSobra = 0;
-
-  maquinas.forEach(m => {
-    totalEntrada += m.entrada;
-    totalSaida += m.saida;
-    totalSobra += m.sobra;
+    if (l.startsWith("(E)")) entrada = extrairValorRS(l);
+    if (l.startsWith("(S)")) saida = extrairValorRS(l);
+    if (l.startsWith("(Total)")) sobra = extrairValorRS(l);
   });
 
   return {
-    pontoChave,
-    pontoExibicao,
-    periodo, // { inicio: 'YYYY-MM-DD', fim: 'YYYY-MM-DD' }
-    dataFechamento: dataFechamentoISO,
-    maquinas,
-    totais: {
-      entrada: totalEntrada,
-      saida: totalSaida,
-      sobra: totalSobra
-    }
+    selo: normalizarSelo(seloBruto),
+    jogo: paraMaiusculo(jogoBruto),
+    entrada,
+    saida,
+    sobra,
+    vidaUtil: entrada > 0 ? (saida / entrada) * 100 : 0
   };
 }
 
-/* ===== 3. MOSTRAR PRÉ-VISUALIZAÇÃO ===== */
-function mostrarExtracaoNaTela(data) {
-  if (!data) return;
+// ====== PROCESSADOR PRINCIPAL ======
+function gerarRelatorioDePontos(textoOCR) {
+  const linhas = textoOCR.split("\n").map(l => l.trim());
 
-  document.getElementById("previewExtracao").style.display = "block";
+  // ----- CAPTURA CLIENTE -----
+  const linhaCliente = linhas.find(l => l.toLowerCase().startsWith("cliente"));
+  const cliente = linhaCliente
+    ? paraMaiusculo(linhaCliente.split(":")[1])
+    : "";
 
-  const htmlMaquinas = data.maquinas
-    .map(
-      m => `
-    <div style="margin-bottom:10px;">
-      <b>${m.selo}</b> — ${m.jogo}<br>
-      Entrada: ${formatarMoedaBR(m.entrada)} |
-      Saída: ${formatarMoedaBR(m.saida)} |
-      Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
-    </div>
-  `
-    )
-    .join("");
+  // ----- CAPTURA DATA -----
+  const linhaData = linhas.find(l => l.startsWith("Data"));
+  const dataStr = linhaData
+    ? linhaData.split(":")[1].trim()
+    : "";
 
-  const periodoTexto = `${formatarDataBR(
-    data.periodo.inicio
-  )} até ${formatarDataBR(data.periodo.fim)}`;
+  const { inicio, fim } = calcularPeriodoSemana(dataStr);
 
-  document.getElementById("dadosExtraidos").innerHTML = `
-    <strong>Ponto:</strong> ${data.pontoExibicao}<br>
-    <strong>Data do fechamento:</strong> ${formatarDataBR(
-      data.dataFechamento
-    )}<br>
-    <strong>Período da semana:</strong> ${periodoTexto}<br><br>
+  // ----- CAPTURA MÁQUINAS -----
+  let blocosMaquinas = [];
+  let atual = [];
 
-    <strong>Totais do ponto:</strong><br>
-    Entrada: ${formatarMoedaBR(data.totais.entrada)}<br>
-    Saída: ${formatarMoedaBR(data.totais.saida)}<br>
-    Sobra: <b>${formatarMoedaBR(data.totais.sobra)}</b><br><br>
+  for (let i = 0; i < linhas.length; i++) {
+    const l = linhas[i];
 
-    <strong>Máquinas:</strong><br>
-    ${htmlMaquinas}
-  `;
-}
-
-/* ===== 4. APROVAR FECHAMENTO ===== */
-function aprovarFechamento() {
-  if (!extracaoAtual) return;
-
-  const registros = getRegistros();
-  registros.push({
-    ...extracaoAtual,
-    id: Date.now(),
-    aprovado: true,
-    criadoEm: new Date().toISOString()
-  });
-
-  salvarRegistros(registros);
-
-  alert("Fechamento salvo com sucesso!");
-
-  extracaoAtual = null;
-  document.getElementById("previewExtracao").style.display = "none";
-
-  carregarPontosNosSelects();
-}
-
-/* DESCARTAR */
-function descartarExtracao() {
-  extracaoAtual = null;
-  document.getElementById("previewExtracao").style.display = "none";
-}
-
-/* ===== 5. CARREGAR SELECTS ===== */
-function carregarPontosNosSelects() {
-  const registros = getRegistros();
-  const pontos = [...new Set(registros.map(r => r.pontoChave))];
-
-  const selects = ["selectPontoSemanal", "selectPontoConsolidado"];
-  selects.forEach(id => {
-    const select = document.getElementById(id);
-    if (!select) return;
-    select.innerHTML = `<option value="">Selecione</option>`;
-    pontos.forEach(p => {
-      const item = registros.find(r => r.pontoChave === p);
-      select.innerHTML += `<option value="${p}">${item.pontoExibicao}</option>`;
-    });
-  });
-
-  carregarSemanas();
-}
-
-function carregarSemanas() {
-  const ponto = document.getElementById("selectPontoSemanal").value;
-  const selectSemana = document.getElementById("selectSemana");
-
-  if (!ponto) {
-    selectSemana.innerHTML = "<option value=''>Selecione</option>";
-    return;
-  }
-
-  const registros = getRegistros().filter(r => r.pontoChave === ponto);
-
-  selectSemana.innerHTML = "";
-  registros.forEach(r => {
-    const periodo = `${formatarDataBR(r.periodo.inicio)} até ${formatarDataBR(
-      r.periodo.fim
-    )}`;
-    selectSemana.innerHTML += `<option value="${r.id}">${periodo}</option>`;
-  });
-}
-
-/* ===== 6. RELATÓRIO SEMANAL ===== */
-function gerarRelatorioSemanal() {
-  const id = Number(document.getElementById("selectSemana").value);
-  const registro = getRegistros().find(r => r.id === id);
-  if (!registro) return;
-
-  const html = montarHtmlRelatorio(registro, "Relatório Semanal");
-
-  abrirModal(html);
-}
-
-/* ===== 7. RELATÓRIO CONSOLIDADO ===== */
-function gerarRelatorioConsolidado() {
-  const ponto = document.getElementById("selectPontoConsolidado").value;
-  const qtd = Number(document.getElementById("selectQtdSemanas").value);
-
-  const registros = getRegistros()
-    .filter(r => r.pontoChave === ponto)
-    .sort((a, b) => new Date(b.periodo.fim) - new Date(a.periodo.fim))
-    .slice(0, qtd);
-
-  if (registros.length === 0) return;
-
-  const relatorio = consolidarRegistros(registros);
-
-  const html = montarHtmlRelatorio(relatorio, `Consolidado (${qtd} semanas)`);
-
-  abrirModal(html);
-}
-
-/* CONSOLIDADO: SOMA TUDO */
-function consolidarRegistros(lista) {
-  let totalEntrada = 0;
-  let totalSaida = 0;
-  let totalSobra = 0;
-
-  const maquinas = {};
-
-  lista.forEach(r => {
-    totalEntrada += r.totais.entrada;
-    totalSaida += r.totais.saida;
-    totalSobra += r.totais.sobra;
-
-    r.maquinas.forEach(m => {
-      if (!maquinas[m.selo]) {
-        maquinas[m.selo] = {
-          selo: m.selo,
-          entrada: 0,
-          saida: 0,
-          sobra: 0
-        };
+    // início de máquina: começa com algo tipo "1-IE033" ou "IE033"
+    if (/^\d*\-?[A-Za-z]{1,3}\d{3}/.test(l)) {
+      // fecha bloco anterior
+      if (atual.length > 0) {
+        blocosMaquinas.push(atual.join("\n"));
+        atual = [];
       }
-      maquinas[m.selo].entrada += m.entrada;
-      maquinas[m.selo].saida += m.saida;
-      maquinas[m.selo].sobra += m.sobra;
-    });
-  });
+      atual.push(l);
+    } else if (atual.length > 0) {
+      atual.push(l);
+    }
+  }
+  if (atual.length > 0) blocosMaquinas.push(atual.join("\n"));
 
+  const maquinas = blocosMaquinas.map(processarBlocoMaquina);
+
+  // soma valores
+  const totalBruto = maquinas.reduce((s, m) => s + m.sobra, 0);
+  const percentualCliente = 0.3;
+  const valorCliente = totalBruto * percentualCliente;
+  const subtotal = totalBruto - valorCliente;
+
+  // ====== RETORNA OBJETO DO RELATÓRIO ======
   return {
-    pontoExibicao: lista[0].pontoExibicao,
-    maquinas: Object.values(maquinas),
-    totais: { entrada: totalEntrada, saida: totalSaida, sobra: totalSobra }
+    cliente,
+    dataFechamento: dataStr,
+    periodo: `${inicio} até ${fim}`,
+    maquinas,
+    totalBruto,
+    percentualCliente,
+    valorCliente,
+    subtotal
   };
 }
 
-/* ===== 8. HTML DO MODAL ===== */
-function montarHtmlRelatorio(r, titulo) {
-  return `
-    <h2>${r.pontoExibicao} — ${titulo}</h2>
+// ====== RELATÓRIO FINAL (TEXTO BONITO) ======
 
-    <h3>Totais do Ponto</h3>
-    Entrada: ${formatarMoedaBR(r.totais.entrada)}<br>
-    Saída: ${formatarMoedaBR(r.totais.saida)}<br>
-    Sobra: <b>${formatarMoedaBR(r.totais.sobra)}</b><br><br>
+function montarRelatorioFinal(dados) {
+  let txt = "";
+  txt += `=== RELATÓRIO DE PONTOS ===\n`;
+  txt += `CLIENTE: ${dados.cliente}\n`;
+  txt += `DATA DO FECHAMENTO: ${dados.dataFechamento}\n`;
+  txt += `PERÍODO DA SEMANA: ${dados.periodo}\n\n`;
 
-    <h3>Máquinas</h3>
-    ${r.maquinas
-      .map(
-        m => `
-      <div style="margin-bottom:8px;">
-        <b>${m.selo}</b> — 
-        Entrada: ${formatarMoedaBR(m.entrada)} |
-        Saída: ${formatarMoedaBR(m.saida)} |
-        Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
-      </div>
-    `
-      )
-      .join("")}
-  `;
+  dados.maquinas.forEach(m => {
+    txt += `Selo: ${m.selo} | Jogo: ${m.jogo}\n`;
+    txt += `Entrada: ${formatarMoeda(m.entrada)}\n`;
+    txt += `Saída: ${formatarMoeda(m.saida)}\n`;
+    txt += `Sobra: ${formatarMoeda(m.sobra)}\n`;
+    txt += `Vida Útil: ${m.vidaUtil.toFixed(2)}%\n`;
+    txt += `---------------------------------------\n`;
+  });
+
+  txt += `TOTAL BRUTO: ${formatarMoeda(dados.totalBruto)}\n`;
+  txt += `PERCENTUAL DO CLIENTE: ${(dados.percentualCliente * 100).toFixed(2)}%\n`;
+  txt += `VALOR DO CLIENTE: ${formatarMoeda(dados.valorCliente)}\n`;
+  txt += `SUBTOTAL: ${formatarMoeda(dados.subtotal)}\n`;
+
+  return txt;
 }
 
-/* ===== 9. DESFAZER ===== */
-function desfazerUltimo() {
-  const ponto = document.getElementById("selectPontoConsolidado").value;
-  if (!ponto) return;
-
-  let registros = getRegistros().filter(r => r.pontoChave === ponto);
-  if (registros.length === 0) return;
-
-  registros.sort((a, b) => new Date(b.periodo.fim) - new Date(a.periodo.fim));
-
-  const ultimo = registros[0];
-
-  const todos = getRegistros().filter(r => r.id !== ultimo.id);
-  salvarRegistros(todos);
-
-  alert("Último fechamento removido.");
-  carregarPontosNosSelects();
-}
-
-/* ===== 10. MODAL ===== */
-function abrirModal(html) {
-  document.getElementById("modalConteudo").innerHTML = html;
-  document.getElementById("modalRelatorio").style.display = "flex";
-}
-
-function fecharModal() {
-  document.getElementById("modalRelatorio").style.display = "none";
-}
+// ====== USO ======
+// Coloque o OCR bruto aqui dentro para testar:
+// const resultado = gerarRelatorioDePontos(textoDoOCR);
+// console.log(montarRelatorioFinal(resultado));
