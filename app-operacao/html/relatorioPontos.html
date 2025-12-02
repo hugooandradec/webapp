@@ -194,26 +194,31 @@
       <button class="btn roxo" id="btnGerarSemanal">Gerar Relatório Semanal</button>
     </div>
 
-    <!-- SEÇÃO: Consolidado -->
-    <div class="secao">
-      <h3>Relatório Consolidado</h3>
+   <!-- SEÇÃO: Consolidado -->
+<div class="secao">
+  <h3>Relatório Consolidado</h3>
 
-      <label for="selectPontoConsolidado">Ponto:</label>
-      <select id="selectPontoConsolidado">
-        <option value="">Selecione</option>
-      </select>
+  <label for="selectPontoConsolidado">Ponto:</label>
+  <select id="selectPontoConsolidado">
+    <option value="">Selecione</option>
+  </select>
 
-      <label for="selectQtdSemanas">Quantas semanas?</label>
-      <select id="selectQtdSemanas">
-        <option value="2">2 semanas</option>
-        <option value="4">4 semanas</option>
-        <option value="8">8 semanas</option>
-      </select>
+  <label for="inputQtdSemanas">Quantas semanas?</label>
+  <input
+    id="inputQtdSemanas"
+    type="number"
+    min="1"
+    step="1"
+    value="4"
+    style="max-width: 140px;"
+  />
+  <small>(digite a quantidade de semanas que deseja consolidar)</small>
 
-      <button class="btn roxo" id="btnGerarConsolidado">Gerar Relatório</button>
+  <button class="btn roxo" id="btnGerarConsolidado">Gerar Relatório</button>
 
-      <button class="btn cinza" id="btnDesfazer">Desfazer último fechamento aprovado</button>
-    </div>
+  <button class="btn cinza" id="btnDesfazer">Desfazer último fechamento aprovado</button>
+</div>
+
 
   </main>
 
