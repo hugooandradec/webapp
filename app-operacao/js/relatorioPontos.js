@@ -1,6 +1,11 @@
 // js/relatorioPontos.js
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
+/* ===== INIT ===== */
+document.addEventListener("DOMContentLoaded", () => {
+  // igual ao cálculo de Retenção: mesmo app, mesmo comportamento de voltar
+  inicializarPagina("Relatório de Pontos", "operacao");
+
   carregarPontosNosSelects();
 
   document.getElementById("btnProcessarPrint").onclick = processarPrint;
