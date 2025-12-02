@@ -1,10 +1,6 @@
 // js/relatorioPontos.js
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
-/* ===== INIT ===== */
-document.addEventListener("DOMContentLoaded", () => {
-  inicializarPagina("Relatório de Pontos", "operacao");
-
   carregarPontosNosSelects();
 
   document.getElementById("btnProcessarPrint").onclick = processarPrint;
