@@ -6,8 +6,8 @@
 <title>Relatório de Pontos</title>
 
 <!-- JS Global -->
-<script src="../../common/js/navegacao.js?v=1"></script>
-<script src="../js/relatorioPontos.js?v=1" defer></script>
+<script type="module" src="../../common/js/navegacao.js"></script>
+<script type="module" src="../js/relatorioPontos.js?v=1"></script>
 
 <style>
   body {
@@ -60,15 +60,24 @@
   }
 
   input[type="file"],
-  textarea,
-  select {
-    width: 100%;
-    margin-top: 8px;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-  }
+select,
+textarea {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 4px;
+  border: none;
+  border-bottom: 2px solid #ccc;
+  background: transparent;
+  font-size: 15px;
+  outline: none;
+}
+
+input[type="file"]:focus,
+select:focus,
+textarea:focus {
+  border-bottom-color: #6a1b9a;
+}
+
 
   textarea {
     height: 120px;
