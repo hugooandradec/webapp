@@ -16,23 +16,28 @@
 
   <!-- Toast -->
   <script defer src="../../common/js/toast.js"></script>
-  
+
   <!-- JS global de navegação -->
   <script type="module" src="../../common/js/navegacao.js"></script>
 
   <!-- JS da página -->
-  <script type="module" src="../js/relatorioPontos.js?v=1"></script>
+  <script type="module" src="../js/relatorioPontos.js?v=2"></script>
 
   <style>
     :root {
       --roxo: #6a1b9a;
+      --verde: #16a34a;
+      --vermelho: #dc2626;
+      --azul: #4aa3ff;
+      --cinza-btn: #aaa;
     }
 
     * {
       box-sizing: border-box;
     }
 
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       background: #f8f8f8;
@@ -80,27 +85,25 @@
     }
 
     input[type="file"],
-input[type="number"],
-select,
-textarea {
-  width: 100%;
-  margin-top: 4px;
-  padding: 6px 4px;
-  border: none;
-  border-bottom: 2px solid #ccc;
-  background: transparent;
-  font-size: 15px;
-  outline: none;
-}
-
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      margin-top: 4px;
+      padding: 6px 4px;
+      border: none;
+      border-bottom: 2px solid #ccc;
+      background: transparent;
+      font-size: 15px;
+      outline: none;
+    }
 
     input[type="file"]:focus,
-input[type="number"]:focus,
-select:focus,
-textarea:focus {
-  border-bottom-color: var(--roxo);
-}
-
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      border-bottom-color: var(--roxo);
+    }
 
     .btn {
       width: 100%;
@@ -111,6 +114,10 @@ textarea:focus {
       font-size: 15px;
       font-weight: 800;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .btn.roxo {
@@ -123,38 +130,139 @@ textarea:focus {
       color: #333;
     }
 
-    /* Modal */
+    /* Modal — mesmo padrão do Retenção */
     #modalRelatorio {
       position: fixed;
       inset: 0;
-      background: #fff;
+      background: rgba(0, 0, 0, .7);
       display: none;
-      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
       z-index: 9999;
     }
 
-    #modalRelatorio header {
-      background: var(--roxo);
-      color: #fff;
-      padding: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 18px;
+    #modalRelatorio.aberta {
+      display: flex !important;
     }
 
-    #modalConteudo {
+    #modalRelatorio .cx {
+      background: #fff;
+      border-radius: 8px;
+      width: min(96vw, 720px);
+      max-height: 88dvh;
+      overflow: auto;
+      position: relative;
       padding: 16px;
-      height: calc(100vh - 54px);
-      overflow-y: auto;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, .25);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #modalRelatorio header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 8px;
     }
 
     #fecharModal {
-      background: none;
+      padding: 8px 14px;
+      border-radius: 8px;
       border: none;
+      background: var(--cinza-btn);
       color: #fff;
-      font-size: 22px;
+      font-weight: 700;
       cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    #modalConteudo {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+
+    /* Estilo interno do relatório */
+    .rel-titulo {
+      margin: 0 0 4px;
+      text-align: center;
+      color: var(--roxo);
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .rel-periodo {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 12px;
+    }
+
+    .rel-totais {
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+    }
+
+    .rel-maquinas {
+      margin-top: 8px;
+      font-size: 0.95rem;
+    }
+
+    .linha-maquina {
+      margin-bottom: 6px;
+    }
+
+    .rel-sep {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 12px 0;
+    }
+
+    .rel-subtitulo {
+      margin: 0 0 6px;
+      font-size: 1rem;
+      color: #333;
+    }
+
+    .linha-indicador {
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .valor-entrada {
+      color: var(--verde);
+      font-weight: 700;
+    }
+
+    .valor-saida {
+      color: var(--vermelho);
+      font-weight: 700;
+    }
+
+    .valor-sobra {
+      color: var(--azul);
+      font-weight: 700;
+    }
+
+    @media (max-width: 600px) {
+      #modalRelatorio {
+        padding: 0;
+        align-items: stretch;
+      }
+
+      #modalRelatorio .cx {
+        width: 100vw;
+        height: 100svh;
+        max-height: 100svh;
+        border-radius: 0;
+        padding: 12px;
+        box-shadow: none;
+      }
+
+      main {
+        padding: 12px;
+      }
     }
   </style>
 </head>
@@ -196,44 +304,37 @@ textarea:focus {
       </select>
 
       <button class="btn roxo" id="btnGerarSemanal">Gerar Relatório Semanal</button>
+      <button class="btn cinza" id="btnRemoverFechamento">Remover fechamento</button>
     </div>
 
-   <!-- SEÇÃO: Consolidado -->
-<div class="secao">
-  <h3>Relatório Consolidado</h3>
+    <!-- SEÇÃO: Consolidado -->
+    <div class="secao">
+      <h3>Relatório Consolidado</h3>
 
-  <label for="selectPontoConsolidado">Ponto:</label>
-  <select id="selectPontoConsolidado">
-    <option value="">Selecione</option>
-  </select>
+      <label for="selectPontoConsolidado">Ponto:</label>
+      <select id="selectPontoConsolidado">
+        <option value="">Selecione</option>
+      </select>
 
-  <label for="inputQtdSemanas">Quantas semanas?</label>
-<input
-  id="inputQtdSemanas"
-  type="number"
-  min="1"
-  step="1"
-  value="4"
-/>
+      <label for="inputQtdSemanas">Quantas semanas?</label>
+      <input id="inputQtdSemanas" type="number" min="1" step="1" value="4" />
+      <small>(digite a quantidade de semanas que deseja consolidar)</small>
 
-  <small>(digite a quantidade de semanas que deseja consolidar)</small>
-
-  <button class="btn roxo" id="btnGerarConsolidado">Gerar Relatório</button>
-
-  <button class="btn cinza" id="btnDesfazer">Desfazer último fechamento aprovado</button>
-</div>
-
+      <button class="btn roxo" id="btnGerarConsolidado">Gerar Relatório</button>
+    </div>
 
   </main>
 
   <!-- Modal -->
-  <div id="modalRelatorio">
-    <header>
-      <span>Relatório</span>
-      <button id="fecharModal">✕</button>
-    </header>
-    <div id="modalConteudo"></div>
+  <div id="modalRelatorio" class="modal">
+    <div class="cx">
+      <header>
+        <button id="fecharModal">Fechar</button>
+      </header>
+      <div id="modalConteudo"></div>
+    </div>
   </div>
 
 </body>
+
 </html>
