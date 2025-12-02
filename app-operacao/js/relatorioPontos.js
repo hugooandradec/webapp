@@ -225,22 +225,20 @@ function interpretarTextoFechamento(texto) {
     const l = linhaOriginal.trim();
     const upper = l.toUpperCase();
 
-    // Cabeçalho de máquina: aceita "1-IE033 (Seven...)" ou "IE033 (Seven...)"
-    const mSelo = l.match(/(?:\d+\s*-\s*)?([A-Za-z]{2}\d{3})/);
-    if (mSelo) {
+    // CABEÇALHO DE MÁQUINA
+    // ex: "1-IE033 (Seven (America))" ou "2-IB158 (HL)"
+    const mCabecalho = l.match(/^\d+\s*-\s*([^\s(]+)/);
+    if (mCabecalho && l.includes("(")) {
+      // fecha máquina anterior, se houver
       if (atual) maquinas.push(atual);
 
-      const selo = mSelo[1].toUpperCase();
+      const selo = mCabecalho[1].toUpperCase();
 
-      // jogo = texto depois do selo
+      // jogo = texto dentro do primeiro par de parênteses
       let jogo = "";
-      const idx = upper.indexOf(selo);
-      if (idx >= 0) {
-        jogo = l
-          .slice(idx + selo.length)
-          .replace(/^[\s\-\:]+/, "")
-          .trim()
-          .toUpperCase();
+      const mJogo = l.match(/\(([^)]+)\)/);
+      if (mJogo) {
+        jogo = mJogo[1].trim().toUpperCase();
       }
 
       atual = {
@@ -255,7 +253,7 @@ function interpretarTextoFechamento(texto) {
 
     if (!atual) continue;
 
-    // Linha de Entrada: "(E) ... = R$ 1.503,00"
+    // LINHA DE ENTRADA: "(E) ... = R$ 1.503,00"
     if (upper.startsWith("(E)")) {
       const mEntrada = l.match(/R\$\s*([\d\.,]+)/i);
       if (mEntrada) {
@@ -264,7 +262,7 @@ function interpretarTextoFechamento(texto) {
       continue;
     }
 
-    // Linha de Saída: "(S) ... = R$ 1.318,85"
+    // LINHA DE SAÍDA: "(S) ... = R$ 1.318,85"
     if (upper.startsWith("(S)")) {
       const mSaida = l.match(/R\$\s*([\d\.,]+)/i);
       if (mSaida) {
@@ -273,7 +271,7 @@ function interpretarTextoFechamento(texto) {
       continue;
     }
 
-    // linhas de (Total), NEGATIVO, etc. são ignoradas
+    // outras linhas (Total, vida útil, etc) são ignoradas
   }
 
   if (atual) maquinas.push(atual);
