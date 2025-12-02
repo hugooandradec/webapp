@@ -3,7 +3,6 @@ import { inicializarPagina } from "../../common/js/navegacao.js";
 
 /* ===== INIT ===== */
 document.addEventListener("DOMContentLoaded", () => {
-  // mesma lógica das outras telas do app Operação
   inicializarPagina("Relatório de Pontos", "operacao");
 
   carregarPontosNosSelects();
@@ -15,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnGerarSemanal").onclick = gerarRelatorioSemanal;
   document.getElementById("btnGerarConsolidado").onclick =
     gerarRelatorioConsolidado;
+
   const btnRemover = document.getElementById("btnRemoverFechamento");
   if (btnRemover) btnRemover.onclick = removerFechamento;
 
@@ -23,11 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const selPontoSem = document.getElementById("selectPontoSemanal");
   if (selPontoSem) selPontoSem.addEventListener("change", carregarSemanas);
 
-  // restaura extração em andamento (caso a página tenha sido recarregada)
   restaurarExtracaoAtual();
 });
 
-/* ===== HELPERS GERAIS ===== */
+/* ===== HELPERS GERAIS / STORAGE ===== */
 
 function getRegistros() {
   try {
@@ -107,6 +106,7 @@ function calcularPeriodoSemana(dataFechamento) {
 }
 
 /* ===== 1. CARREGAR PONTOS NOS SELECTS ===== */
+
 function carregarPontosNosSelects() {
   const registros = getRegistros();
   const pontosMap = new Map();
@@ -128,7 +128,6 @@ function carregarPontosNosSelects() {
     });
   });
 
-  // ao mudar o ponto no relatório semanal, recarrega as semanas
   carregarSemanas();
 }
 
@@ -137,7 +136,7 @@ function carregarPontosNosSelects() {
 async function lerTextoDoPrint(file) {
   if (!file) return "";
   try {
-    toast.info("Lendo imagem, aguarde...");
+    if (window.toast) toast.info("Lendo imagem, aguarde...");
 
     const { data } = await Tesseract.recognize(file, "por+eng", {
       logger: (m) => console.log("[OCR Relatório de Pontos]", m)
@@ -150,74 +149,100 @@ async function lerTextoDoPrint(file) {
     alert("Não foi possível ler a imagem.");
     return "";
   } finally {
-    limparToast();
+    try {
+      if (window.toast && toast.clear) toast.clear();
+    } catch (e) {}
   }
 }
 
-function limparToast() {
-  if (window.toast && toast.clear) toast.clear();
+// parse simples de número pt-BR
+function parseNumero(str) {
+  if (!str) return 0;
+  return Number(
+    str
+      .toString()
+      .replace(/\./g, "")
+      .replace(",", ".")
+  ) || 0;
 }
 
 /**
  * Faz o parse do texto lido do print, retornando
  * um objeto com ponto, data, lista de máquinas, etc.
+ * Aceita linhas de máquina no formato:
+ *  - "1-IE033 (Seven (America))"
+ *  - "IE033 (HL)"
  */
 function interpretarTextoFechamento(texto) {
-  // quebra em linhas
+  texto = (texto || "").replace(/\r/g, "");
   const linhas = texto
-    .split(/\r?\n/)
+    .split("\n")
     .map((l) => l.trim())
-    .filter(Boolean);
+    .filter((l) => l.length > 0);
 
   console.log("Linhas normalizadas:", linhas);
 
-  // encontrar linha do ponto/cliente
+  // ===== Cliente / Ponto =====
   let ponto = "";
-  const linhaPonto = linhas.find((l) =>
-    l.toUpperCase().startsWith("CLIENTE")
+  const linhaCliente = linhas.find((l) =>
+    l.toLowerCase().startsWith("cliente")
   );
-  if (linhaPonto) {
-    const partes = linhaPonto.split(/[:\-]/);
-    ponto = (partes[1] || "").trim().toUpperCase();
-  }
-
-  // encontrar data do fechamento (primeira coisa que parecer data dd/mm/aa ou dd/mm/aaaa)
-  let dataFechamentoISO = "";
-  for (const l of linhas) {
-    const m = l.match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
-    if (m) {
-      const dia = m[1];
-      const mes = m[2];
-      let ano = m[3];
-      if (ano.length === 2) ano = "20" + ano;
-      dataFechamentoISO = `${ano}-${mes}-${dia}`;
-      break;
+  if (linhaCliente) {
+    const partes = linhaCliente.split(":");
+    if (partes[1]) {
+      ponto = partes[1].trim();
     }
   }
+  ponto = (ponto || "").toUpperCase();
+  if (!ponto) ponto = "PONTO DESCONHECIDO";
 
-  // máquinas: procurar linhas que tenham padrão de selo + jogo + E/S
+  // ===== Data do fechamento =====
+  let dataFechamentoISO = "";
+  const linhaData = linhas.find((l) =>
+    l.toLowerCase().startsWith("data")
+  );
+  if (linhaData) {
+    const m = linhaData.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (m) {
+      let [_, d, mo, y] = m;
+      let anoNum = parseInt(y, 10);
+      if (anoNum < 100) anoNum += 2000;
+      const dt = new Date(anoNum, parseInt(mo, 10) - 1, parseInt(d, 10));
+      if (!isNaN(dt.getTime())) {
+        dataFechamentoISO = formatarDataISO(dt);
+      }
+    }
+  }
+  if (!dataFechamentoISO) {
+    dataFechamentoISO = formatarDataISO(new Date());
+  }
+
+  // ===== Máquinas =====
   const maquinas = [];
   let atual = null;
 
-  for (const l of linhas) {
-    // detectar selo (duas letras + 3 números, ex: IE033)
-    const mSelo = l.match(/\b([A-Za-z]{2}\d{3})\b/);
+  for (const linhaOriginal of linhas) {
+    const l = linhaOriginal.trim();
+    const upper = l.toUpperCase();
+
+    // Cabeçalho de máquina: aceita "1-IE033 (Seven...)" ou "IE033 (Seven...)"
+    const mSelo = l.match(/(?:\d+\s*-\s*)?([A-Za-z]{2}\d{3})/);
     if (mSelo) {
-      // quando encontra um selo novo, fecha a máquina anterior (se houver)
-      if (atual) {
-        maquinas.push(atual);
-      }
+      if (atual) maquinas.push(atual);
+
       const selo = mSelo[1].toUpperCase();
-      // jogo: tentar pegar algo depois do selo, se existir
+
+      // jogo = texto depois do selo
       let jogo = "";
-      const idx = l.indexOf(selo);
+      const idx = upper.indexOf(selo);
       if (idx >= 0) {
         jogo = l
           .slice(idx + selo.length)
-          .replace(/[:\-]/g, " ")
+          .replace(/^[\s\-\:]+/, "")
           .trim()
           .toUpperCase();
       }
+
       atual = {
         selo,
         jogo,
@@ -230,24 +255,30 @@ function interpretarTextoFechamento(texto) {
 
     if (!atual) continue;
 
-    // procurar entrada e saída na linha: sempre após "E" e "S", usando o que vem depois do "-"
-    // Ex: "(E) - 1.503,00 (S) - 1.318,85"
-    const mEntrada = l.match(/\(E\)\s*-\s*([\d\.\,]+)/i);
-    const mSaida = l.match(/\(S\)\s*-\s*([\d\.\,]+)/i);
+    // Linha de Entrada: "(E) ... = R$ 1.503,00"
+    if (upper.startsWith("(E)")) {
+      const mEntrada = l.match(/R\$\s*([\d\.,]+)/i);
+      if (mEntrada) {
+        atual.entrada = parseNumero(mEntrada[1]);
+      }
+      continue;
+    }
 
-    if (mEntrada) {
-      atual.entrada = parseNumero(mEntrada[1]);
+    // Linha de Saída: "(S) ... = R$ 1.318,85"
+    if (upper.startsWith("(S)")) {
+      const mSaida = l.match(/R\$\s*([\d\.,]+)/i);
+      if (mSaida) {
+        atual.saida = parseNumero(mSaida[1]);
+      }
+      continue;
     }
-    if (mSaida) {
-      atual.saida = parseNumero(mSaida[1]);
-    }
+
+    // linhas de (Total), NEGATIVO, etc. são ignoradas
   }
 
-  if (atual) {
-    maquinas.push(atual);
-  }
+  if (atual) maquinas.push(atual);
 
-  // calcular sobras (entrada - saída)
+  // calcula sobra (entrada - saída)
   maquinas.forEach((m) => {
     m.sobra = (m.entrada || 0) - (m.saida || 0);
   });
@@ -257,17 +288,6 @@ function interpretarTextoFechamento(texto) {
     dataFechamentoISO,
     maquinas
   };
-}
-
-// parse simples de número pt-BR
-function parseNumero(str) {
-  if (!str) return 0;
-  return Number(
-    str
-      .toString()
-      .replace(/\./g, "")
-      .replace(",", ".")
-  ) || 0;
 }
 
 /* ===== 3. PRÉ-VISUALIZAÇÃO DA EXTRAÇÃO ===== */
@@ -288,9 +308,7 @@ async function processarPrint() {
   const dados = interpretarTextoFechamento(texto);
   console.log("Dados interpretados (fechamento):", dados);
 
-  // salva extração temporária
   localStorage.setItem(TEMP_KEY, JSON.stringify(dados));
-
   mostrarExtracaoNaTela(dados);
 }
 
@@ -373,7 +391,6 @@ function aprovarFechamento() {
 
     const periodo = calcularPeriodoSemana(dataFechamentoDate);
 
-    // ===== Máquinas =====
     const maquinasCompletas = maquinas.map((m, idx) => ({
       numero: idx + 1,
       selo: (m.selo || "").toUpperCase(),
@@ -393,14 +410,13 @@ function aprovarFechamento() {
       { entrada: 0, saida: 0, sobra: 0 }
     );
 
-    // ===== Verificar se já existe fechamento igual (ponto + mesma combinação de entradas/saídas) =====
     const registros = getRegistros();
+
+    // checa duplicidade: mesmo ponto + mesma combinação de entradas/saídas
     const jaExiste = registros.some((reg) => {
       if (reg.pontoChave !== pontoChave) return false;
       if (!reg.maquinas || reg.maquinas.length !== maquinasCompletas.length)
         return false;
-
-      // compara entradas e saídas máquina a máquina
       return reg.maquinas.every((mReg, i) => {
         const mNovo = maquinasCompletas[i];
         return (
@@ -421,7 +437,7 @@ function aprovarFechamento() {
       id: proximoId(),
       pontoChave,
       pontoExibicao,
-      periodo, // { inicio: 'YYYY-MM-DD', fim: 'YYYY-MM-DD' }
+      periodo,
       dataFechamento: dataFechamentoISO,
       maquinas: maquinasCompletas,
       totais
@@ -432,10 +448,7 @@ function aprovarFechamento() {
 
     alert("Fechamento salvo com sucesso!");
 
-    // limpa extracao atual
     descartarExtracao();
-
-    // recarrega selects
     carregarPontosNosSelects();
   } catch (e) {
     console.error("Erro ao aprovar fechamento:", e);
@@ -466,13 +479,16 @@ function carregarSemanas() {
 }
 
 /* ===== 6. RELATÓRIO SEMANAL ===== */
+
 function gerarRelatorioSemanal() {
   const id = Number(document.getElementById("selectSemana").value);
   const registro = getRegistros().find((r) => r.id === id);
-  if (!registro) return;
+  if (!registro) {
+    alert("Selecione uma semana para gerar o relatório.");
+    return;
+  }
 
   const html = montarHtmlRelatorio(registro, "Relatório Semanal");
-
   abrirModal(html);
 }
 
@@ -494,10 +510,7 @@ function gerarRelatorioConsolidado() {
     return;
   }
 
-  // ordena por fim do período (mais recente primeiro)
   regs.sort((a, b) => new Date(b.periodo.fim) - new Date(a.periodo.fim));
-
-  // pega só as últimas N semanas
   regs = regs.slice(0, qtdSemanas);
 
   const pontoExibicao = regs[0].pontoExibicao;
@@ -506,7 +519,6 @@ function gerarRelatorioConsolidado() {
     fim: regs[0].periodo.fim
   };
 
-  // Totais somados
   const totais = regs.reduce(
     (acc, r) => {
       acc.entrada += r.totais.entrada || 0;
@@ -517,7 +529,6 @@ function gerarRelatorioConsolidado() {
     { entrada: 0, saida: 0, sobra: 0 }
   );
 
-  // Agrupar máquinas por selo+jogo
   const mapaMaquinas = new Map();
 
   regs.forEach((r) => {
@@ -553,14 +564,14 @@ function gerarRelatorioConsolidado() {
   abrirModal(html);
 }
 
-/* ===== 8. HTML DO RELATÓRIO (formato "tipo Retenção") ===== */
+/* ===== 8. HTML DO RELATÓRIO (formato “tipo Retenção”) ===== */
 
 function montarHtmlRelatorio(r, titulo) {
   if (!r) return "";
 
   const blocos = [];
 
-  // Título e período
+  // título + período
   blocos.push(
     `<span style="color:#6a1b9a;font-weight:900;">${r.pontoExibicao} — ${titulo}</span>`
   );
@@ -571,9 +582,9 @@ function montarHtmlRelatorio(r, titulo) {
       )}`
     );
   }
-  blocos.push(""); // linha em branco
+  blocos.push("");
 
-  // Totais do ponto
+  // totais
   blocos.push("Totais do Ponto");
   blocos.push(
     `Entrada: <span class="valor-entrada">${formatarMoedaBR(
@@ -592,7 +603,7 @@ function montarHtmlRelatorio(r, titulo) {
   );
   blocos.push("");
 
-  // Máquinas
+  // máquinas
   blocos.push("Máquinas");
   blocos.push("");
 
@@ -613,12 +624,11 @@ function montarHtmlRelatorio(r, titulo) {
     blocos.push("");
   });
 
-  // Indicadores da semana (só faz sentido se tiver período e máquinas)
+  // indicadores (quando tiver período + máquinas)
   if (r.periodo && r.maquinas && r.maquinas.length) {
     const totalEntrada = r.totais?.entrada || 0;
     const totalSaida = r.totais?.saida || 0;
     const totalSobra = r.totais?.sobra || 0;
-
     const maquinas = r.maquinas;
 
     const maisEntrada = maquinas.reduce(
@@ -734,6 +744,7 @@ function montarHtmlRelatorio(r, titulo) {
 }
 
 /* ===== 9. REMOVER FECHAMENTO (selecionado) ===== */
+
 function removerFechamento() {
   const selectSemana = document.getElementById("selectSemana");
   if (!selectSemana) return;
@@ -768,6 +779,7 @@ function removerFechamento() {
 }
 
 /* ===== 10. MODAL ===== */
+
 function abrirModal(html) {
   document.getElementById("modalConteudo").innerHTML = html;
   document.getElementById("modalRelatorio").style.display = "flex";
