@@ -3,7 +3,7 @@ import { inicializarPagina } from "../../common/js/navegacao.js";
 
 /* ===== INIT ===== */
 document.addEventListener("DOMContentLoaded", () => {
-  inicializarPagina("Relatório de Pontos");
+  inicializarPagina("Relatório de Pontos", "operacao");
 
   carregarPontosNosSelects();
 
