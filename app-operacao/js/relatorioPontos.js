@@ -3,7 +3,7 @@ import { inicializarPagina } from "../../common/js/navegacao.js";
 
 /* ===== INIT ===== */
 document.addEventListener("DOMContentLoaded", () => {
-  // igual ao cálculo de Retenção: mesmo app, mesmo comportamento de voltar
+  // mesma lógica das outras telas do app Operação
   inicializarPagina("Relatório de Pontos", "operacao");
 
   carregarPontosNosSelects();
@@ -79,6 +79,19 @@ function calcularPeriodoSemana(dataFechamento) {
   };
 }
 
+/* Helper para limpar toasts, igual outras telas */
+function limparToast() {
+  try {
+    if (window.toast?.dismissAll) window.toast.dismissAll();
+    else if (window.toast?.clearAll) window.toast.clearAll();
+  } catch (e) {}
+  try {
+    document
+      .querySelectorAll(".toast, .toast-container, [id*='toast']")
+      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+  } catch (e) {}
+}
+
 /* ===== STORAGE ===== */
 const KEY = "relatorioPontos_registros";
 
@@ -100,7 +113,6 @@ async function processarPrint() {
     return;
   }
 
-  // OCR externo (trecho futuro)
   const texto = await extrairTextoOCR(file);
 
   extracaoAtual = extrairRelatorioDoOcr(texto);
@@ -115,28 +127,31 @@ async function processarPrint() {
   mostrarExtracaoNaTela(extracaoAtual);
 }
 
-// OCR REAL — igual ao Retenção
+// OCR LOCAL — igual Retenção / Pré-Fecho (Tesseract no navegador)
 async function extrairTextoOCR(file) {
-  try {
-    const formData = new FormData();
-    formData.append("imagem", file);
-
-    const resp = await fetch(`${URL_BACKEND}/ocr`, {
-      method: "POST",
-      body: formData
-    });
-
-    if (!resp.ok) {
-      console.error("Falha no OCR:", resp.status);
-      return "";
-    }
-
-    const data = await resp.json();
-    return data.texto || "";
-  } catch (err) {
-    console.error("Erro no OCR:", err);
+  if (!window.Tesseract) {
+    alert("Biblioteca de OCR (Tesseract.js) não carregada.");
     return "";
   }
+
+  try {
+    if (window.toast) toast.info("Lendo imagem, aguarde...");
+  } catch (e) {}
+
+  let texto = "";
+  try {
+    const { data } = await Tesseract.recognize(file, "por+eng", {
+      logger: (m) => console.log("[OCR Relatório de Pontos]", m)
+    });
+    texto = (data && data.text) ? data.text : "";
+  } catch (err) {
+    console.error("Erro no OCR (Relatório de Pontos):", err);
+    alert("Não foi possível ler a imagem.");
+    texto = "";
+  }
+
+  limparToast();
+  return texto;
 }
 
 /* ===== 2. EXTRAIR DADOS DO TEXTO ===== */
