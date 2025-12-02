@@ -115,17 +115,44 @@ async function processarPrint() {
 
   const texto = await extrairTextoOCR(file);
 
-  extracaoAtual = extrairRelatorioDoOcr(texto);
+  console.log("=== OCR RELATÓRIO DE PONTOS (BRUTO) ===");
+  console.log(texto);
 
-  if (!extracaoAtual || !extracaoAtual.maquinas?.length) {
-    alert(
-      "Não foi possível interpretar o print automaticamente. Confira o OCR."
-    );
+  // Se o OCR devolveu literalmente nada ou quase nada
+  if (!texto || texto.trim().length < 10) {
+    alert("O OCR não conseguiu ler o print (texto vazio ou muito curto).");
+    const preview = document.getElementById("previewExtracao");
+    const dados = document.getElementById("dadosExtraidos");
+    if (preview && dados) {
+      preview.style.display = "block";
+      dados.innerText = "[OCR não retornou texto útil]\n\n" + (texto || "");
+    }
     return;
   }
 
+  extracaoAtual = extrairRelatorioDoOcr(texto);
+
+  // Se não achou nenhuma máquina, vamos mostrar o texto cru pra debug
+  if (!extracaoAtual || !extracaoAtual.maquinas?.length) {
+    alert(
+      "Não consegui identificar as máquinas automaticamente.\n" +
+      "Vou mostrar o texto cru do OCR na tela. Copia isso pra mim depois, por favor."
+    );
+
+    const preview = document.getElementById("previewExtracao");
+    const dados = document.getElementById("dadosExtraidos");
+    if (preview && dados) {
+      preview.style.display = "block";
+      dados.innerText = texto;
+    }
+    extracaoAtual = null;
+    return;
+  }
+
+  // Se deu certo, segue o fluxo normal
   mostrarExtracaoNaTela(extracaoAtual);
 }
+
 
 // OCR LOCAL — igual Retenção / Pré-Fecho (Tesseract no navegador)
 async function extrairTextoOCR(file) {
