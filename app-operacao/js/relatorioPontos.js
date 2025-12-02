@@ -115,14 +115,28 @@ async function processarPrint() {
   mostrarExtracaoNaTela(extracaoAtual);
 }
 
-/* ===== OCR (placeholder) ===== */
+// OCR REAL — igual ao Retenção
 async function extrairTextoOCR(file) {
-  // TODO: integrar com OCR real (backend / API externa)
-  console.warn(
-    "extrairTextoOCR ainda é placeholder. Integre com OCR real depois."
-  );
-  // por enquanto, você pode colar o texto manualmente aqui pra testes
-  return "";
+  try {
+    const formData = new FormData();
+    formData.append("imagem", file);
+
+    const resp = await fetch(`${URL_BACKEND}/ocr`, {
+      method: "POST",
+      body: formData
+    });
+
+    if (!resp.ok) {
+      console.error("Falha no OCR:", resp.status);
+      return "";
+    }
+
+    const data = await resp.json();
+    return data.texto || "";
+  } catch (err) {
+    console.error("Erro no OCR:", err);
+    return "";
+  }
 }
 
 /* ===== 2. EXTRAIR DADOS DO TEXTO ===== */
