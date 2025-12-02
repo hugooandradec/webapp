@@ -95,20 +95,38 @@ function limparToast() {
   } catch (e) {}
 }
 
-/* Normaliza selo (duas letras + três números, ex: IE033, IB158) */
+/*
+  Normaliza selo para o padrão:
+  - SEMPRE 2 letras + 3 números (LLNNN)
+  - Corrige casos de OCR como:
+      "1E033" -> "IE033"
+      "1B158" -> "IB158"
+*/
 function normalizarSelo(seloBruto) {
   let txt = (seloBruto || "").toUpperCase().trim();
 
-  // remove prefixos tipo "1-", "2-", "12-", etc.
-  txt = txt.replace(/^[0-9\-]+/, "");
+  // caso típico: OCR lê "1E033" ou "1B158" (1 no lugar de I)
+  const bugI = txt.match(/^1([A-Z]\d{3})$/);
+  if (bugI) {
+    return "I" + bugI[1]; // IE033, IB158...
+  }
 
-  // remove qualquer coisa que não seja letra ou número
+  // limpa qualquer coisa que não seja letra ou número
   txt = txt.replace(/[^A-Z0-9]/g, "");
 
-  // tenta encontrar padrão LLNNN
-  const m = txt.match(/([A-Z]{2}\d{3})/);
-  if (m) return m[1];
+  // se já estiver certinho (LLNNN), mantém
+  const padraoOk = txt.match(/^([A-Z]{2}\d{3})$/);
+  if (padraoOk) {
+    return padraoOk[1];
+  }
 
+  // fallback: se vier só 1 letra + 3 números, assume que falta um 'I' no início
+  const umLetraTresNum = txt.match(/^([A-Z]\d{3})$/);
+  if (umLetraTresNum) {
+    return "I" + umLetraTresNum[1];
+  }
+
+  // último recurso: devolve o texto como veio (pra debug)
   return txt;
 }
 
@@ -277,34 +295,35 @@ function extrairRelatorioDoOcr(texto) {
 
   linhas.forEach((l) => {
     // Cabeçalho da máquina:
-    // "1-10E33 (Seven (America))"
-    // "2-1B158 (HL)"
-    // "IE033 (Seven America)"
-    const cab = l.match(/^(\d+)\s*-\s*([A-Za-z0-9]+)\s*\((.+)\)/) ||
-                l.match(/^([A-Za-z0-9]+)\s*\((.+)\)/);
-    if (cab) {
+    // "1-1E033 (Seven (America))"  -> num=1, seloBruto="1E033"
+    // "2-1B158 (HL)"              -> num=2, seloBruto="1B158"
+    // "IE033 (Seven America)"     -> sem número
+    const cabComNumero = l.match(/^(\d+)\s*-\s*([A-Za-z0-9]+)\s*\((.+)\)/);
+    const cabSemNumero = !cabComNumero
+      ? l.match(/^([A-Za-z0-9]+)\s*\((.+)\)/)
+      : null;
+
+    if (cabComNumero || cabSemNumero) {
       if (atual) maquinas.push(atual);
 
       let numero = "";
       let seloBruto = "";
       let jogoBruto = "";
 
-      if (cab.length === 4) {
-        // bateu no primeiro regex (com número)
-        numero = cab[1];    // ex: "1"
-        seloBruto = cab[2]; // ex: "10E33"
-        jogoBruto = cab[3]; // ex: "Seven (America)"
+      if (cabComNumero) {
+        numero = cabComNumero[1];    // "1", "2", ...
+        seloBruto = cabComNumero[2]; // "1E033", "1B158"...
+        jogoBruto = cabComNumero[3];
       } else {
-        // bateu no segundo regex (sem número)
-        seloBruto = cab[1];
-        jogoBruto = cab[2];
+        seloBruto = cabSemNumero[1];
+        jogoBruto = cabSemNumero[2];
       }
 
       const selo = normalizarSelo(seloBruto);
       const jogo = (jogoBruto || "").trim().toUpperCase();
 
       atual = {
-        numero: numero || null, // "1", "2", ...
+        numero: numero || null,
         selo,
         jogo,
         entrada: 0,
@@ -330,8 +349,7 @@ function extrairRelatorioDoOcr(texto) {
       return;
     }
 
-    // IGNORAMOS a linha de (Total) do OCR e calculamos sobra manualmente
-    // para evitar erros se o OCR falhar na linha de total.
+    // Linha de (Total) a gente ignora agora; a sobra é calculada manualmente.
   });
 
   if (atual) maquinas.push(atual);
@@ -593,16 +611,20 @@ function montarHtmlRelatorio(r, titulo) {
 
     <h3>Máquinas</h3>
     ${r.maquinas
-      .map(
-        (m) => `
-      <div style="margin-bottom:8px;">
-        <b>${m.selo}</b> — 
-        Entrada: ${formatarMoedaBR(m.entrada)} |
-        Saída: ${formatarMoedaBR(m.saida)} |
-        Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
-      </div>
-    `
-      )
+      .map((m) => {
+        const prefixo =
+          m.numero != null && m.numero !== ""
+            ? `${m.numero} - `
+            : "";
+        return `
+          <div style="margin-bottom:8px;">
+            <b>${prefixo}${m.selo}</b> — 
+            Entrada: ${formatarMoedaBR(m.entrada)} |
+            Saída: ${formatarMoedaBR(m.saida)} |
+            Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
+          </div>
+        `;
+      })
       .join("")}
   `;
 }
