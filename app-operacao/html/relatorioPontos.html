@@ -80,17 +80,19 @@
     }
 
     input[type="file"],
-    select,
-    textarea {
-      width: 100%;
-      margin-top: 4px;
-      padding: 6px 4px;
-      border: none;
-      border-bottom: 2px solid #ccc;
-      background: transparent;
-      font-size: 15px;
-      outline: none;
-    }
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 4px;
+  border: none;
+  border-bottom: 2px solid #ccc;
+  background: transparent;
+  font-size: 15px;
+  outline: none;
+}
+
 
     input[type="file"]:focus,
     select:focus,
@@ -204,14 +206,14 @@
   </select>
 
   <label for="inputQtdSemanas">Quantas semanas?</label>
-  <input
-    id="inputQtdSemanas"
-    type="number"
-    min="1"
-    step="1"
-    value="4"
-    style="max-width: 140px;"
-  />
+<input
+  id="inputQtdSemanas"
+  type="number"
+  min="1"
+  step="1"
+  value="4"
+/>
+
   <small>(digite a quantidade de semanas que deseja consolidar)</small>
 
   <button class="btn roxo" id="btnGerarConsolidado">Gerar Relatório</button>
