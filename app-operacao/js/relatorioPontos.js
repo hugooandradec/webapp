@@ -21,6 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const selPontoSem = document.getElementById("selectPontoSemanal");
   if (selPontoSem) selPontoSem.addEventListener("change", carregarSemanas);
+
+  // restaura extração em andamento (caso a página tenha sido recarregada)
+  restaurarExtracaoAtual();
 });
 
 /* ===== HELPERS GERAIS ===== */
@@ -111,6 +114,7 @@ function normalizarSelo(seloBruto) {
 
 /* ===== STORAGE ===== */
 const KEY = "relatorioPontos_registros";
+const KEY_EXTRACAO_ATUAL = "relatorioPontos_extracaoAtual";
 
 function getRegistros() {
   return JSON.parse(localStorage.getItem(KEY) || "[]");
@@ -118,6 +122,28 @@ function getRegistros() {
 
 function salvarRegistros(lista) {
   localStorage.setItem(KEY, JSON.stringify(lista));
+}
+
+function salvarExtracaoAtual() {
+  if (extracaoAtual) {
+    localStorage.setItem(KEY_EXTRACAO_ATUAL, JSON.stringify(extracaoAtual));
+  } else {
+    localStorage.removeItem(KEY_EXTRACAO_ATUAL);
+  }
+}
+
+function restaurarExtracaoAtual() {
+  try {
+    const salvo = localStorage.getItem(KEY_EXTRACAO_ATUAL);
+    if (!salvo) return;
+    const obj = JSON.parse(salvo);
+    if (obj && obj.maquinas && obj.maquinas.length) {
+      extracaoAtual = obj;
+      mostrarExtracaoNaTela(extracaoAtual);
+    }
+  } catch (e) {
+    console.error("Erro ao restaurar extração atual:", e);
+  }
 }
 
 /* ===== 1. PROCESSAR PRINT ===== */
@@ -163,10 +189,12 @@ async function processarPrint() {
       dados.innerText = texto;
     }
     extracaoAtual = null;
+    salvarExtracaoAtual();
     return;
   }
 
   // Se deu certo, segue o fluxo normal
+  salvarExtracaoAtual();
   mostrarExtracaoNaTela(extracaoAtual);
 }
 
@@ -252,17 +280,31 @@ function extrairRelatorioDoOcr(texto) {
     // "1-10E33 (Seven (America))"
     // "2-1B158 (HL)"
     // "IE033 (Seven America)"
-    const cab = l.match(/^(\d+\s*-\s*)?([A-Za-z0-9]+)\s*\((.+)\)/);
+    const cab = l.match(/^(\d+)\s*-\s*([A-Za-z0-9]+)\s*\((.+)\)/) ||
+                l.match(/^([A-Za-z0-9]+)\s*\((.+)\)/);
     if (cab) {
       if (atual) maquinas.push(atual);
 
-      const seloBruto = cab[2];
-      const jogoBruto = cab[3];
+      let numero = "";
+      let seloBruto = "";
+      let jogoBruto = "";
+
+      if (cab.length === 4) {
+        // bateu no primeiro regex (com número)
+        numero = cab[1];    // ex: "1"
+        seloBruto = cab[2]; // ex: "10E33"
+        jogoBruto = cab[3]; // ex: "Seven (America)"
+      } else {
+        // bateu no segundo regex (sem número)
+        seloBruto = cab[1];
+        jogoBruto = cab[2];
+      }
 
       const selo = normalizarSelo(seloBruto);
       const jogo = (jogoBruto || "").trim().toUpperCase();
 
       atual = {
+        numero: numero || null, // "1", "2", ...
         selo,
         jogo,
         entrada: 0,
@@ -288,12 +330,8 @@ function extrairRelatorioDoOcr(texto) {
       return;
     }
 
-    // Linha de Total / Sobra: "(Total) 1503.00 - 1318.85 = R$ 184,15"
-    if (l.toLowerCase().startsWith("(total")) {
-      const m = l.match(/R\$\s*([\d\.,]+)/i);
-      if (m) atual.sobra = parseMoedaBR(m[1]);
-      return;
-    }
+    // IGNORAMOS a linha de (Total) do OCR e calculamos sobra manualmente
+    // para evitar erros se o OCR falhar na linha de total.
   });
 
   if (atual) maquinas.push(atual);
@@ -304,6 +342,9 @@ function extrairRelatorioDoOcr(texto) {
   let totalSobra = 0;
 
   maquinas.forEach((m) => {
+    // sobra sempre calculada como entrada - saída
+    m.sobra = (m.entrada || 0) - (m.saida || 0);
+
     totalEntrada += m.entrada;
     totalSaida += m.saida;
     totalSobra += m.sobra;
@@ -327,19 +368,24 @@ function extrairRelatorioDoOcr(texto) {
 function mostrarExtracaoNaTela(data) {
   if (!data) return;
 
-  document.getElementById("previewExtracao").style.display = "block";
+  const preview = document.getElementById("previewExtracao");
+  if (preview) preview.style.display = "block";
 
   const htmlMaquinas = data.maquinas
-    .map(
-      (m) => `
-    <div style="margin-bottom:10px;">
-      <b>${m.selo}</b> — ${m.jogo}<br>
-      Entrada: ${formatarMoedaBR(m.entrada)} |
-      Saída: ${formatarMoedaBR(m.saida)} |
-      Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
-    </div>
-  `
-    )
+    .map((m) => {
+      const prefixo =
+        m.numero != null && m.numero !== ""
+          ? `${m.numero} - `
+          : "";
+      return `
+        <div style="margin-bottom:10px;">
+          <b>${prefixo}${m.selo}</b> — ${m.jogo}<br>
+          Entrada: ${formatarMoedaBR(m.entrada)} |
+          Saída: ${formatarMoedaBR(m.saida)} |
+          Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
+        </div>
+      `;
+    })
     .join("");
 
   const periodoTexto = `${formatarDataBR(
@@ -380,6 +426,7 @@ function aprovarFechamento() {
   alert("Fechamento salvo com sucesso!");
 
   extracaoAtual = null;
+  salvarExtracaoAtual();
   document.getElementById("previewExtracao").style.display = "none";
 
   carregarPontosNosSelects();
@@ -388,6 +435,7 @@ function aprovarFechamento() {
 /* DESCARTAR */
 function descartarExtracao() {
   extracaoAtual = null;
+  salvarExtracaoAtual();
   document.getElementById("previewExtracao").style.display = "none";
 }
 
