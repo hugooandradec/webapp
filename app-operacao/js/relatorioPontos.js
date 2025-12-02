@@ -3,7 +3,7 @@ import { inicializarPagina } from "../../common/js/navegacao.js";
 
 /* ===== INIT ===== */
 document.addEventListener("DOMContentLoaded", () => {
-  // igual ao cálculo de Retenção: mesmo app, mesmo comportamento de voltar
+  // mesma lógica das outras telas do app Operação
   inicializarPagina("Relatório de Pontos", "operacao");
 
   carregarPontosNosSelects();
@@ -79,19 +79,31 @@ function calcularPeriodoSemana(dataFechamento) {
   };
 }
 
-// normaliza selo: remove prefixos numéricos, pega padrão LLNNN, tudo maiúsculo
+/* Helper para limpar toasts, igual outras telas */
+function limparToast() {
+  try {
+    if (window.toast?.dismissAll) window.toast.dismissAll();
+    else if (window.toast?.clearAll) window.toast.clearAll();
+  } catch (e) {}
+  try {
+    document
+      .querySelectorAll(".toast, .toast-container, [id*='toast']")
+      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+  } catch (e) {}
+}
+
+/* Normaliza selo (duas letras + três números, ex: IE033, IB158) */
 function normalizarSelo(seloBruto) {
   let txt = (seloBruto || "").toUpperCase().trim();
 
-  // remove prefixos tipo "1-" / "2-" / "12-"
+  // remove prefixos tipo "1-", "2-", "12-", etc.
   txt = txt.replace(/^[0-9\-]+/, "");
 
-  // remove qualquer coisa que não seja letra/número
+  // remove qualquer coisa que não seja letra ou número
   txt = txt.replace(/[^A-Z0-9]/g, "");
 
-  // tenta achar o padrão duas letras + três números
-  const padrao = /([A-Z]{2}\d{3})/;
-  const m = txt.match(padrao);
+  // tenta encontrar padrão LLNNN
+  const m = txt.match(/([A-Z]{2}\d{3})/);
   if (m) return m[1];
 
   return txt;
@@ -118,43 +130,71 @@ async function processarPrint() {
     return;
   }
 
-  // OCR externo (trecho futuro)
   const texto = await extrairTextoOCR(file);
 
-  extracaoAtual = extrairRelatorioDoOcr(texto);
+  console.log("=== OCR RELATÓRIO DE PONTOS (BRUTO) ===");
+  console.log(texto);
 
-  if (!extracaoAtual || !extracaoAtual.maquinas?.length) {
-    alert(
-      "Não foi possível interpretar o print automaticamente. Confira o OCR."
-    );
+  // Se o OCR devolveu literalmente nada ou quase nada
+  if (!texto || texto.trim().length < 10) {
+    alert("O OCR não conseguiu ler o print (texto vazio ou muito curto).");
+    const preview = document.getElementById("previewExtracao");
+    const dados = document.getElementById("dadosExtraidos");
+    if (preview && dados) {
+      preview.style.display = "block";
+      dados.innerText = "[OCR não retornou texto útil]\n\n" + (texto || "");
+    }
     return;
   }
 
+  extracaoAtual = extrairRelatorioDoOcr(texto);
+
+  // Se não achou nenhuma máquina, vamos mostrar o texto cru pra debug
+  if (!extracaoAtual || !extracaoAtual.maquinas?.length) {
+    alert(
+      "Não consegui identificar as máquinas automaticamente.\n" +
+        "Vou mostrar o texto cru do OCR na tela. Copia isso pra mim depois, por favor."
+    );
+
+    const preview = document.getElementById("previewExtracao");
+    const dados = document.getElementById("dadosExtraidos");
+    if (preview && dados) {
+      preview.style.display = "block";
+      dados.innerText = texto;
+    }
+    extracaoAtual = null;
+    return;
+  }
+
+  // Se deu certo, segue o fluxo normal
   mostrarExtracaoNaTela(extracaoAtual);
 }
 
-// OCR REAL — igual ao Retenção
+// OCR LOCAL — igual Retenção / Pré-Fecho (Tesseract no navegador)
 async function extrairTextoOCR(file) {
-  try {
-    const formData = new FormData();
-    formData.append("imagem", file);
-
-    const resp = await fetch(`${URL_BACKEND}/ocr`, {
-      method: "POST",
-      body: formData
-    });
-
-    if (!resp.ok) {
-      console.error("Falha no OCR:", resp.status);
-      return "";
-    }
-
-    const data = await resp.json();
-    return data.texto || "";
-  } catch (err) {
-    console.error("Erro no OCR:", err);
+  if (!window.Tesseract) {
+    alert("Biblioteca de OCR (Tesseract.js) não carregada.");
     return "";
   }
+
+  try {
+    if (window.toast) toast.info("Lendo imagem, aguarde...");
+  } catch (e) {}
+
+  let texto = "";
+  try {
+    const { data } = await Tesseract.recognize(file, "por+eng", {
+      logger: (m) => console.log("[OCR Relatório de Pontos]", m)
+    });
+    texto = (data && data.text) ? data.text : "";
+  } catch (err) {
+    console.error("Erro no OCR (Relatório de Pontos):", err);
+    alert("Não foi possível ler a imagem.");
+    texto = "";
+  }
+
+  limparToast();
+  return texto;
 }
 
 /* ===== 2. EXTRAIR DADOS DO TEXTO ===== */
@@ -162,25 +202,27 @@ function extrairRelatorioDoOcr(texto) {
   texto = (texto || "").replace(/\r/g, "");
   const linhas = texto
     .split("\n")
-    .map(l => l.trim())
-    .filter(l => l.length > 0);
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0);
 
   // ===== Cliente / Ponto =====
   let pontoNome = "PONTO DESCONHECIDO";
-  const linhaCliente = linhas.find(l => l.toLowerCase().startsWith("cliente"));
+  const linhaCliente = linhas.find((l) =>
+    l.toLowerCase().startsWith("cliente")
+  );
   if (linhaCliente) {
     const partes = linhaCliente.split(":");
     if (partes[1]) {
       pontoNome = partes[1].trim();
     }
   }
-  const pontoExibicao = pontoNome.toUpperCase(); // sempre maiúsculo
+  const pontoExibicao = pontoNome.toUpperCase();
   const pontoChave = gerarSlugPonto(pontoExibicao);
 
   // ===== Data do fechamento =====
   let dataFechamentoISO = null;
   let dataFechamentoDate = new Date();
-  const linhaData = linhas.find(l => l.toLowerCase().startsWith("data"));
+  const linhaData = linhas.find((l) => l.toLowerCase().startsWith("data"));
   if (linhaData) {
     const m = linhaData.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
     if (m) {
@@ -205,14 +247,20 @@ function extrairRelatorioDoOcr(texto) {
   const maquinas = [];
   let atual = null;
 
-  linhas.forEach(l => {
-    // Cabeçalho da máquina: "1-IE033 (Seven America)" ou "2-1B158 (HL)"
-    const cab = l.match(/^\d+\s*-\s*([A-Za-z0-9]+)\s*\((.+)\)/);
+  linhas.forEach((l) => {
+    // Cabeçalho da máquina:
+    // "1-10E33 (Seven (America))"
+    // "2-1B158 (HL)"
+    // "IE033 (Seven America)"
+    const cab = l.match(/^(\d+\s*-\s*)?([A-Za-z0-9]+)\s*\((.+)\)/);
     if (cab) {
       if (atual) maquinas.push(atual);
 
-      const selo = normalizarSelo(cab[1]);
-      const jogo = cab[2].trim().toUpperCase();
+      const seloBruto = cab[2];
+      const jogoBruto = cab[3];
+
+      const selo = normalizarSelo(seloBruto);
+      const jogo = (jogoBruto || "").trim().toUpperCase();
 
       atual = {
         selo,
@@ -255,7 +303,7 @@ function extrairRelatorioDoOcr(texto) {
   let totalSaida = 0;
   let totalSobra = 0;
 
-  maquinas.forEach(m => {
+  maquinas.forEach((m) => {
     totalEntrada += m.entrada;
     totalSaida += m.saida;
     totalSobra += m.sobra;
@@ -283,7 +331,7 @@ function mostrarExtracaoNaTela(data) {
 
   const htmlMaquinas = data.maquinas
     .map(
-      m => `
+      (m) => `
     <div style="margin-bottom:10px;">
       <b>${m.selo}</b> — ${m.jogo}<br>
       Entrada: ${formatarMoedaBR(m.entrada)} |
@@ -346,15 +394,15 @@ function descartarExtracao() {
 /* ===== 5. CARREGAR SELECTS ===== */
 function carregarPontosNosSelects() {
   const registros = getRegistros();
-  const pontos = [...new Set(registros.map(r => r.pontoChave))];
+  const pontos = [...new Set(registros.map((r) => r.pontoChave))];
 
   const selects = ["selectPontoSemanal", "selectPontoConsolidado"];
-  selects.forEach(id => {
+  selects.forEach((id) => {
     const select = document.getElementById(id);
     if (!select) return;
     select.innerHTML = `<option value="">Selecione</option>`;
-    pontos.forEach(p => {
-      const item = registros.find(r => r.pontoChave === p);
+    pontos.forEach((p) => {
+      const item = registros.find((r) => r.pontoChave === p);
       select.innerHTML += `<option value="${p}">${item.pontoExibicao}</option>`;
     });
   });
@@ -371,10 +419,10 @@ function carregarSemanas() {
     return;
   }
 
-  const registros = getRegistros().filter(r => r.pontoChave === ponto);
+  const registros = getRegistros().filter((r) => r.pontoChave === ponto);
 
   selectSemana.innerHTML = "";
-  registros.forEach(r => {
+  registros.forEach((r) => {
     const periodo = `${formatarDataBR(r.periodo.inicio)} até ${formatarDataBR(
       r.periodo.fim
     )}`;
@@ -385,7 +433,7 @@ function carregarSemanas() {
 /* ===== 6. RELATÓRIO SEMANAL ===== */
 function gerarRelatorioSemanal() {
   const id = Number(document.getElementById("selectSemana").value);
-  const registro = getRegistros().find(r => r.id === id);
+  const registro = getRegistros().find((r) => r.id === id);
   if (!registro) return;
 
   const html = montarHtmlRelatorio(registro, "Relatório Semanal");
@@ -396,18 +444,56 @@ function gerarRelatorioSemanal() {
 /* ===== 7. RELATÓRIO CONSOLIDADO ===== */
 function gerarRelatorioConsolidado() {
   const ponto = document.getElementById("selectPontoConsolidado").value;
-  const qtd = Number(document.getElementById("selectQtdSemanas").value);
 
-  const registros = getRegistros()
-    .filter(r => r.pontoChave === ponto)
-    .sort((a, b) => new Date(b.periodo.fim) - new Date(a.periodo.fim))
-    .slice(0, qtd);
+  // lê de um input number (novo). Se não existir, cai no select antigo.
+  let qtd = 0;
+  const inputQtd = document.getElementById("inputQtdSemanas");
+  if (inputQtd) {
+    qtd = Number(inputQtd.value);
+  } else {
+    const selQtd = document.getElementById("selectQtdSemanas");
+    qtd = selQtd ? Number(selQtd.value) : 0;
+  }
 
-  if (registros.length === 0) return;
+  if (!ponto) {
+    alert("Selecione um ponto primeiro.");
+    return;
+  }
+
+  if (!qtd || qtd <= 0) {
+    alert("Informe uma quantidade de semanas válida (mínimo 1).");
+    return;
+  }
+
+  const todosRegistros = getRegistros()
+    .filter((r) => r.pontoChave === ponto)
+    .sort((a, b) => new Date(b.periodo.fim) - new Date(a.periodo.fim));
+
+  if (todosRegistros.length === 0) {
+    alert("Ainda não há fechamentos salvos para esse ponto.");
+    return;
+  }
+
+  let qtdUsada = qtd;
+
+  if (qtd > todosRegistros.length) {
+    const disponiveis = todosRegistros.length;
+    const ok = confirm(
+      `Você pediu ${qtd} semana(s), mas só existem ${disponiveis} semana(s) cadastradas para este ponto.\n\n` +
+        `Deseja gerar o relatório assim mesmo, usando apenas ${disponiveis} semana(s)?`
+    );
+    if (!ok) return;
+    qtdUsada = disponiveis;
+  }
+
+  const registros = todosRegistros.slice(0, qtdUsada);
 
   const relatorio = consolidarRegistros(registros);
 
-  const html = montarHtmlRelatorio(relatorio, `Consolidado (${qtd} semanas)`);
+  const html = montarHtmlRelatorio(
+    relatorio,
+    `Consolidado (${qtdUsada} semana${qtdUsada > 1 ? "s" : ""})`
+  );
 
   abrirModal(html);
 }
@@ -420,12 +506,12 @@ function consolidarRegistros(lista) {
 
   const maquinas = {};
 
-  lista.forEach(r => {
+  lista.forEach((r) => {
     totalEntrada += r.totais.entrada;
     totalSaida += r.totais.saida;
     totalSobra += r.totais.sobra;
 
-    r.maquinas.forEach(m => {
+    r.maquinas.forEach((m) => {
       if (!maquinas[m.selo]) {
         maquinas[m.selo] = {
           selo: m.selo,
@@ -449,21 +535,8 @@ function consolidarRegistros(lista) {
 
 /* ===== 8. HTML DO MODAL ===== */
 function montarHtmlRelatorio(r, titulo) {
-  let periodoHtml = "";
-  if (r.periodo && r.periodo.inicio && r.periodo.fim) {
-    periodoHtml = `
-      <div>
-        <strong>Período:</strong> ${formatarDataBR(
-          r.periodo.inicio
-        )} até ${formatarDataBR(r.periodo.fim)}
-      </div>
-      <br>
-    `;
-  }
-
   return `
     <h2>${r.pontoExibicao} — ${titulo}</h2>
-    ${periodoHtml}
 
     <h3>Totais do Ponto</h3>
     Entrada: ${formatarMoedaBR(r.totais.entrada)}<br>
@@ -473,7 +546,7 @@ function montarHtmlRelatorio(r, titulo) {
     <h3>Máquinas</h3>
     ${r.maquinas
       .map(
-        m => `
+        (m) => `
       <div style="margin-bottom:8px;">
         <b>${m.selo}</b> — 
         Entrada: ${formatarMoedaBR(m.entrada)} |
@@ -491,14 +564,14 @@ function desfazerUltimo() {
   const ponto = document.getElementById("selectPontoConsolidado").value;
   if (!ponto) return;
 
-  let registros = getRegistros().filter(r => r.pontoChave === ponto);
+  let registros = getRegistros().filter((r) => r.pontoChave === ponto);
   if (registros.length === 0) return;
 
   registros.sort((a, b) => new Date(b.periodo.fim) - new Date(a.periodo.fim));
 
   const ultimo = registros[0];
 
-  const todos = getRegistros().filter(r => r.id !== ultimo.id);
+  const todos = getRegistros().filter((r) => r.id !== ultimo.id);
   salvarRegistros(todos);
 
   alert("Último fechamento removido.");
