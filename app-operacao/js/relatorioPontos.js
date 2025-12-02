@@ -165,6 +165,24 @@ function parseNumero(str) {
       .replace(",", ".")
   ) || 0;
 }
+function normalizarSelo(bruto) {
+  if (!bruto) return "";
+  // deixa só letras e números
+  let s = bruto.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  // se tiver um padrão certinho LLNNN (ex: IE033), usa esse
+  const strict = s.match(/[A-Z]{2}\d{3}/);
+  if (strict) {
+    s = strict[0];
+  }
+
+  // se ficou algo tipo 1E033, IE033, LE033 etc (1/I/L confundidos)
+  if (/^[1IL][A-Z]\d{3}$/.test(s)) {
+    s = "I" + s.slice(1); // força o primeiro caractere a ser "I"
+  }
+
+  return s;
+}
 
 /**
  * Faz o parse do texto lido do print, retornando
@@ -228,35 +246,36 @@ function interpretarTextoFechamento(texto) {
     // CABEÇALHO DE MÁQUINA
     // ex: "1-IE033 (Seven (America))" ou "2-IB158 (HL)"
     const mCabecalho = l.match(/^\d+\s*-\s*([^\s(]+)/);
-    if (mCabecalho && l.includes("(")) {
-      if (atual) maquinas.push(atual);
+if (mCabecalho && l.includes("(")) {
+  if (atual) maquinas.push(atual);
 
-      // tenta pegar primeiro um selo 2 letras + 3 números em qualquer lugar da linha
-      let selo = "";
-      const mSeloStrict = l.match(/([A-Za-z]{2}\d{3})/);
-      if (mSeloStrict) {
-        selo = mSeloStrict[1].toUpperCase();
-      } else {
-        // fallback: token logo após o hífen
-        selo = mCabecalho[1].toUpperCase();
-      }
+  // tenta achar selo certinho LLNNN; se não achar, usa o token após o hífen
+  let seloBruto = "";
+  const mSeloStrict = l.match(/([A-Za-z]{2}\d{3})/);
+  if (mSeloStrict) {
+    seloBruto = mSeloStrict[1];
+  } else {
+    seloBruto = mCabecalho[1];
+  }
+  const selo = normalizarSelo(seloBruto);
 
-      // jogo = texto dentro do primeiro par de parênteses
-      let jogo = "";
-      const mJogo = l.match(/\(([^)]+)\)/);
-      if (mJogo) {
-        jogo = mJogo[1].trim().toUpperCase();
-      }
+  // jogo = texto dentro do primeiro par de parênteses
+  let jogo = "";
+  const mJogo = l.match(/\(([^)]+)\)/);
+  if (mJogo) {
+    jogo = mJogo[1].trim().toUpperCase();
+  }
 
-      atual = {
-        selo,
-        jogo,
-        entrada: 0,
-        saida: 0,
-        sobra: 0
-      };
-      continue;
-    }
+  atual = {
+    selo,
+    jogo,
+    entrada: 0,
+    saida: 0,
+    sobra: 0
+  };
+  continue;
+}
+
 
     if (!atual) continue;
 
@@ -398,13 +417,14 @@ function aprovarFechamento() {
     const periodo = calcularPeriodoSemana(dataFechamentoDate);
 
     const maquinasCompletas = maquinas.map((m, idx) => ({
-      numero: idx + 1,
-      selo: (m.selo || "").toUpperCase(),
-      jogo: (m.jogo || "").toUpperCase(),
-      entrada: m.entrada || 0,
-      saida: m.saida || 0,
-      sobra: (m.entrada || 0) - (m.saida || 0)
-    }));
+  numero: idx + 1,
+  selo: normalizarSelo(m.selo),
+  jogo: (m.jogo || "").toUpperCase(),
+  entrada: m.entrada || 0,
+  saida: m.saida || 0,
+  sobra: (m.entrada || 0) - (m.saida || 0)
+}));
+
 
     const totais = maquinasCompletas.reduce(
       (acc, m) => {
