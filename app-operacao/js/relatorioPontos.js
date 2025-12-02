@@ -15,21 +15,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btnGerarSemanal").onclick = gerarRelatorioSemanal;
   document.getElementById("btnGerarConsolidado").onclick =
     gerarRelatorioConsolidado;
-
   const btnRemover = document.getElementById("btnRemoverFechamento");
-  if (btnRemover) btnRemover.onclick = removerFechamentoSelecionado;
+  if (btnRemover) btnRemover.onclick = removerFechamento;
 
   document.getElementById("fecharModal").onclick = fecharModal;
 
   const selPontoSem = document.getElementById("selectPontoSemanal");
   if (selPontoSem) selPontoSem.addEventListener("change", carregarSemanas);
-
-  const modalRel = document.getElementById("modalRelatorio");
-  if (modalRel) {
-    modalRel.addEventListener("click", (e) => {
-      if (e.target.id === "modalRelatorio") fecharModal();
-    });
-  }
 
   // restaura extração em andamento (caso a página tenha sido recarregada)
   restaurarExtracaoAtual();
@@ -37,33 +29,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ===== HELPERS GERAIS ===== */
 
-function parseMoedaBR(str) {
-  if (!str) return 0;
-  const limpo = str
-    .replace(/[^\d,.-]/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
-  const n = parseFloat(limpo);
-  return isNaN(n) ? 0 : n;
+function getRegistros() {
+  try {
+    const raw = localStorage.getItem("relatorio_pontos_v1");
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error("Erro ao ler registros do localStorage:", e);
+    return [];
+  }
+}
+
+function salvarRegistros(lista) {
+  localStorage.setItem("relatorio_pontos_v1", JSON.stringify(lista));
+}
+
+function proximoId() {
+  const regs = getRegistros();
+  let maior = 0;
+  regs.forEach((r) => {
+    if (r.id > maior) maior = r.id;
+  });
+  return maior + 1;
 }
 
 function formatarMoedaBR(valor) {
-  return (Number(valor) || 0).toLocaleString("pt-BR", {
+  const n = Number(valor) || 0;
+  return n.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2
   });
 }
 
-function formatarPercent(valor) {
-  return (Number(valor) || 0).toFixed(2) + "%";
-}
-
 function gerarSlugPonto(nome) {
-  return (nome || "")
+  if (!nome) return "";
+  return nome
+    .trim()
+    .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-+|-+$)/g, "");
 }
@@ -87,7 +92,7 @@ function formatarDataBRCurta(iso) {
   return `${d}/${m}/${y.slice(2)}`;
 }
 
-// calcula segunda e domingo da semana do fechamento (segunda–domingo)
+// calcula a semana (segunda a domingo) onde cai a data do fechamento
 function calcularPeriodoSemana(dataFechamento) {
   const diaSemana = dataFechamento.getDay(); // 0 = dom, 1 = seg...
   const diffSegunda = (diaSemana + 6) % 7; // distância até segunda
@@ -101,447 +106,344 @@ function calcularPeriodoSemana(dataFechamento) {
   };
 }
 
-/* Helper para limpar toasts, igual outras telas */
-function limparToast() {
-  try {
-    if (window.toast?.dismissAll) window.toast.dismissAll();
-    else if (window.toast?.clearAll) window.toast.clearAll();
-  } catch (e) {}
-  try {
-    document
-      .querySelectorAll(".toast, .toast-container, [id*='toast']")
-      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
-  } catch (e) {}
-}
+/* ===== 1. CARREGAR PONTOS NOS SELECTS ===== */
+function carregarPontosNosSelects() {
+  const registros = getRegistros();
+  const pontosMap = new Map();
 
-/*
-  Normaliza selo para o padrão:
-  - SEMPRE 2 letras + 3 números (LLNNN)
-  - Corrige casos de OCR como:
-      "1E033" -> "IE033"
-      "1B158" -> "IB158"
-*/
-function normalizarSelo(seloBruto) {
-  let txt = (seloBruto || "").toUpperCase().trim();
-
-  // caso típico: OCR lê "1E033" ou "1B158" (1 no lugar de I)
-  const bugI = txt.match(/^1([A-Z]\d{3})$/);
-  if (bugI) {
-    return "I" + bugI[1]; // IE033, IB158...
-  }
-
-  // limpa qualquer coisa que não seja letra ou número
-  txt = txt.replace(/[^A-Z0-9]/g, "");
-
-  // se já estiver certinho (LLNNN), mantém
-  const padraoOk = txt.match(/^([A-Z]{2}\d{3})$/);
-  if (padraoOk) {
-    return padraoOk[1];
-  }
-
-  // fallback: se vier só 1 letra + 3 números, assume que falta um 'I' no início
-  const umLetraTresNum = txt.match(/^([A-Z]\d{3})$/);
-  if (umLetraTresNum) {
-    return "I" + umLetraTresNum[1];
-  }
-
-  // último recurso: devolve o texto como veio (pra debug)
-  return txt;
-}
-
-/* ===== STORAGE ===== */
-const KEY = "relatorioPontos_registros";
-const KEY_EXTRACAO_ATUAL = "relatorioPontos_extracaoAtual";
-
-function getRegistros() {
-  return JSON.parse(localStorage.getItem(KEY) || "[]");
-}
-
-function salvarRegistros(lista) {
-  localStorage.setItem(KEY, JSON.stringify(lista));
-}
-
-function salvarExtracaoAtual() {
-  if (extracaoAtual) {
-    localStorage.setItem(KEY_EXTRACAO_ATUAL, JSON.stringify(extracaoAtual));
-  } else {
-    localStorage.removeItem(KEY_EXTRACAO_ATUAL);
-  }
-}
-
-function restaurarExtracaoAtual() {
-  try {
-    const salvo = localStorage.getItem(KEY_EXTRACAO_ATUAL);
-    if (!salvo) return;
-    const obj = JSON.parse(salvo);
-    if (obj && obj.maquinas && obj.maquinas.length) {
-      extracaoAtual = obj;
-      mostrarExtracaoNaTela(extracaoAtual);
+  registros.forEach((r) => {
+    if (!pontosMap.has(r.pontoChave)) {
+      pontosMap.set(r.pontoChave, r.pontoExibicao);
     }
-  } catch (e) {
-    console.error("Erro ao restaurar extração atual:", e);
-  }
-}
-
-/* ===== DUPLICIDADE DE FECHAMENTO ===== */
-
-function gerarAssinaturaMaquinas(listaMaquinas) {
-  const arr = (listaMaquinas || []).map((m) => ({
-    selo: (m.selo || "").toUpperCase(),
-    entrada: Number(m.entrada) || 0,
-    saida: Number(m.saida) || 0
-  }));
-
-  arr.sort((a, b) => {
-    if (a.selo < b.selo) return -1;
-    if (a.selo > b.selo) return 1;
-    if (a.entrada !== b.entrada) return a.entrada - b.entrada;
-    return a.saida - b.saida;
   });
 
-  return arr.map((m) => `${m.selo}|${m.entrada}|${m.saida}`).join(";");
-}
+  const selSem = document.getElementById("selectPontoSemanal");
+  const selCons = document.getElementById("selectPontoConsolidado");
 
-function ehFechamentoDuplicado(novo, registros) {
-  const assinaturaNovo = gerarAssinaturaMaquinas(novo.maquinas);
-
-  return registros.some((r) => {
-    if (!r || !r.maquinas) return false;
-    if (r.pontoChave !== novo.pontoChave) return false;
-
-    // mesma semana (segunda–domingo)
-    if (r.periodo && novo.periodo) {
-      if (
-        r.periodo.inicio !== novo.periodo.inicio ||
-        r.periodo.fim !== novo.periodo.fim
-      ) {
-        return false;
-      }
-    }
-
-    const assinaturaExistente = gerarAssinaturaMaquinas(r.maquinas);
-    return assinaturaExistente === assinaturaNovo;
+  [selSem, selCons].forEach((sel) => {
+    if (!sel) return;
+    sel.innerHTML = "<option value=''>Selecione</option>";
+    pontosMap.forEach((nome, chave) => {
+      sel.innerHTML += `<option value="${chave}">${nome}</option>`;
+    });
   });
+
+  // ao mudar o ponto no relatório semanal, recarrega as semanas
+  carregarSemanas();
 }
 
-/* ===== 1. PROCESSAR PRINT ===== */
-let extracaoAtual = null;
+/* ===== 2. OCR / IMPORTAÇÃO DO PRINT ===== */
 
-async function processarPrint() {
-  const file = document.getElementById("inputPrint").files[0];
-  if (!file) {
-    alert("Escolha um print primeiro.");
-    return;
-  }
-
-  const texto = await extrairTextoOCR(file);
-
-  console.log("=== OCR RELATÓRIO DE PONTOS (BRUTO) ===");
-  console.log(texto);
-
-  // Se o OCR devolveu literalmente nada ou quase nada
-  if (!texto || texto.trim().length < 10) {
-    alert("O OCR não conseguiu ler o print (texto vazio ou muito curto).");
-    const preview = document.getElementById("previewExtracao");
-    const dados = document.getElementById("dadosExtraidos");
-    if (preview && dados) {
-      preview.style.display = "block";
-      dados.innerText = "[OCR não retornou texto útil]\n\n" + (texto || "");
-    }
-    return;
-  }
-
-  extracaoAtual = extrairRelatorioDoOcr(texto);
-
-  // Se não achou nenhuma máquina, vamos mostrar o texto cru pra debug
-  if (!extracaoAtual || !extracaoAtual.maquinas?.length) {
-    alert(
-      "Não consegui identificar as máquinas automaticamente.\n" +
-        "Vou mostrar o texto cru do OCR na tela. Copia isso pra mim depois, por favor."
-    );
-
-    const preview = document.getElementById("previewExtracao");
-    const dados = document.getElementById("dadosExtraidos");
-    if (preview && dados) {
-      preview.style.display = "block";
-      dados.innerText = texto;
-    }
-    extracaoAtual = null;
-    salvarExtracaoAtual();
-    return;
-  }
-
-  // Se deu certo, segue o fluxo normal
-  salvarExtracaoAtual();
-  mostrarExtracaoNaTela(extracaoAtual);
-}
-
-// OCR LOCAL — igual Retenção / Pré-Fecho (Tesseract no navegador)
-async function extrairTextoOCR(file) {
-  if (!window.Tesseract) {
-    alert("Biblioteca de OCR (Tesseract.js) não carregada.");
-    return "";
-  }
-
+async function lerTextoDoPrint(file) {
+  if (!file) return "";
   try {
-    if (window.toast) toast.info("Lendo imagem, aguarde...");
-  } catch (e) {}
+    toast.info("Lendo imagem, aguarde...");
 
-  let texto = "";
-  try {
     const { data } = await Tesseract.recognize(file, "por+eng", {
       logger: (m) => console.log("[OCR Relatório de Pontos]", m)
     });
-    texto = data && data.text ? data.text : "";
+    const texto = (data && data.text) ? data.text : "";
+    console.log("OCR (Relatório de Pontos):", texto);
+    return texto;
   } catch (err) {
     console.error("Erro no OCR (Relatório de Pontos):", err);
     alert("Não foi possível ler a imagem.");
-    texto = "";
+    return "";
+  } finally {
+    limparToast();
   }
-
-  limparToast();
-  return texto;
 }
 
-/* ===== 2. EXTRAIR DADOS DO TEXTO ===== */
-function extrairRelatorioDoOcr(texto) {
-  texto = (texto || "").replace(/\r/g, "");
+function limparToast() {
+  if (window.toast && toast.clear) toast.clear();
+}
+
+/**
+ * Faz o parse do texto lido do print, retornando
+ * um objeto com ponto, data, lista de máquinas, etc.
+ */
+function interpretarTextoFechamento(texto) {
+  // quebra em linhas
   const linhas = texto
-    .split("\n")
+    .split(/\r?\n/)
     .map((l) => l.trim())
-    .filter((l) => l.length > 0);
+    .filter(Boolean);
 
-  // ===== Cliente / Ponto =====
-  let pontoNome = "PONTO DESCONHECIDO";
-  const linhaCliente = linhas.find((l) =>
-    l.toLowerCase().startsWith("cliente")
+  console.log("Linhas normalizadas:", linhas);
+
+  // encontrar linha do ponto/cliente
+  let ponto = "";
+  const linhaPonto = linhas.find((l) =>
+    l.toUpperCase().startsWith("CLIENTE")
   );
-  if (linhaCliente) {
-    const partes = linhaCliente.split(":");
-    if (partes[1]) {
-      pontoNome = partes[1].trim();
-    }
+  if (linhaPonto) {
+    const partes = linhaPonto.split(/[:\-]/);
+    ponto = (partes[1] || "").trim().toUpperCase();
   }
-  const pontoExibicao = pontoNome.toUpperCase();
-  const pontoChave = gerarSlugPonto(pontoExibicao);
 
-  // ===== Data do fechamento =====
-  let dataFechamentoISO = null;
-  let dataFechamentoDate = new Date();
-  const linhaData = linhas.find((l) => l.toLowerCase().startsWith("data"));
-  if (linhaData) {
-    const m = linhaData.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+  // encontrar data do fechamento (primeira coisa que parecer data dd/mm/aa ou dd/mm/aaaa)
+  let dataFechamentoISO = "";
+  for (const l of linhas) {
+    const m = l.match(/(\d{2})\/(\d{2})\/(\d{2,4})/);
     if (m) {
-      let [_, d, mo, y] = m;
-      let anoNum = parseInt(y, 10);
-      if (anoNum < 100) anoNum += 2000; // 25 -> 2025
-      const dt = new Date(anoNum, parseInt(mo, 10) - 1, parseInt(d, 10));
-      if (!isNaN(dt.getTime())) {
-        dataFechamentoDate = dt;
-        dataFechamentoISO = formatarDataISO(dt);
-      }
+      const dia = m[1];
+      const mes = m[2];
+      let ano = m[3];
+      if (ano.length === 2) ano = "20" + ano;
+      dataFechamentoISO = `${ano}-${mes}-${dia}`;
+      break;
     }
   }
-  if (!dataFechamentoISO) {
-    dataFechamentoISO = formatarDataISO(dataFechamentoDate);
-  }
 
-  // ===== Período da semana (segunda a domingo) =====
-  const periodo = calcularPeriodoSemana(dataFechamentoDate);
-
-  // ===== Máquinas =====
+  // máquinas: procurar linhas que tenham padrão de selo + jogo + E/S
   const maquinas = [];
   let atual = null;
 
-  linhas.forEach((l) => {
-    // Cabeçalho da máquina:
-    // "1-1E033 (Seven (America))"  -> num=1, seloBruto="1E033"
-    // "2-1B158 (HL)"              -> num=2, seloBruto="1B158"
-    // "IE033 (Seven America)"     -> sem número
-    const cabComNumero = l.match(/^(\d+)\s*-\s*([A-Za-z0-9]+)\s*\((.+)\)/);
-    const cabSemNumero = !cabComNumero
-      ? l.match(/^([A-Za-z0-9]+)\s*\((.+)\)/)
-      : null;
-
-    if (cabComNumero || cabSemNumero) {
-      if (atual) maquinas.push(atual);
-
-      let numero = "";
-      let seloBruto = "";
-      let jogoBruto = "";
-
-      if (cabComNumero) {
-        numero = cabComNumero[1]; // "1", "2", ...
-        seloBruto = cabComNumero[2]; // "1E033", "1B158"...
-        jogoBruto = cabComNumero[3];
-      } else {
-        seloBruto = cabSemNumero[1];
-        jogoBruto = cabSemNumero[2];
+  for (const l of linhas) {
+    // detectar selo (duas letras + 3 números, ex: IE033)
+    const mSelo = l.match(/\b([A-Za-z]{2}\d{3})\b/);
+    if (mSelo) {
+      // quando encontra um selo novo, fecha a máquina anterior (se houver)
+      if (atual) {
+        maquinas.push(atual);
       }
-
-      const selo = normalizarSelo(seloBruto);
-      const jogo = (jogoBruto || "").trim().toUpperCase();
-
+      const selo = mSelo[1].toUpperCase();
+      // jogo: tentar pegar algo depois do selo, se existir
+      let jogo = "";
+      const idx = l.indexOf(selo);
+      if (idx >= 0) {
+        jogo = l
+          .slice(idx + selo.length)
+          .replace(/[:\-]/g, " ")
+          .trim()
+          .toUpperCase();
+      }
       atual = {
-        numero: numero || null,
         selo,
         jogo,
         entrada: 0,
         saida: 0,
         sobra: 0
       };
-      return;
+      continue;
     }
 
-    if (!atual) return;
+    if (!atual) continue;
 
-    // Linha de Entrada: "(E) xxxx - yyyy = R$ 1.503,00"
-    if (l.toUpperCase().startsWith("(E)")) {
-      const m = l.match(/R\$\s*([\d\.,]+)/i);
-      if (m) atual.entrada = parseMoedaBR(m[1]);
-      return;
+    // procurar entrada e saída na linha: sempre após "E" e "S", usando o que vem depois do "-"
+    // Ex: "(E) - 1.503,00 (S) - 1.318,85"
+    const mEntrada = l.match(/\(E\)\s*-\s*([\d\.\,]+)/i);
+    const mSaida = l.match(/\(S\)\s*-\s*([\d\.\,]+)/i);
+
+    if (mEntrada) {
+      atual.entrada = parseNumero(mEntrada[1]);
     }
-
-    // Linha de Saída: "(S) xxxx - yyyy = R$ 1.318,85"
-    if (l.toUpperCase().startsWith("(S)")) {
-      const m = l.match(/R\$\s*([\d\.,]+)/i);
-      if (m) atual.saida = parseMoedaBR(m[1]);
-      return;
+    if (mSaida) {
+      atual.saida = parseNumero(mSaida[1]);
     }
+  }
 
-    // Linha de (Total) a gente ignora agora; a sobra é calculada manualmente.
-  });
+  if (atual) {
+    maquinas.push(atual);
+  }
 
-  if (atual) maquinas.push(atual);
-
-  // ===== Totais do ponto =====
-  let totalEntrada = 0;
-  let totalSaida = 0;
-  let totalSobra = 0;
-
+  // calcular sobras (entrada - saída)
   maquinas.forEach((m) => {
-    // sobra sempre calculada como entrada - saída
     m.sobra = (m.entrada || 0) - (m.saida || 0);
-
-    totalEntrada += m.entrada;
-    totalSaida += m.saida;
-    totalSobra += m.sobra;
   });
 
   return {
-    pontoChave,
-    pontoExibicao,
-    periodo, // { inicio: 'YYYY-MM-DD', fim: 'YYYY-MM-DD' }
-    dataFechamento: dataFechamentoISO,
-    maquinas,
-    totais: {
-      entrada: totalEntrada,
-      saida: totalSaida,
-      sobra: totalSobra
-    }
+    ponto,
+    dataFechamentoISO,
+    maquinas
   };
 }
 
-/* ===== 3. MOSTRAR PRÉ-VISUALIZAÇÃO ===== */
-function mostrarExtracaoNaTela(data) {
-  if (!data) return;
-
-  const preview = document.getElementById("previewExtracao");
-  if (preview) preview.style.display = "block";
-
-  const htmlMaquinas = data.maquinas
-    .map((m) => {
-      const prefixo =
-        m.numero != null && m.numero !== "" ? `${m.numero} - ` : "";
-      return `
-        <div style="margin-bottom:10px;">
-          <b>${prefixo}${m.selo}</b> — ${m.jogo}<br>
-          Entrada: ${formatarMoedaBR(m.entrada)} |
-          Saída: ${formatarMoedaBR(m.saida)} |
-          Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
-        </div>
-      `;
-    })
-    .join("");
-
-  const periodoTexto = `${formatarDataBR(
-    data.periodo.inicio
-  )} até ${formatarDataBR(data.periodo.fim)}`;
-
-  document.getElementById("dadosExtraidos").innerHTML = `
-    <strong>Ponto:</strong> ${data.pontoExibicao}<br>
-    <strong>Data do fechamento:</strong> ${formatarDataBR(
-      data.dataFechamento
-    )}<br>
-    <strong>Período da semana:</strong> ${periodoTexto}<br><br>
-
-    <strong>Totais do ponto:</strong><br>
-    Entrada: ${formatarMoedaBR(data.totais.entrada)}<br>
-    Saída: ${formatarMoedaBR(data.totais.saida)}<br>
-    Sobra: <b>${formatarMoedaBR(data.totais.sobra)}</b><br><br>
-
-    <strong>Máquinas:</strong><br>
-    ${htmlMaquinas}
-  `;
+// parse simples de número pt-BR
+function parseNumero(str) {
+  if (!str) return 0;
+  return Number(
+    str
+      .toString()
+      .replace(/\./g, "")
+      .replace(",", ".")
+  ) || 0;
 }
 
-/* ===== 4. APROVAR FECHAMENTO ===== */
-function aprovarFechamento() {
-  if (!extracaoAtual) return;
+/* ===== 3. PRÉ-VISUALIZAÇÃO DA EXTRAÇÃO ===== */
 
-  const registros = getRegistros();
+const TEMP_KEY = "relatorio_pontos_extracao_atual";
 
-  if (ehFechamentoDuplicado(extracaoAtual, registros)) {
-    alert(
-      "Este fechamento já parece ter sido importado para esta semana.\n" +
-        "Não será salvo novamente."
-    );
+async function processarPrint() {
+  const input = document.getElementById("inputPrint");
+  const file = input.files && input.files[0];
+  if (!file) {
+    alert("Selecione uma imagem primeiro.");
     return;
   }
 
-  registros.push({
-    ...extracaoAtual,
-    id: Date.now(),
-    aprovado: true,
-    criadoEm: new Date().toISOString()
-  });
+  const texto = await lerTextoDoPrint(file);
+  if (!texto) return;
 
-  salvarRegistros(registros);
+  const dados = interpretarTextoFechamento(texto);
+  console.log("Dados interpretados (fechamento):", dados);
 
-  alert("Fechamento salvo com sucesso!");
+  // salva extração temporária
+  localStorage.setItem(TEMP_KEY, JSON.stringify(dados));
 
-  extracaoAtual = null;
-  salvarExtracaoAtual();
-  document.getElementById("previewExtracao").style.display = "none";
-
-  carregarPontosNosSelects();
+  mostrarExtracaoNaTela(dados);
 }
 
-/* DESCARTAR */
+function restaurarExtracaoAtual() {
+  try {
+    const raw = localStorage.getItem(TEMP_KEY);
+    if (!raw) return;
+    const dados = JSON.parse(raw);
+    if (!dados || !dados.maquinas || !dados.maquinas.length) return;
+    mostrarExtracaoNaTela(dados);
+  } catch (e) {
+    console.error("Erro ao restaurar extração atual:", e);
+  }
+}
+
+function mostrarExtracaoNaTela(dados) {
+  const divPreview = document.getElementById("previewExtracao");
+  const divDados = document.getElementById("dadosExtraidos");
+
+  if (!dados || !dados.maquinas || !dados.maquinas.length) {
+    divPreview.style.display = "none";
+    divDados.innerHTML = "";
+    return;
+  }
+
+  divPreview.style.display = "block";
+
+  const { ponto, dataFechamentoISO, maquinas } = dados;
+
+  const pontoExibicao = (ponto || "").toUpperCase() || "(SEM NOME)";
+  const dataBR = formatarDataBR(dataFechamentoISO);
+
+  let html = `<p><b>Ponto:</b> ${pontoExibicao}<br><b>Data do Fechamento:</b> ${
+    dataBR || "-"
+  }</p>`;
+
+  html += "<ul>";
+  maquinas.forEach((m) => {
+    html += `<li>${m.selo} — ${m.jogo || "-"}<br>
+      Entrada: ${formatarMoedaBR(m.entrada)} |
+      Saída: ${formatarMoedaBR(m.saida)} |
+      Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
+    </li>`;
+  });
+  html += "</ul>";
+
+  divDados.innerHTML = html;
+}
+
 function descartarExtracao() {
-  extracaoAtual = null;
-  salvarExtracaoAtual();
+  localStorage.removeItem(TEMP_KEY);
   document.getElementById("previewExtracao").style.display = "none";
+  document.getElementById("dadosExtraidos").innerHTML = "";
+  document.getElementById("inputPrint").value = "";
 }
 
-/* ===== 5. CARREGAR SELECTS ===== */
-function carregarPontosNosSelects() {
-  const registros = getRegistros();
-  const pontos = [...new Set(registros.map((r) => r.pontoChave))];
+/* ===== 4. APROVAR E SALVAR FECHAMENTO ===== */
 
-  const selects = ["selectPontoSemanal", "selectPontoConsolidado"];
-  selects.forEach((id) => {
-    const select = document.getElementById(id);
-    if (!select) return;
-    select.innerHTML = `<option value="">Selecione</option>`;
-    pontos.forEach((p) => {
-      const item = registros.find((r) => r.pontoChave === p);
-      select.innerHTML += `<option value="${p}">${item.pontoExibicao}</option>`;
+function aprovarFechamento() {
+  try {
+    const raw = localStorage.getItem(TEMP_KEY);
+    if (!raw) {
+      alert("Nenhuma extração pendente.");
+      return;
+    }
+    const dados = JSON.parse(raw);
+    if (!dados || !dados.maquinas || !dados.maquinas.length) {
+      alert("Dados incompletos para salvar.");
+      return;
+    }
+
+    const { ponto, dataFechamentoISO, maquinas } = dados;
+
+    const pontoExibicao = (ponto || "").toUpperCase() || "(SEM NOME)";
+    const pontoChave = gerarSlugPonto(pontoExibicao);
+
+    const dataFechamentoDate = dataFechamentoISO
+      ? new Date(dataFechamentoISO)
+      : new Date();
+
+    const periodo = calcularPeriodoSemana(dataFechamentoDate);
+
+    // ===== Máquinas =====
+    const maquinasCompletas = maquinas.map((m, idx) => ({
+      numero: idx + 1,
+      selo: (m.selo || "").toUpperCase(),
+      jogo: (m.jogo || "").toUpperCase(),
+      entrada: m.entrada || 0,
+      saida: m.saida || 0,
+      sobra: (m.entrada || 0) - (m.saida || 0)
+    }));
+
+    const totais = maquinasCompletas.reduce(
+      (acc, m) => {
+        acc.entrada += m.entrada || 0;
+        acc.saida += m.saida || 0;
+        acc.sobra += m.sobra || 0;
+        return acc;
+      },
+      { entrada: 0, saida: 0, sobra: 0 }
+    );
+
+    // ===== Verificar se já existe fechamento igual (ponto + mesma combinação de entradas/saídas) =====
+    const registros = getRegistros();
+    const jaExiste = registros.some((reg) => {
+      if (reg.pontoChave !== pontoChave) return false;
+      if (!reg.maquinas || reg.maquinas.length !== maquinasCompletas.length)
+        return false;
+
+      // compara entradas e saídas máquina a máquina
+      return reg.maquinas.every((mReg, i) => {
+        const mNovo = maquinasCompletas[i];
+        return (
+          Number(mReg.entrada) === Number(mNovo.entrada) &&
+          Number(mReg.saida) === Number(mNovo.saida)
+        );
+      });
     });
-  });
 
-  carregarSemanas();
+    if (jaExiste) {
+      alert(
+        "Esse fechamento já foi importado anteriormente (mesmos valores de entrada e saída)."
+      );
+      return;
+    }
+
+    const novo = {
+      id: proximoId(),
+      pontoChave,
+      pontoExibicao,
+      periodo, // { inicio: 'YYYY-MM-DD', fim: 'YYYY-MM-DD' }
+      dataFechamento: dataFechamentoISO,
+      maquinas: maquinasCompletas,
+      totais
+    };
+
+    registros.push(novo);
+    salvarRegistros(registros);
+
+    alert("Fechamento salvo com sucesso!");
+
+    // limpa extracao atual
+    descartarExtracao();
+
+    // recarrega selects
+    carregarPontosNosSelects();
+  } catch (e) {
+    console.error("Erro ao aprovar fechamento:", e);
+    alert("Erro ao salvar fechamento.");
+  }
 }
+
+/* ===== 5. CARREGAR SEMANAS DE UM PONTO ===== */
 
 function carregarSemanas() {
   const ponto = document.getElementById("selectPontoSemanal").value;
@@ -567,10 +469,7 @@ function carregarSemanas() {
 function gerarRelatorioSemanal() {
   const id = Number(document.getElementById("selectSemana").value);
   const registro = getRegistros().find((r) => r.id === id);
-  if (!registro) {
-    alert("Selecione uma semana para gerar o relatório.");
-    return;
-  }
+  if (!registro) return;
 
   const html = montarHtmlRelatorio(registro, "Relatório Semanal");
 
@@ -578,133 +477,143 @@ function gerarRelatorioSemanal() {
 }
 
 /* ===== 7. RELATÓRIO CONSOLIDADO ===== */
+
 function gerarRelatorioConsolidado() {
   const ponto = document.getElementById("selectPontoConsolidado").value;
-
-  // lê de um input number (novo). Se não existir, cai no select antigo.
-  let qtd = 0;
-  const inputQtd = document.getElementById("inputQtdSemanas");
-  if (inputQtd) {
-    qtd = Number(inputQtd.value);
-  } else {
-    const selQtd = document.getElementById("selectQtdSemanas");
-    qtd = selQtd ? Number(selQtd.value) : 0;
-  }
-
-  if (!ponto) {
-    alert("Selecione um ponto primeiro.");
+  const qtdSemanas = Number(
+    document.getElementById("inputQtdSemanas").value || "0"
+  );
+  if (!ponto || !qtdSemanas) {
+    alert("Selecione o ponto e a quantidade de semanas.");
     return;
   }
 
-  if (!qtd || qtd <= 0) {
-    alert("Informe uma quantidade de semanas válida (mínimo 1).");
-    return;
-  }
-
-  const todosRegistros = getRegistros()
-    .filter((r) => r.pontoChave === ponto)
-    .sort((a, b) => new Date(b.periodo.fim) - new Date(a.periodo.fim));
-
-  if (todosRegistros.length === 0) {
+  let regs = getRegistros().filter((r) => r.pontoChave === ponto);
+  if (!regs.length) {
     alert("Ainda não há fechamentos salvos para esse ponto.");
     return;
   }
 
-  let qtdUsada = qtd;
+  // ordena por fim do período (mais recente primeiro)
+  regs.sort((a, b) => new Date(b.periodo.fim) - new Date(a.periodo.fim));
 
-  if (qtd > todosRegistros.length) {
-    const disponiveis = todosRegistros.length;
-    const ok = confirm(
-      `Você pediu ${qtd} semana(s), mas só existem ${disponiveis} semana(s) cadastradas para este ponto.\n\n` +
-        `Deseja gerar o relatório assim mesmo, usando apenas ${disponiveis} semana(s)?`
-    );
-    if (!ok) return;
-    qtdUsada = disponiveis;
-  }
+  // pega só as últimas N semanas
+  regs = regs.slice(0, qtdSemanas);
 
-  const registros = todosRegistros.slice(0, qtdUsada);
+  const pontoExibicao = regs[0].pontoExibicao;
+  const periodoGeral = {
+    inicio: regs[regs.length - 1].periodo.inicio,
+    fim: regs[0].periodo.fim
+  };
 
-  const relatorio = consolidarRegistros(registros);
-
-  const html = montarHtmlRelatorio(
-    relatorio,
-    `Consolidado (${qtdUsada} semana${qtdUsada > 1 ? "s" : ""})`
+  // Totais somados
+  const totais = regs.reduce(
+    (acc, r) => {
+      acc.entrada += r.totais.entrada || 0;
+      acc.saida += r.totais.saida || 0;
+      acc.sobra += r.totais.sobra || 0;
+      return acc;
+    },
+    { entrada: 0, saida: 0, sobra: 0 }
   );
 
-  abrirModal(html);
-}
+  // Agrupar máquinas por selo+jogo
+  const mapaMaquinas = new Map();
 
-/* CONSOLIDADO: SOMA TUDO */
-function consolidarRegistros(lista) {
-  let totalEntrada = 0;
-  let totalSaida = 0;
-  let totalSobra = 0;
-
-  const maquinas = {};
-
-  lista.forEach((r) => {
-    totalEntrada += r.totais.entrada;
-    totalSaida += r.totais.saida;
-    totalSobra += r.totais.sobra;
-
+  regs.forEach((r) => {
     r.maquinas.forEach((m) => {
-      if (!maquinas[m.selo]) {
-        maquinas[m.selo] = {
+      const chave = `${m.selo}||${m.jogo || ""}`;
+      if (!mapaMaquinas.has(chave)) {
+        mapaMaquinas.set(chave, {
           selo: m.selo,
+          jogo: m.jogo,
           entrada: 0,
           saida: 0,
           sobra: 0
-        };
+        });
       }
-      maquinas[m.selo].entrada += m.entrada;
-      maquinas[m.selo].saida += m.saida;
-      maquinas[m.selo].sobra += m.sobra;
+      const ag = mapaMaquinas.get(chave);
+      ag.entrada += m.entrada || 0;
+      ag.saida += m.saida || 0;
+      ag.sobra += m.sobra || 0;
     });
   });
 
-  return {
-    pontoExibicao: lista[0].pontoExibicao,
-    maquinas: Object.values(maquinas),
-    totais: { entrada: totalEntrada, saida: totalSaida, sobra: totalSobra }
+  const listaMaquinas = Array.from(mapaMaquinas.values());
+
+  const consolidado = {
+    pontoChave: ponto,
+    pontoExibicao,
+    periodo: periodoGeral,
+    totais,
+    maquinas: listaMaquinas
   };
+
+  const html = montarHtmlRelatorio(consolidado, "Relatório Consolidado");
+  abrirModal(html);
 }
 
-/* ===== 8. HTML DO MODAL ===== */
+/* ===== 8. HTML DO RELATÓRIO (formato "tipo Retenção") ===== */
+
 function montarHtmlRelatorio(r, titulo) {
   if (!r) return "";
 
-  const periodoHtml =
-    r.periodo && r.periodo.inicio && r.periodo.fim
-      ? `<div class="rel-periodo">${formatarDataBRCurta(
-          r.periodo.inicio
-        )} - ${formatarDataBRCurta(r.periodo.fim)}</div>`
-      : "";
+  const blocos = [];
 
-  const htmlMaquinas = (r.maquinas || [])
-    .map((m) => {
-      const prefixo =
-        m.numero != null && m.numero !== "" ? `${m.numero} - ` : "";
-      const jogo = m.jogo ? ` - ${m.jogo}` : "";
-      return `
-        <div class="linha-maquina">
-          <b>${prefixo}${m.selo}${jogo}</b><br>
-          Entrada: <span class="valor-entrada">${formatarMoedaBR(
-            m.entrada
-          )}</span> |
-          Saída: <span class="valor-saida">${formatarMoedaBR(
-            m.saida
-          )}</span> |
-          Sobra: <span class="valor-sobra">${formatarMoedaBR(
-            m.sobra
-          )}</span>
-        </div>
-      `;
-    })
-    .join("");
+  // Título e período
+  blocos.push(
+    `<span style="color:#6a1b9a;font-weight:900;">${r.pontoExibicao} — ${titulo}</span>`
+  );
+  if (r.periodo && r.periodo.inicio && r.periodo.fim) {
+    blocos.push(
+      `${formatarDataBRCurta(r.periodo.inicio)} - ${formatarDataBRCurta(
+        r.periodo.fim
+      )}`
+    );
+  }
+  blocos.push(""); // linha em branco
 
-  let resumoHtml = "";
+  // Totais do ponto
+  blocos.push("Totais do Ponto");
+  blocos.push(
+    `Entrada: <span class="valor-entrada">${formatarMoedaBR(
+      r.totais.entrada
+    )}</span>`
+  );
+  blocos.push(
+    `Saída: <span class="valor-saida">${formatarMoedaBR(
+      r.totais.saida
+    )}</span>`
+  );
+  blocos.push(
+    `Sobra: <span class="valor-sobra">${formatarMoedaBR(
+      r.totais.sobra
+    )}</span>`
+  );
+  blocos.push("");
 
-  // Indicadores só fazem sentido no relatório semanal (tem período)
+  // Máquinas
+  blocos.push("Máquinas");
+  blocos.push("");
+
+  (r.maquinas || []).forEach((m) => {
+    const prefixo =
+      m.numero != null && m.numero !== "" ? `${m.numero} - ` : "";
+    const jogo = m.jogo ? ` - ${m.jogo}` : "";
+    blocos.push(`${prefixo}${m.selo}${jogo}`);
+    blocos.push(
+      `Entrada: <span class="valor-entrada">${formatarMoedaBR(
+        m.entrada
+      )}</span> | ` +
+        `Saída: <span class="valor-saida">${formatarMoedaBR(
+          m.saida
+        )}</span> | ` +
+        `Sobra: <span class="valor-sobra">${formatarMoedaBR(m.sobra)}</span>`
+    );
+    blocos.push("");
+  });
+
+  // Indicadores da semana (só faz sentido se tiver período e máquinas)
   if (r.periodo && r.maquinas && r.maquinas.length) {
     const totalEntrada = r.totais?.entrada || 0;
     const totalSaida = r.totais?.saida || 0;
@@ -723,30 +632,33 @@ function montarHtmlRelatorio(r, titulo) {
       null
     );
     const maisSaida = maquinas.reduce(
-      (acc, m) => (acc == null || (m.saida || 0) > (acc.saida || 0) ? m : acc),
+      (acc, m) =>
+        acc == null || (m.saida || 0) > (acc.saida || 0) ? m : acc,
       null
     );
     const menosSaida = maquinas.reduce(
-      (acc, m) => (acc == null || (m.saida || 0) < (acc.saida || 0) ? m : acc),
+      (acc, m) =>
+        acc == null || (m.saida || 0) < (acc.saida || 0) ? m : acc,
       null
     );
     const maisSobra = maquinas.reduce(
-      (acc, m) => (acc == null || (m.sobra || 0) > (acc.sobra || 0) ? m : acc),
+      (acc, m) =>
+        acc == null || (m.sobra || 0) > (acc.sobra || 0) ? m : acc,
       null
     );
     const menosSobra = maquinas.reduce(
-      (acc, m) => (acc == null || (m.sobra || 0) < (acc.sobra || 0) ? m : acc),
+      (acc, m) =>
+        acc == null || (m.sobra || 0) < (acc.sobra || 0) ? m : acc,
       null
     );
 
     const pct = (val, total) =>
       total ? ((Number(val) || 0) / total) * 100 : 0;
 
-    const linhaStat = (rotulo, m, campo, total, tipo) => {
-      if (!m) return "";
+    const linhaIndicador = (rotulo, m, campo, total, tipo) => {
+      if (!m) return;
       const valor = m[campo] || 0;
-      const porcent = pct(valor, total);
-      const jogoLabel = m.jogo ? ` - ${m.jogo}` : "";
+      const jogo = m.jogo ? ` - ${m.jogo}` : "";
       const classe =
         tipo === "entrada"
           ? "valor-entrada"
@@ -759,124 +671,108 @@ function montarHtmlRelatorio(r, titulo) {
           : tipo === "saida"
           ? "Saída"
           : "Sobra";
-      return `
-        <div class="linha-indicador">
-          <strong>${rotulo}:</strong>
-          <span> ${m.selo}${jogoLabel} — ${labelCampo}: <span class="${classe}">${formatarMoedaBR(
-        valor
-      )}</span> (${formatarPercent(porcent)} do total)</span>
-        </div>
-      `;
+      const porcent = pct(valor, total);
+
+      blocos.push("");
+      blocos.push(`${rotulo}:`);
+      blocos.push(
+        `${m.selo}${jogo} — ${labelCampo}: <span class="${classe}">${formatarMoedaBR(
+          valor
+        )}</span> (${porcent.toFixed(2)}% do total)`
+      );
     };
 
-    resumoHtml = `
-      <hr class="rel-sep">
-      <h3 class="rel-subtitulo">Indicadores da Semana</h3>
-      ${linhaStat(
-        "Máquina que mais jogou",
-        maisEntrada,
-        "entrada",
-        totalEntrada,
-        "entrada"
-      )}
-      ${linhaStat(
-        "Máquina que menos jogou",
-        menosEntrada,
-        "entrada",
-        totalEntrada,
-        "entrada"
-      )}
-      ${linhaStat(
-        "Máquina que mais pagou",
-        maisSaida,
-        "saida",
-        totalSaida,
-        "saida"
-      )}
-      ${linhaStat(
-        "Máquina que menos pagou",
-        menosSaida,
-        "saida",
-        totalSaida,
-        "saida"
-      )}
-      ${linhaStat(
-        "Máquina que mais sobrou",
-        maisSobra,
-        "sobra",
-        totalSobra,
-        "sobra"
-      )}
-      ${linhaStat(
-        "Máquina que menos sobrou",
-        menosSobra,
-        "sobra",
-        totalSobra,
-        "sobra"
-      )}
-    `;
+    blocos.push("----------------------------------------");
+    blocos.push("");
+    blocos.push("Indicadores da Semana");
+
+    linhaIndicador(
+      "Máquina que mais jogou",
+      maisEntrada,
+      "entrada",
+      totalEntrada,
+      "entrada"
+    );
+    linhaIndicador(
+      "Máquina que menos jogou",
+      menosEntrada,
+      "entrada",
+      totalEntrada,
+      "entrada"
+    );
+    linhaIndicador(
+      "Máquina que mais pagou",
+      maisSaida,
+      "saida",
+      totalSaida,
+      "saida"
+    );
+    linhaIndicador(
+      "Máquina que menos pagou",
+      menosSaida,
+      "saida",
+      totalSaida,
+      "saida"
+    );
+    linhaIndicador(
+      "Máquina que mais sobrou",
+      maisSobra,
+      "sobra",
+      totalSobra,
+      "sobra"
+    );
+    linhaIndicador(
+      "Máquina que menos sobrou",
+      menosSobra,
+      "sobra",
+      totalSobra,
+      "sobra"
+    );
   }
 
-  return `
-    <h2 class="rel-titulo">${r.pontoExibicao} — ${titulo}</h2>
-    ${periodoHtml}
-
-    <div class="rel-totais">
-      <strong>Totais do Ponto</strong><br>
-      Entrada: <span class="valor-entrada">${formatarMoedaBR(
-        r.totais.entrada
-      )}</span><br>
-      Saída: <span class="valor-saida">${formatarMoedaBR(
-        r.totais.saida
-      )}</span><br>
-      Sobra: <span class="valor-sobra">${formatarMoedaBR(
-        r.totais.sobra
-      )}</span>
-    </div>
-
-    <div class="rel-maquinas">
-      <strong>Máquinas</strong><br>
-      ${htmlMaquinas}
-    </div>
-
-    ${resumoHtml}
-  `;
+  return blocos.join("<br>");
 }
 
-/* ===== 9. REMOVER FECHAMENTO SELECIONADO ===== */
-function removerFechamentoSelecionado() {
-  const id = Number(document.getElementById("selectSemana").value);
+/* ===== 9. REMOVER FECHAMENTO (selecionado) ===== */
+function removerFechamento() {
+  const selectSemana = document.getElementById("selectSemana");
+  if (!selectSemana) return;
+
+  const id = Number(selectSemana.value);
   if (!id) {
-    alert("Selecione um fechamento (semana) para remover.");
+    alert("Selecione o ponto e a semana que deseja remover.");
     return;
   }
 
   const registros = getRegistros();
-  const idx = registros.findIndex((r) => r.id === id);
-  if (idx === -1) {
+  const registro = registros.find((r) => r.id === id);
+  if (!registro) {
     alert("Fechamento não encontrado.");
     return;
   }
 
-  const ok = confirm("Tem certeza que deseja remover este fechamento?");
+  const periodo = `${formatarDataBR(registro.periodo.inicio)} até ${formatarDataBR(
+    registro.periodo.fim
+  )}`;
+
+  const ok = confirm(
+    `Remover o fechamento da semana ${periodo} do ponto ${registro.pontoExibicao}?`
+  );
   if (!ok) return;
 
-  registros.splice(idx, 1);
-  salvarRegistros(registros);
-  alert("Fechamento removido.");
+  const novos = registros.filter((r) => r.id !== id);
+  salvarRegistros(novos);
 
+  alert("Fechamento removido com sucesso.");
   carregarPontosNosSelects();
 }
 
 /* ===== 10. MODAL ===== */
 function abrirModal(html) {
-  const conteudo = document.getElementById("modalConteudo");
-  if (conteudo) conteudo.innerHTML = html;
-  const modal = document.getElementById("modalRelatorio");
-  if (modal) modal.classList.add("aberta");
+  document.getElementById("modalConteudo").innerHTML = html;
+  document.getElementById("modalRelatorio").style.display = "flex";
 }
 
 function fecharModal() {
-  const modal = document.getElementById("modalRelatorio");
-  if (modal) modal.classList.remove("aberta");
+  document.getElementById("modalRelatorio").style.display = "none";
 }
