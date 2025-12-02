@@ -1,210 +1,227 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Relatório de Pontos</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Relatório de Pontos</title>
+  <meta name="theme-color" content="#6a1b9a" />
 
-<!-- JS Global -->
-<script type="module" src="../../common/js/navegacao.js"></script>
-<script type="module" src="../js/relatorioPontos.js?v=1"></script>
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-<style>
-  body {
-    margin: 0;
-    background: #f4f4f4;
-    font-family: Arial, sans-serif;
-  }
+  <!-- Toast -->
+  <script defer src="../../common/js/toast.js"></script>
+  
+  <!-- JS global de navegação -->
+  <script type="module" src="../../common/js/navegacao.js"></script>
 
-  /* Cabeçalho padrão */
-  header {
-    background: #6a1b9a;
-    color: white;
-    padding: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
+  <!-- JS da página -->
+  <script type="module" src="../js/relatorioPontos.js?v=1"></script>
 
-  header h1 {
-    margin: 0;
-    font-size: 20px;
-  }
+  <style>
+    :root {
+      --roxo: #6a1b9a;
+    }
 
-  .usuario-area {
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+    * {
+      box-sizing: border-box;
+    }
 
-  /* Container geral */
-  .container {
-    padding: 15px;
-    max-width: 480px;
-    margin: auto;
-  }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f8f8f8;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      overflow-x: hidden;
+    }
 
-  .secao {
-    background: white;
-    padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 25px;
-    box-shadow: 0 0 8px #00000022;
-  }
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 16px;
+    }
 
-  .secao h2 {
-    margin-top: 0;
-    font-size: 18px;
-    color: #6a1b9a;
-  }
+    h1 {
+      display: none;
+    }
 
-  input[type="file"],
-select,
-textarea {
-  width: 100%;
-  margin-top: 8px;
-  padding: 8px 4px;
-  border: none;
-  border-bottom: 2px solid #ccc;
-  background: transparent;
-  font-size: 15px;
-  outline: none;
-}
+    h2 {
+      color: var(--roxo);
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 1.5rem;
+      font-weight: 900;
+    }
 
-input[type="file"]:focus,
-select:focus,
-textarea:focus {
-  border-bottom-color: #6a1b9a;
-}
+    .secao {
+      background: #fff;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 0 8px #00000022;
+      margin-bottom: 22px;
+    }
 
+    .secao h3 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+      color: var(--roxo);
+      font-weight: 800;
+    }
 
-  textarea {
-    height: 120px;
-    resize: vertical;
-  }
+    label {
+      font-weight: 700;
+      display: block;
+      margin-top: 6px;
+    }
 
-  .btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    margin-top: 10px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-  }
+    input[type="file"],
+    select,
+    textarea {
+      width: 100%;
+      margin-top: 4px;
+      padding: 6px 4px;
+      border: none;
+      border-bottom: 2px solid #ccc;
+      background: transparent;
+      font-size: 15px;
+      outline: none;
+    }
 
-  .btn-roxo {
-    background: #6a1b9a;
-    color: white;
-  }
+    input[type="file"]:focus,
+    select:focus,
+    textarea:focus {
+      border-bottom-color: var(--roxo);
+    }
 
-  .btn-cinza {
-    background: #dcdcdc;
-  }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      margin-top: 14px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
 
-  /* Modal tela cheia */
-  #modalRelatorio {
-    position: fixed;
-    inset: 0;
-    background: white;
-    z-index: 9999;
-    display: none;
-    flex-direction: column;
-  }
+    .btn.roxo {
+      background: var(--roxo);
+      color: #fff;
+    }
 
-  #modalRelatorio header {
-    background: #6a1b9a;
-    color: white;
-    padding: 12px;
-    font-size: 20px;
-    display: flex;
-    justify-content: space-between;
-  }
+    .btn.cinza {
+      background: #dcdcdc;
+      color: #333;
+    }
 
-  #modalConteudo {
-    padding: 15px;
-    height: calc(100vh - 60px);
-    overflow-y: auto;
-  }
+    /* Modal */
+    #modalRelatorio {
+      position: fixed;
+      inset: 0;
+      background: #fff;
+      display: none;
+      flex-direction: column;
+      z-index: 9999;
+    }
 
-  #fecharModal {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 22px;
-    cursor: pointer;
-  }
-</style>
+    #modalRelatorio header {
+      background: var(--roxo);
+      color: #fff;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 18px;
+    }
+
+    #modalConteudo {
+      padding: 16px;
+      height: calc(100vh - 54px);
+      overflow-y: auto;
+    }
+
+    #fecharModal {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 22px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
-<header id="headerGlobal">
-  <!-- Cabeçalho será preenchido pelo inicializarPagina() -->
-</header>
 
-<div class="container">
+  <main>
 
-  <!-- IMPORTAR PRINT -->
-  <div class="secao">
-    <h2>Importar Print</h2>
-    <input type="file" id="inputPrint" accept="image/*" />
-    <button class="btn btn-roxo" id="btnProcessarPrint">Processar Print</button>
+    <h1>Relatório de Pontos</h1>
+    <h2>Relatório de Pontos</h2>
 
-    <div id="previewExtracao" style="display:none; margin-top:15px;">
-      <h3>Pré-visualização</h3>
-      <div id="dadosExtraidos"></div>
+    <!-- SEÇÃO: Importar Print -->
+    <div class="secao">
+      <h3>Importar Print</h3>
+      <input type="file" id="inputPrint" accept="image/*" />
+      <button class="btn roxo" id="btnProcessarPrint">Processar Print</button>
 
-      <button class="btn btn-roxo" id="btnAprovar">Aprovar e Salvar</button>
-      <button class="btn btn-cinza" id="btnDescartar">Descartar</button>
+      <div id="previewExtracao" style="display:none; margin-top:15px;">
+        <h3>Pré-visualização</h3>
+        <div id="dadosExtraidos"></div>
+
+        <button class="btn roxo" id="btnAprovar">Aprovar e Salvar</button>
+        <button class="btn cinza" id="btnDescartar">Descartar</button>
+      </div>
     </div>
+
+    <!-- SEÇÃO: Relatório Semanal -->
+    <div class="secao">
+      <h3>Relatórios Semanais</h3>
+
+      <label for="selectPontoSemanal">Ponto:</label>
+      <select id="selectPontoSemanal">
+        <option value="">Selecione</option>
+      </select>
+
+      <label for="selectSemana">Semana:</label>
+      <select id="selectSemana">
+        <option value="">Selecione</option>
+      </select>
+
+      <button class="btn roxo" id="btnGerarSemanal">Gerar Relatório Semanal</button>
+    </div>
+
+    <!-- SEÇÃO: Consolidado -->
+    <div class="secao">
+      <h3>Relatório Consolidado</h3>
+
+      <label for="selectPontoConsolidado">Ponto:</label>
+      <select id="selectPontoConsolidado">
+        <option value="">Selecione</option>
+      </select>
+
+      <label for="selectQtdSemanas">Quantas semanas?</label>
+      <select id="selectQtdSemanas">
+        <option value="2">2 semanas</option>
+        <option value="4">4 semanas</option>
+        <option value="8">8 semanas</option>
+      </select>
+
+      <button class="btn roxo" id="btnGerarConsolidado">Gerar Relatório</button>
+
+      <button class="btn cinza" id="btnDesfazer">Desfazer último fechamento aprovado</button>
+    </div>
+
+  </main>
+
+  <!-- Modal -->
+  <div id="modalRelatorio">
+    <header>
+      <span>Relatório</span>
+      <button id="fecharModal">✕</button>
+    </header>
+    <div id="modalConteudo"></div>
   </div>
-
-  <!-- CONSULTAR FECHAMENTOS -->
-  <div class="secao">
-    <h2>Relatórios Semanais</h2>
-
-    <label>Ponto:</label>
-    <select id="selectPontoSemanal"></select>
-
-    <label>Semana:</label>
-    <select id="selectSemana"></select>
-
-    <button class="btn btn-roxo" id="btnGerarSemanal">Gerar Relatório Semanal</button>
-  </div>
-
-  <!-- CONSOLIDADO 2-4-8 SEMANAS -->
-  <div class="secao">
-    <h2>Relatório Consolidado</h2>
-
-    <label>Ponto:</label>
-    <select id="selectPontoConsolidado"></select>
-
-    <label>Quantas semanas?</label>
-    <select id="selectQtdSemanas">
-      <option value="2">2 semanas</option>
-      <option value="4">4 semanas</option>
-      <option value="8">8 semanas</option>
-    </select>
-
-    <button class="btn btn-roxo" id="btnGerarConsolidado">Gerar Relatório</button>
-
-    <button class="btn btn-cinza" id="btnDesfazer">
-      Desfazer último fechamento aprovado
-    </button>
-  </div>
-
-</div>
-
-<!-- MODAL TELA CHEIA -->
-<div id="modalRelatorio">
-  <header>
-    <span>Relatório</span>
-    <button id="fecharModal">✕</button>
-  </header>
-  <div id="modalConteudo"></div>
-</div>
 
 </body>
 </html>
