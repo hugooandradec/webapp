@@ -229,10 +229,17 @@ function interpretarTextoFechamento(texto) {
     // ex: "1-IE033 (Seven (America))" ou "2-IB158 (HL)"
     const mCabecalho = l.match(/^\d+\s*-\s*([^\s(]+)/);
     if (mCabecalho && l.includes("(")) {
-      // fecha máquina anterior, se houver
       if (atual) maquinas.push(atual);
 
-      const selo = mCabecalho[1].toUpperCase();
+      // tenta pegar primeiro um selo 2 letras + 3 números em qualquer lugar da linha
+      let selo = "";
+      const mSeloStrict = l.match(/([A-Za-z]{2}\d{3})/);
+      if (mSeloStrict) {
+        selo = mSeloStrict[1].toUpperCase();
+      } else {
+        // fallback: token logo após o hífen
+        selo = mCabecalho[1].toUpperCase();
+      }
 
       // jogo = texto dentro do primeiro par de parênteses
       let jogo = "";
@@ -271,7 +278,7 @@ function interpretarTextoFechamento(texto) {
       continue;
     }
 
-    // outras linhas (Total, vida útil, etc) são ignoradas
+    // linhas de Total, vida útil, etc. são ignoradas
   }
 
   if (atual) maquinas.push(atual);
@@ -287,6 +294,7 @@ function interpretarTextoFechamento(texto) {
     maquinas
   };
 }
+
 
 /* ===== 3. PRÉ-VISUALIZAÇÃO DA EXTRAÇÃO ===== */
 
