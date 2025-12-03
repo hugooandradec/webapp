@@ -259,13 +259,18 @@ if (mCabecalho && l.includes("(")) {
   }
   const selo = normalizarSelo(seloBruto);
 
-  // jogo = texto dentro do primeiro par de parênteses
-  let jogo = "";
-  const mJogo = l.match(/\(([^)]+)\)/);
-  if (mJogo) {
-    jogo = mJogo[1].trim().toUpperCase();
-  }
-
+  // jogo = texto entre o primeiro "(" e o último ")"
+let jogo = "";
+const idxAbre = l.indexOf("(");
+const idxFecha = l.lastIndexOf(")");
+if (idxAbre !== -1 && idxFecha !== -1 && idxFecha > idxAbre) {
+  let inside = l.slice(idxAbre + 1, idxFecha).trim(); // ex: "Seven (America)"
+  inside = inside.toUpperCase();                      // "SEVEN (AMERICA)"
+  // se tiver um " (" no meio, troca por " - ("
+  inside = inside.replace(" (", " - (");              // "SEVEN - (AMERICA)"
+  jogo = inside;
+}
+  
   atual = {
     selo,
     jogo,
@@ -706,32 +711,37 @@ function montarHtmlRelatorio(r, titulo) {
     const pct = (val, total) =>
       total ? ((Number(val) || 0) / total) * 100 : 0;
 
-    const linhaIndicador = (rotulo, m, campo, total, tipo) => {
-      if (!m) return;
-      const valor = m[campo] || 0;
-      const jogo = m.jogo ? ` - ${m.jogo}` : "";
-      const classe =
-        tipo === "entrada"
-          ? "valor-entrada"
-          : tipo === "saida"
-          ? "valor-saida"
-          : "valor-sobra";
-      const labelCampo =
-        tipo === "entrada"
-          ? "Entrada"
-          : tipo === "saida"
-          ? "Saída"
-          : "Sobra";
-      const porcent = pct(valor, total);
+   const linhaIndicador = (rotulo, m, campo, total, tipo) => {
+  if (!m) return;
+  const valor = m[campo] || 0;
+  const nomeMaquina = m.jogo ? `${m.selo} - ${m.jogo}` : m.selo;
 
-      blocos.push("");
-      blocos.push(`${rotulo}:`);
-      blocos.push(
-        `${m.selo}${jogo} — ${labelCampo}: <span class="${classe}">${formatarMoedaBR(
-          valor
-        )}</span> (${porcent.toFixed(2)}% do total)`
-      );
-    };
+  const classe =
+    tipo === "entrada"
+      ? "valor-entrada"
+      : tipo === "saida"
+      ? "valor-saida"
+      : "valor-sobra";
+
+  const labelCampo =
+    tipo === "entrada"
+      ? "Entrada"
+      : tipo === "saida"
+      ? "Saída"
+      : "Sobra";
+
+  const porcent = pct(valor, total);
+
+  blocos.push("");
+  // linha 1: enunciado + máquina
+  blocos.push(`${rotulo}: ${nomeMaquina}`);
+  // linha 2: valor + porcentagem
+  blocos.push(
+    `${labelCampo}: <span class="${classe}">${formatarMoedaBR(
+      valor
+    )}</span> (${porcent.toFixed(2)}% do total)`
+  );
+};
 
     blocos.push("----------------------------------------");
     blocos.push("");
