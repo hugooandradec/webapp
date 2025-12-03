@@ -120,16 +120,23 @@ function carregarPontosNosSelects() {
   const selSem = document.getElementById("selectPontoSemanal");
   const selCons = document.getElementById("selectPontoConsolidado");
 
+  // transforma em array e ordena pelo nome do ponto (valor do map)
+  const listaPontos = Array.from(pontosMap.entries()).sort((a, b) =>
+    a[1].localeCompare(b[1], "pt-BR", { sensitivity: "base" })
+  );
+  // a[0] = chave, a[1] = nome
+
   [selSem, selCons].forEach((sel) => {
     if (!sel) return;
     sel.innerHTML = "<option value=''>Selecione</option>";
-    pontosMap.forEach((nome, chave) => {
+    listaPontos.forEach(([chave, nome]) => {
       sel.innerHTML += `<option value="${chave}">${nome}</option>`;
     });
   });
 
   carregarSemanas();
 }
+
 
 /* ===== 2. OCR / IMPORTAÇÃO DO PRINT ===== */
 
@@ -198,8 +205,18 @@ function normalizarJogo(bruto) {
     j += ")".repeat(abre - fecha);
   }
 
-  return j;
+  // REMOVE HÍFENS DUPLICADOS: " - - (" → " - ("
+  j = j.replace(/-\s*-\s*\(/g, "- (");
+
+  // Se houver espaços extras antes do hífen, limpa: "SEVEN  -  (" -> "SEVEN - ("
+  j = j.replace(/\s+-\s+\(/g, " - (");
+
+  // Remove duplicações estranhas causadas pelo OCR: "--" → "-"
+  j = j.replace(/--+/g, "-");
+
+  return j.trim();
 }
+
 
 
 /**
@@ -519,7 +536,14 @@ function carregarSemanas() {
     return;
   }
 
-  const registros = getRegistros().filter((r) => r.pontoChave === ponto);
+  let registros = getRegistros().filter((r) => r.pontoChave === ponto);
+
+  // ordena pela data de início da semana (mais antiga primeiro)
+  registros.sort(
+    (a, b) =>
+      new Date(a.periodo.inicio).getTime() -
+      new Date(b.periodo.inicio).getTime()
+  );
 
   selectSemana.innerHTML = "";
   registros.forEach((r) => {
@@ -529,6 +553,7 @@ function carregarSemanas() {
     selectSemana.innerHTML += `<option value="${r.id}">${periodo}</option>`;
   });
 }
+
 
 /* ===== 6. RELATÓRIO SEMANAL ===== */
 
