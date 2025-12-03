@@ -147,24 +147,31 @@ function carregarPontosNosSelects() {
 async function lerTextoDoPrint(file) {
   if (!file) return "";
   try {
-    if (window.toast) toast.info("Lendo imagem, aguarde...");
+    if (window.toast && toast.info) {
+      toast.info("Lendo imagem, aguarde...", { duration: 5000 });
+    }
 
     const { data } = await Tesseract.recognize(file, "por+eng", {
       logger: (m) => console.log("[OCR Relatório de Pontos]", m)
     });
+
     const texto = (data && data.text) ? data.text : "";
-    console.log("OCR (Relatório de Pontos):", texto);
     return texto;
+
   } catch (err) {
     console.error("Erro no OCR (Relatório de Pontos):", err);
     alert("Não foi possível ler a imagem.");
     return "";
   } finally {
-    try {
-      if (window.toast && toast.clear) toast.clear();
-    } catch (e) {}
+    // GARANTE que sempre some — até se o toast estiver bugado
+    setTimeout(() => {
+      try {
+        if (window.toast && toast.clear) toast.clear();
+      } catch (e) {}
+    }, 300);
   }
 }
+
 
 // parse simples de número pt-BR
 function parseNumero(str) {
