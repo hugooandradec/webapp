@@ -18,6 +18,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnRemover = document.getElementById("btnRemoverFechamento");
   if (btnRemover) btnRemover.onclick = removerFechamento;
 
+  const btnRemoverPonto = document.getElementById("btnRemoverPonto");
+  if (btnRemoverPonto) btnRemoverPonto.onclick = removerPonto;
+
   document.getElementById("fecharModal").onclick = fecharModal;
 
   const selPontoSem = document.getElementById("selectPontoSemanal");
@@ -25,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   restaurarExtracaoAtual();
 });
+
 
 /* ===== HELPERS GERAIS / STORAGE ===== */
 
@@ -886,6 +890,49 @@ function removerFechamento() {
   alert("Fechamento removido com sucesso.");
   carregarPontosNosSelects();
 }
+
+function removerPonto() {
+  const selPonto = document.getElementById("selectPontoSemanal");
+  if (!selPonto) return;
+
+  const pontoChave = selPonto.value;
+  if (!pontoChave) {
+    alert("Selecione o ponto que você deseja remover.");
+    return;
+  }
+
+  const registros = getRegistros();
+  const registrosDoPonto = registros.filter(
+    (r) => r.pontoChave === pontoChave
+  );
+
+  if (!registrosDoPonto.length) {
+    alert("Não há fechamentos salvos para esse ponto.");
+    return;
+  }
+
+  const nomePonto = registrosDoPonto[0].pontoExibicao;
+  const qtd = registrosDoPonto.length;
+
+  const ok = confirm(
+    `Remover TODOS os ${qtd} fechamento(s) do ponto ${nomePonto}?\n` +
+      "Essa operação NÃO poderá ser desfeita."
+  );
+  if (!ok) return;
+
+  const novos = registros.filter((r) => r.pontoChave !== pontoChave);
+  salvarRegistros(novos);
+
+  alert(`Todos os fechamentos do ponto ${nomePonto} foram removidos.`);
+
+  // atualiza selects
+  carregarPontosNosSelects();
+  const selectSemana = document.getElementById("selectSemana");
+  if (selectSemana) {
+    selectSemana.innerHTML = "<option value=''>Selecione</option>";
+  }
+}
+
 
 /* ===== 10. MODAL ===== */
 
