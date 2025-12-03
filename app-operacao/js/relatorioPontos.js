@@ -418,14 +418,18 @@ function mostrarExtracaoNaTela(dados) {
   }</p>`;
 
   html += "<ul>";
-  maquinas.forEach((m) => {
-    html += `<li>${m.selo} — ${m.jogo || "-"}<br>
-      Entrada: ${formatarMoedaBR(m.entrada)} |
-      Saída: ${formatarMoedaBR(m.saida)} |
-      Sobra: <b>${formatarMoedaBR(m.sobra)}</b>
-    </li>`;
-  });
-  html += "</ul>";
+maquinas.forEach((m) => {
+  html += `
+    <li>
+      <b>${m.selo} — ${m.jogo || "-"}</b><br>
+      Entrada: <span style="color:#1b8f2e;">${formatarMoedaBR(m.entrada)}</span> |
+      Saída: <span style="color:#c0392b;">${formatarMoedaBR(m.saida)}</span> |
+      Sobra: <span style="color:#1976d2; font-weight:bold;">${formatarMoedaBR(m.sobra)}</span>
+    </li>
+  `;
+});
+html += "</ul>";
+
 
   divDados.innerHTML = html;
 }
