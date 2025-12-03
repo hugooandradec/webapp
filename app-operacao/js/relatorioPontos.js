@@ -522,11 +522,12 @@ function gerarRelatorioSemanal() {
 
 function gerarRelatorioConsolidado() {
   const ponto = document.getElementById("selectPontoConsolidado").value;
-  const qtdSemanas = Number(
+  const qtdSemanasSolicitada = Number(
     document.getElementById("inputQtdSemanas").value || "0"
   );
-  if (!ponto || !qtdSemanas) {
-    alert("Selecione o ponto e a quantidade de semanas.");
+
+  if (!ponto || !qtdSemanasSolicitada) {
+    alert("Selecione o ponto e informe a quantidade de semanas.");
     return;
   }
 
@@ -536,8 +537,21 @@ function gerarRelatorioConsolidado() {
     return;
   }
 
+  // ordena por fim do período (mais recente primeiro)
   regs.sort((a, b) => new Date(b.periodo.fim) - new Date(a.periodo.fim));
-  regs = regs.slice(0, qtdSemanas);
+
+  const disponiveis = regs.length;
+
+  // se pediu mais do que tem, avisa e ajusta
+  if (disponiveis < qtdSemanasSolicitada) {
+    alert(
+      `Existem apenas ${disponiveis} semana(s) disponível(is) para este ponto.\n` +
+      `O relatório será gerado com ${disponiveis} semana(s).`
+    );
+  }
+
+  const qtdUsada = Math.min(disponiveis, qtdSemanasSolicitada);
+  regs = regs.slice(0, qtdUsada);
 
   const pontoExibicao = regs[0].pontoExibicao;
   const periodoGeral = {
@@ -589,6 +603,7 @@ function gerarRelatorioConsolidado() {
   const html = montarHtmlRelatorio(consolidado, "Relatório Consolidado");
   abrirModal(html);
 }
+
 
 /* ===== 8. HTML DO RELATÓRIO (formato “tipo Retenção”) ===== */
 
