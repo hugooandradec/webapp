@@ -184,6 +184,24 @@ function normalizarSelo(bruto) {
   return s;
 }
 
+function normalizarJogo(bruto) {
+  if (!bruto) return "";
+  let j = bruto.toString().trim().toUpperCase();
+
+  // troca " (" por " - (" para casos tipo "SEVEN (AMERICA)"
+  j = j.replace(/\s+\(/g, " - (");
+
+  // se tiver "(" mas menos ")" (OCR comeu um parêntese), completa no final
+  const abre = (j.match(/\(/g) || []).length;
+  const fecha = (j.match(/\)/g) || []).length;
+  if (abre > fecha) {
+    j += ")".repeat(abre - fecha);
+  }
+
+  return j;
+}
+
+
 /**
  * Faz o parse do texto lido do print, retornando
  * um objeto com ponto, data, lista de máquinas, etc.
@@ -246,10 +264,9 @@ function interpretarTextoFechamento(texto) {
     // CABEÇALHO DE MÁQUINA
     // ex: "1-IE033 (Seven (America))" ou "2-IB158 (HL)"
     const mCabecalho = l.match(/^\d+\s*-\s*([^\s(]+)/);
-if (mCabecalho && l.includes("(")) {
-  if (atual) maquinas.push(atual);
+    if (mCabecalho && l.includes("(")) {
+      if (atual) maquinas.push(atual);
 
-  // tenta achar selo certinho LLNNN; se não achar, usa o token após o hífen
   let seloBruto = "";
   const mSeloStrict = l.match(/([A-Za-z]{2}\d{3})/);
   if (mSeloStrict) {
@@ -259,18 +276,21 @@ if (mCabecalho && l.includes("(")) {
   }
   const selo = normalizarSelo(seloBruto);
 
-  // jogo = texto entre o primeiro "(" e o último ")"
-let jogo = "";
-const idxAbre = l.indexOf("(");
-const idxFecha = l.lastIndexOf(")");
-if (idxAbre !== -1 && idxFecha !== -1 && idxFecha > idxAbre) {
-  let inside = l.slice(idxAbre + 1, idxFecha).trim(); // ex: "Seven (America)"
-  inside = inside.toUpperCase();                      // "SEVEN (AMERICA)"
-  // se tiver um " (" no meio, troca por " - ("
-  inside = inside.replace(" (", " - (");              // "SEVEN - (AMERICA)"
-  jogo = inside;
-}
-  
+  // ===== jogo: tudo entre o primeiro "(" e o último ")" (se tiver)
+  let jogo = "";
+  const idxAbre = l.indexOf("(");
+  const idxFecha = l.lastIndexOf(")");
+  let inside;
+  if (idxAbre !== -1) {
+    if (idxFecha !== -1 && idxFecha > idxAbre) {
+      inside = l.slice(idxAbre + 1, idxFecha).trim();
+    } else {
+      // se não achou ")", pega até o fim da linha
+      inside = l.slice(idxAbre + 1).trim();
+    }
+    jogo = normalizarJogo(inside);
+  }
+
   atual = {
     selo,
     jogo,
@@ -280,6 +300,7 @@ if (idxAbre !== -1 && idxFecha !== -1 && idxFecha > idxAbre) {
   };
   continue;
 }
+
 
 
     if (!atual) continue;
@@ -422,13 +443,13 @@ function aprovarFechamento() {
     const periodo = calcularPeriodoSemana(dataFechamentoDate);
 
     const maquinasCompletas = maquinas.map((m, idx) => ({
-  numero: idx + 1,
-  selo: normalizarSelo(m.selo),
-  jogo: (m.jogo || "").toUpperCase(),
-  entrada: m.entrada || 0,
-  saida: m.saida || 0,
-  sobra: (m.entrada || 0) - (m.saida || 0)
-}));
+      numero: idx + 1,
+      selo: normalizarSelo(m.selo),
+      jogo: normalizarJogo(m.jogo),
+      entrada: m.entrada || 0,
+      saida: m.saida || 0,
+      sobra: (m.entrada || 0) - (m.saida || 0)
+    }));
 
 
     const totais = maquinasCompletas.reduce(
@@ -576,26 +597,38 @@ function gerarRelatorioConsolidado() {
 
   const mapaMaquinas = new Map();
 
-  regs.forEach((r) => {
-    r.maquinas.forEach((m) => {
-      const chave = `${m.selo}||${m.jogo || ""}`;
-      if (!mapaMaquinas.has(chave)) {
-        mapaMaquinas.set(chave, {
-          selo: m.selo,
-          jogo: m.jogo,
-          entrada: 0,
-          saida: 0,
-          sobra: 0
-        });
-      }
-      const ag = mapaMaquinas.get(chave);
-      ag.entrada += m.entrada || 0;
-      ag.saida += m.saida || 0;
-      ag.sobra += m.sobra || 0;
-    });
-  });
+regs.forEach((r) => {
+  r.maquinas.forEach((m) => {
+    const seloNorm = normalizarSelo(m.selo);
+    const jogoNorm = normalizarJogo(m.jogo);
 
-  const listaMaquinas = Array.from(mapaMaquinas.values());
+    // chave de agrupamento = SÓ o selo
+    const chave = seloNorm;
+
+    if (!mapaMaquinas.has(chave)) {
+      mapaMaquinas.set(chave, {
+        selo: seloNorm,
+        jogo: jogoNorm,   // jogo atual conhecido (pode ser atualizado depois)
+        entrada: 0,
+        saida: 0,
+        sobra: 0
+      });
+    }
+
+    const ag = mapaMaquinas.get(chave);
+    ag.entrada += m.entrada || 0;
+    ag.saida += m.saida || 0;
+    ag.sobra += m.sobra || 0;
+
+    // se nesse lançamento o jogo vier preenchido, atualiza o "nome" da máquina
+    if (jogoNorm) {
+      ag.jogo = jogoNorm;
+    }
+  });
+});
+
+const listaMaquinas = Array.from(mapaMaquinas.values());
+
 
   const consolidado = {
     pontoChave: ponto,
