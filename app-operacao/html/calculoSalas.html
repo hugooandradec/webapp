@@ -407,7 +407,7 @@
     }
 
     // bruto / 2 + 10% em cima da metade - despesas = valor1
-    // cartão - 8% (taxa) = valor2
+    // cartão - 6% (taxa) = valor2
     // valor1 - valor2 = lucro final
     function calcularResultadoSala(sala) {
       const bruto = parseCentavos(sala.bruto);
@@ -419,7 +419,7 @@
       const metade = bruto / 2;
       const com10 = metade * 1.10;
       const valor1 = com10 - despesas;
-      const valor2 = cartao * 0.08;
+      const valor2 = cartao * 0.06;
       return valor1 - valor2;
     }
 
