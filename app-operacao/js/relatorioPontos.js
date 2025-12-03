@@ -343,13 +343,30 @@ function interpretarTextoFechamento(texto) {
     }
 
     // LINHA DE SAÍDA: "(S) ... = R$ 1.318,85"
-    if (upper.startsWith("(S)")) {
-      const mSaida = l.match(/R\$\s*([\d\.,]+)/i);
-      if (mSaida) {
-        atual.saida = parseNumero(mSaida[1]);
-      }
-      continue;
+if (upper.startsWith("(S)")) {
+
+  // tenta capturar com R$
+  let mSaida = l.match(/R\$\s*([\d\.,]+)/i);
+
+  // se não tiver R$, tenta capturar só o número após "="
+  if (!mSaida) {
+    mSaida = l.match(/=\s*([\d\.,]+)/);
+  }
+
+  // se ainda não achou, tenta pegar o ÚLTIMO número da linha
+  if (!mSaida) {
+    const numeros = l.match(/([\d\.,]+)/g);
+    if (numeros && numeros.length) {
+      mSaida = [null, numeros[numeros.length - 1]];
     }
+  }
+
+  if (mSaida) {
+    atual.saida = parseNumero(mSaida[1]);
+  }
+
+  continue;
+}
 
     // linhas de Total, vida útil, etc. são ignoradas
   }
