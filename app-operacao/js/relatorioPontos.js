@@ -185,18 +185,46 @@ function parseNumero(str) {
 }
 function normalizarSelo(bruto) {
   if (!bruto) return "";
+
   // deixa só letras e números
   let s = bruto.toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-  // se tiver um padrão certinho LLNNN (ex: IE033), usa esse
+  // 1) se já tiver um padrão certinho LLNNN (ex.: IE033, IB158), usa direto
   const strict = s.match(/[A-Z]{2}\d{3}/);
   if (strict) {
-    s = strict[0];
+    return strict[0];
   }
 
-  // se ficou algo tipo 1E033, IE033, LE033 etc (1/I/L confundidos)
+  // 2) tenta corrigir erros clássicos de OCR nos 5 primeiros caracteres
+  if (s.length >= 5) {
+    s = s.slice(0, 5);
+    const chars = s.split("");
+
+    // posição 0: 1 / I / L confundidos → força pra "I"
+    if (/[1IL]/.test(chars[0])) {
+      chars[0] = "I";
+    }
+
+    // posição 1: 8 confundido com B, 0 confundido com O
+    if (chars[1] === "8") {
+      chars[1] = "B";   // I8007 → IB007
+    } else if (chars[1] === "0") {
+      chars[1] = "O";
+    }
+
+    const candidato = chars.join("");
+    const strict2 = candidato.match(/[A-Z]{2}\d{3}/);
+    if (strict2) {
+      return strict2[0];
+    }
+
+    // se não bateu, volta pro valor ajustado pra continuar o fluxo
+    s = candidato;
+  }
+
+  // 3) fallback antigo: 1E033 / LE033 / IE033 etc.
   if (/^[1IL][A-Z]\d{3}$/.test(s)) {
-    s = "I" + s.slice(1); // força o primeiro caractere a ser "I"
+    s = "I" + s.slice(1);
   }
 
   return s;
