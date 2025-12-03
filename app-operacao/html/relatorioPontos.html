@@ -122,6 +122,19 @@
       color: #333;
     }
 
+    .grupo-botoes-menores {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.grupo-botoes-menores .btn {
+  flex: 1;
+  padding: 10px 6px;
+  font-size: 0.9rem;
+}
+
+
     /* === MODAL — padrão igual Retenção === */
     #modalRelatorio {
       position: fixed;
@@ -295,8 +308,19 @@
         <option value="">Selecione</option>
       </select>
 
-      <button class="btn roxo" id="btnGerarSemanal">Gerar Relatório Semanal</button>
-      <button class="btn cinza" id="btnRemoverFechamento">Remover fechamento</button>
+      <button id="btnGerarSemanal" class="btn btn-primario">
+  Gerar Relatório Semanal
+</button>
+
+<div class="grupo-botoes-menores">
+  <button id="btnRemoverFechamento" class="btn btn-cinza">
+    Remover fechamento
+  </button>
+  <button id="btnRemoverPonto" class="btn btn-cinza">
+    Remover ponto
+  </button>
+</div>
+
     </div>
 
     <!-- Consolidado -->
