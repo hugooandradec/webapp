@@ -1,6 +1,6 @@
 // ================================
 // CÁLCULO DE SALAS (BINGOS)
-// Resultado = Bruto - Despesas - Cartão
+// Resultado = Bruto - Despesas - Cartão - Taxa Parcelamento
 // Salva em localStorage para funcionar offline
 // ================================
 
@@ -85,8 +85,15 @@ function adicionarSala(lista, totalEl, dados = null) {
       <input type="number" class="sala-cartao" placeholder="CARTÃO" step="0.01" inputmode="decimal">
     </div>
 
+    <div class="linha">
+      <label>Taxa de parcelamento cartão:</label>
+      <input type="number" class="sala-taxa" placeholder="TAXA PARCELAMENTO" step="0.01" inputmode="decimal">
+    </div>
+
     <div class="resultado-sala">
-      Resultado: <span class="texto-resultado">R$ 0,00 (Neutro)</span>
+      Resultado: <span class="texto-resultado">R$ 0,00 (Neutro)</span><br>
+      <span class="texto-pipo">Pipo: R$ 0,00</span> |
+      <span class="texto-pass">Pass: R$ 0,00</span>
     </div>
   `;
 
@@ -96,16 +103,21 @@ function adicionarSala(lista, totalEl, dados = null) {
   const bruto = card.querySelector(".sala-bruto");
   const despesas = card.querySelector(".sala-despesas");
   const cartao = card.querySelector(".sala-cartao");
+  const taxa = card.querySelector(".sala-taxa");
   const resultadoSpan = card.querySelector(".texto-resultado");
+  const spanPipo = card.querySelector(".texto-pipo");
+  const spanPass = card.querySelector(".texto-pass");
   const btnRem = card.querySelector(".btn-remover");
 
   const atualizar = () => {
-    const b = parseFloat(bruto.value.replace(",", ".")) || 0;
-    const d = parseFloat(despesas.value.replace(",", ".")) || 0;
-    const c = parseFloat(cartao.value.replace(",", ".")) || 0;
+    const b = parseFloat((bruto.value || "").replace(",", ".")) || 0;
+    const d = parseFloat((despesas.value || "").replace(",", ".")) || 0;
+    const c = parseFloat((cartao.value || "").replace(",", ".")) || 0;
+    const t = parseFloat((taxa.value || "").replace(",", ".")) || 0;
 
-    const resultado = b - d - c;
+    const resultado = b - d - c - t;
 
+    // Resultado principal
     let texto = `R$ ${resultado.toFixed(2)}`;
     let label = "";
     let classe = "";
@@ -125,11 +137,18 @@ function adicionarSala(lista, totalEl, dados = null) {
     resultadoSpan.classList.remove("positivo", "negativo");
     if (classe) resultadoSpan.classList.add(classe);
 
+    // Pipo (2/3) e Pass (1/3) do resultado final
+    const pipoVal = resultado * (2 / 3);
+    const passVal = resultado * (1 / 3);
+
+    spanPipo.textContent = `Pipo: R$ ${pipoVal.toFixed(2)}`;
+    spanPass.textContent = `Pass: R$ ${passVal.toFixed(2)}`;
+
     salvarSalas();
     atualizarTotalSalas(totalEl);
   };
 
-  [nome, bruto, despesas, cartao].forEach(inp => {
+  [nome, bruto, despesas, cartao, taxa].forEach((inp) => {
     if (!inp) return;
     inp.addEventListener("input", () => {
       if (inp === nome) {
@@ -151,6 +170,7 @@ function adicionarSala(lista, totalEl, dados = null) {
     bruto.value = dados.bruto || "";
     despesas.value = dados.despesas || "";
     cartao.value = dados.cartao || "";
+    taxa.value = dados.taxa || "";
     atualizar();
   } else {
     atualizar();
@@ -165,11 +185,21 @@ function adicionarSala(lista, totalEl, dados = null) {
 function atualizarTotalSalas(totalEl) {
   let total = 0;
 
-  document.querySelectorAll(".card").forEach(card => {
-    const bruto = parseFloat(card.querySelector(".sala-bruto").value.replace(",", ".")) || 0;
-    const despesas = parseFloat(card.querySelector(".sala-despesas").value.replace(",", ".")) || 0;
-    const cartao = parseFloat(card.querySelector(".sala-cartao").value.replace(",", ".")) || 0;
-    total += (bruto - despesas - cartao);
+  document.querySelectorAll(".card").forEach((card) => {
+    const bruto = parseFloat(
+      (card.querySelector(".sala-bruto").value || "").replace(",", ".")
+    ) || 0;
+    const despesas = parseFloat(
+      (card.querySelector(".sala-despesas").value || "").replace(",", ".")
+    ) || 0;
+    const cartao = parseFloat(
+      (card.querySelector(".sala-cartao").value || "").replace(",", ".")
+    ) || 0;
+    const taxa = parseFloat(
+      (card.querySelector(".sala-taxa").value || "").replace(",", ".")
+    ) || 0;
+
+    total += bruto - despesas - cartao - taxa;
   });
 
   const txt = `TOTAL GERAL: R$ ${total.toFixed(2)}`;
@@ -201,18 +231,35 @@ function abrirRelatorioSalas(inputData, inputPonto, totalEl, relConteudo, modal)
   } else {
     cards.forEach((card, i) => {
       const nome = card.querySelector(".sala-nome").value || `Sala ${i + 1}`;
-      const bruto = parseFloat(card.querySelector(".sala-bruto").value.replace(",", ".")) || 0;
-      const despesas = parseFloat(card.querySelector(".sala-despesas").value.replace(",", ".")) || 0;
-      const cartao = parseFloat(card.querySelector(".sala-cartao").value.replace(",", ".")) || 0;
-      const resultado = bruto - despesas - cartao;
+      const bruto = parseFloat(
+        (card.querySelector(".sala-bruto").value || "").replace(",", ".")
+      ) || 0;
+      const despesas = parseFloat(
+        (card.querySelector(".sala-despesas").value || "").replace(",", ".")
+      ) || 0;
+      const cartao = parseFloat(
+        (card.querySelector(".sala-cartao").value || "").replace(",", ".")
+      ) || 0;
+      const taxa = parseFloat(
+        (card.querySelector(".sala-taxa").value || "").replace(",", ".")
+      ) || 0;
 
-      const label = resultado > 0 ? "Lucro" : (resultado < 0 ? "Prejuízo" : "Neutro");
+      const resultado = bruto - despesas - cartao - taxa;
+      const label =
+        resultado > 0 ? "Lucro" : resultado < 0 ? "Prejuízo" : "Neutro";
+
+      const pipoVal = resultado * (2 / 3);
+      const passVal = resultado * (1 / 3);
 
       html += `
         <div class="bloco-sala">
           <strong>${nome.toUpperCase()}</strong><br>
-          Bruto: R$ ${bruto.toFixed(2)} | Desp: R$ ${despesas.toFixed(2)} | Cartão: R$ ${cartao.toFixed(2)}<br>
-          Resultado: R$ ${resultado.toFixed(2)} (${label})
+          Bruto: R$ ${bruto.toFixed(2)} |
+          Desp: R$ ${despesas.toFixed(2)} |
+          Cartão: R$ ${cartao.toFixed(2)} |
+          Taxa Parc.: R$ ${taxa.toFixed(2)}<br>
+          Resultado: R$ ${resultado.toFixed(2)} (${label})<br>
+          Pipo: R$ ${pipoVal.toFixed(2)} | Pass: R$ ${passVal.toFixed(2)}
         </div>
       `;
     });
@@ -236,16 +283,19 @@ function abrirRelatorioSalas(inputData, inputPonto, totalEl, relConteudo, modal)
 
 function salvarSalas() {
   const data = document.getElementById("data-salas").value;
-  const ponto = document.getElementById("ponto-salas").value.toUpperCase();
+  const ponto = document
+    .getElementById("ponto-salas")
+    .value.toUpperCase();
 
   const salas = [];
 
-  document.querySelectorAll(".card").forEach(card => {
+  document.querySelectorAll(".card").forEach((card) => {
     salas.push({
       nome: card.querySelector(".sala-nome").value.toUpperCase(),
       bruto: card.querySelector(".sala-bruto").value,
       despesas: card.querySelector(".sala-despesas").value,
-      cartao: card.querySelector(".sala-cartao").value
+      cartao: card.querySelector(".sala-cartao").value,
+      taxa: card.querySelector(".sala-taxa").value
     });
   });
 
@@ -262,7 +312,7 @@ function carregarSalas(lista, totalEl) {
   document.getElementById("ponto-salas").value = (dados.ponto || "").toUpperCase();
 
   if (dados.salas && Array.isArray(dados.salas)) {
-    dados.salas.forEach(s => adicionarSala(lista, totalEl, s));
+    dados.salas.forEach((s) => adicionarSala(lista, totalEl, s));
   } else {
     atualizarTotalSalas(totalEl);
   }
