@@ -18,22 +18,17 @@
     :root {
       --roxo: #6a1b9a;
       --verde: #16a34a;
+      --azul: #1d4ed8;
       --vermelho: #dc2626;
       --cinza-btn: #aaa;
       --danger: #d9534f;
     }
 
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
     body {
       margin: 0;
       padding: 0;
       background: #f8f8f8;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      overflow-x: hidden;
     }
 
     main {
@@ -42,312 +37,118 @@
       padding: 16px;
     }
 
-    h1 {
-      display: none;
-    }
-
     h2 {
-      color: var(--roxo);
       text-align: center;
-      margin-bottom: 16px;
-      font-size: 1.5rem;
+      color: var(--roxo);
       font-weight: 900;
+      margin-bottom: 16px;
     }
 
     .linha {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin: 10px 0;
+      margin-bottom: 8px;
     }
 
-    .linha label {
-      font-weight: 700;
-      min-width: 70px;
-    }
-
-    .linha span.sub {
-      font-size: 0.8rem;
-      color: #666;
-      font-weight: 600;
-    }
-
-    input[type="date"] {
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 1px solid #dcdcdc;
-      outline: none;
-      font-size: 0.95rem;
-    }
-
-    .barra {
-      height: 1px;
-      background: #ddd;
-      margin: 12px 0;
-    }
-
-    /* Botões */
     .acoes {
       display: flex;
+      gap: 8px;
+      margin: 16px 0;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding: 4px 0;
     }
 
     .btn {
       padding: 10px 16px;
-      border: none;
       border-radius: 10px;
-      font-weight: 800;
+      border: none;
+      font-weight: bold;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.92rem;
-      white-space: nowrap;
     }
 
-    .btn.roxo {
-      background: var(--roxo);
-      color: #fff;
-    }
-
-    .btn.cinza {
-      background: var(--cinza-btn);
-      color: #fff;
-    }
-
-    .btn.danger {
-      background: var(--danger);
-      color: #fff;
-    }
-
-    .btn i {
-      font-size: 1rem;
-    }
-
-    /* Cards */
-    .cards {
-      display: grid;
-      gap: 12px;
-    }
+    .btn.roxo { background: var(--roxo); color: white; }
+    .btn.cinza { background: #ccc; }
+    .btn.danger { background: var(--danger); color: white; }
 
     .card {
-      background: #fff;
-      border-radius: 12px;
-      border: 1px solid #eee;
+      background: white;
       padding: 12px;
-      overflow: hidden;
-    }
-
-    .card-titulo {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 800;
-      font-size: 0.95rem;
-      margin-bottom: 6px;
-      color: #444;
-    }
-
-    .card-titulo small {
-      font-weight: 400;
-      font-size: 0.75rem;
-      color: #777;
-      margin-right: 8px;
-    }
-
-    .icone-remover {
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      color: #999;
-      padding: 4px;
-    }
-
-    .icone-remover i {
-      font-size: 0.9rem;
-    }
-
-    .linha-nome {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 4px 0 6px;
-    }
-
-    .linha-nome label {
-      font-weight: 700;
-      min-width: 55px;
-    }
-
-    .linha-nome input {
-      flex: 1;
-      border: none;
-      border-bottom: 2px solid #dcdcdc;
-      padding: 6px 0;
-      text-transform: uppercase;
-      outline: none;
-      background: transparent;
-      font-size: 0.95rem;
-    }
-
-    .linha-nome input:focus {
-      border-bottom-color: var(--roxo);
-    }
-
-    /* Campos monetários em linha (label + input) */
-    .grid-sala {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 8px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #eee;
     }
 
     .col-sala {
       display: flex;
-      align-items: center;
-      font-size: 0.9rem;
-      gap: 8px;
+      justify-content: space-between;
+      margin: 6px 0;
     }
 
-    .col-sala label {
-      font-weight: 700;
-      color: #444;
-      min-width: 140px;
-    }
-
-    .col-sala input {
-      flex: 1;
+    input {
       border: none;
-      border-bottom: 2px solid #dcdcdc;
-      padding: 6px 0;
-      font-size: 0.95rem;
+      border-bottom: 2px solid #ddd;
+      padding: 4px;
+      text-align: right;
+      width: 140px;
+    }
+
+    input:focus {
+      border-bottom: 2px solid var(--roxo);
       outline: none;
-      background: transparent;
-      text-align: right;
     }
 
-    .col-sala input:focus {
-      border-bottom-color: var(--roxo);
-    }
-
-    .resultado {
+    .resultado-sala {
       margin-top: 10px;
-      font-weight: 700;
-      font-size: 0.9rem;
-    }
-
-    .resultado .valor {
-      font-weight: 800;
-    }
-
-    .linha-pipo-pass {
-      margin-top: 4px;
-      font-size: 0.88rem;
-    }
-
-    .linha-pipo-pass span {
+      font-size: 0.95rem;
       font-weight: 700;
     }
 
-    .verde {
-      color: var(--verde);
-    }
+    .verde { color: var(--verde); }
+    .vermelho { color: var(--vermelho); }
+    .azul { color: var(--azul); }
 
-    .vermelho {
-      color: var(--vermelho);
-    }
-
-    .neutro {
-      color: #555;
-    }
-
-    .total-geral {
-      margin-top: 18px;
-      font-weight: 900;
-      font-size: 1.05rem;
-      text-align: right;
-    }
-
-    /* Modal — fullscreen, igual Retenção / Lançamento */
+    /* Modal */
     #modalSalas {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, .7);
+      background: rgba(0,0,0,0.7);
       display: none;
       justify-content: center;
       align-items: center;
-      padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
-      z-index: 1000;
+      padding: 15px;
     }
 
-    #modalSalas.aberta {
-      display: flex !important;
-    }
+    #modalSalas.aberta { display: flex; }
 
     #modalSalas .cx {
-      background: #fff;
-      border-radius: 8px;
-      width: min(96vw, 520px);
-      max-height: 88dvh;
-      overflow: auto;
-      position: relative;
-      padding: 16px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, .25);
-      -webkit-overflow-scrolling: touch;
+      background: white;
+      width: min(95vw, 520px);
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 20px;
+      border-radius: 10px;
+      font-family: ui-monospace;
     }
 
-    .rel {
-      font-family: ui-monospace, Menlo, Consolas, monospace;
-      font-size: 0.9rem;
-      line-height: 1.25;
-      white-space: pre-wrap;
+    .linha-pipo-pass {
+      margin-top: 8px;
+      font-weight: bold;
     }
 
-    @media (max-width: 600px) {
-      #modalSalas {
-        padding: 0;
-        align-items: stretch;
-      }
-
-      #modalSalas .cx {
-        width: 100vw;
-        height: 100svh;
-        max-height: 100svh;
-        border-radius: 0;
-        padding: 12px;
-        box-shadow: none;
-      }
-
-      main {
-        padding: 12px;
-      }
-
-      .col-sala label {
-        min-width: 110px;
-        font-size: 0.85rem;
-      }
-    }
   </style>
 </head>
 
 <body>
 
   <main>
-    <h1>Cálculo de Salas</h1>
     <h2>Cálculo de Salas</h2>
 
     <div class="linha">
       <label>Data:</label>
-      <input id="dataDe" type="date" />
-
-      <span class="sub">Até</span>
-      <input id="dataAte" type="date" />
+      <input id="dataDe" type="date">
+      <span>até</span>
+      <input id="dataAte" type="date">
     </div>
-
-    <div class="barra"></div>
 
     <div class="acoes">
       <button id="btnAdicionar" class="btn roxo">
@@ -363,353 +164,24 @@
       </button>
     </div>
 
-    <div id="listaSalas" class="cards"></div>
+    <div id="listaSalas"></div>
 
     <div id="totalGeral" class="total-geral"></div>
   </main>
 
   <!-- Modal -->
-  <div id="modalSalas" class="modal">
+  <div id="modalSalas">
     <div class="cx">
-      <header style="display:flex;justify-content:space-between;align-items:center;">
-        <h3 style="margin:0;">Relatório de Salas</h3>
+      <div style="display:flex; justify-content:space-between;">
+        <strong style="font-size:1.2rem;">Relatório de Salas</strong>
         <button id="btnFecharModal" class="btn cinza">Fechar</button>
-      </header>
-
-      <div id="relConteudo" class="rel"></div>
+      </div>
+      <hr>
+      <div id="relConteudo"></div>
     </div>
   </div>
 
-  <script type="module">
-    import { inicializarPagina } from "../../common/js/navegacao.js";
-
-    const STORAGE_KEY = "calculo_salas_v1";
-    let salas = [];
-
-    function parseCentavos(v) {
-      if (!v) return 0;
-      const limpo = v.toString().replace(/\D/g, "");
-      if (!limpo) return 0;
-      return Number(limpo) / 100;
-    }
-
-    function formatarMoeda(v) {
-      return (Number(v) || 0).toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-        minimumFractionDigits: 2
-      });
-    }
-
-    function formatarInputMonetario(input) {
-      let v = (input.value || "").toString().replace(/\D/g, "");
-      if (!v) {
-        input.value = "";
-        return;
-      }
-      const num = Number(v) / 100;
-      input.value = num.toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    }
-
-    // Cálculo base do lucro da sala
-    // bruto / 2 + 10% em cima da metade - despesas = valor1
-    // cartão - 6% (taxa) = valor2
-    // valorFinalBase = valor1 - valor2
-    // Resultado final = valorFinalBase - taxaParcelamentoManual
-    function calcularResultadoSala(sala) {
-      const bruto = parseCentavos(sala.bruto);
-      const despesas = parseCentavos(sala.despesas);
-      const cartao = parseCentavos(sala.cartao);
-      const taxaParc = parseCentavos(sala.taxa);
-
-      if (!bruto && !despesas && !cartao && !taxaParc) return 0;
-
-      const metade = bruto / 2;
-      const com10 = metade * 1.10;
-      const valor1 = com10 - despesas;
-      const valor2 = cartao * 0.06;
-
-      const valorFinalBase = valor1 - valor2;
-      const valorFinal = valorFinalBase - taxaParc;
-
-      return valorFinal;
-    }
-
-    function salvarNoStorage() {
-      const dataDe = document.getElementById("dataDe").value || "";
-      const dataAte = document.getElementById("dataAte").value || "";
-      const payload = { dataDe, dataAte, salas };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    }
-
-    function carregarDoStorage() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-
-      try {
-        const dados = JSON.parse(raw);
-        document.getElementById("dataDe").value = dados.dataDe || "";
-        document.getElementById("dataAte").value = dados.dataAte || "";
-        salas = Array.isArray(dados.salas) ? dados.salas : [];
-      } catch (e) {
-        console.error("Erro ao carregar storage:", e);
-      }
-    }
-
-    function atualizarTotalGeral() {
-      const elTotal = document.getElementById("totalGeral");
-      let total = 0;
-      salas.forEach((s) => {
-        total += calcularResultadoSala(s);
-      });
-
-      elTotal.textContent = "";
-      elTotal.className = "total-geral";
-
-      if (!salas.length) return;
-
-      const texto = "TOTAL GERAL: " + formatarMoeda(total);
-      elTotal.textContent = texto;
-
-      if (total < 0) {
-        elTotal.classList.add("vermelho");
-      } else if (total > 0) {
-        elTotal.classList.add("verde");
-      } else {
-        elTotal.classList.add("neutro");
-      }
-    }
-
-    function criarCardSala(sala, index) {
-      const card = document.createElement("div");
-      card.className = "card";
-
-      card.innerHTML = `
-        <div class="card-titulo">
-          <span>Sala ${index + 1}</span>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <small>preencha os valores e veja o resultado</small>
-            <button class="icone-remover" title="Remover sala">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="linha-nome">
-          <label>Nome:</label>
-          <input type="text" class="sala-nome" placeholder="NOME DA SALA">
-        </div>
-
-        <div class="grid-sala">
-          <div class="col-sala">
-            <label>Bruto (R$)</label>
-            <input type="tel" inputmode="numeric" class="sala-bruto" placeholder="0,00">
-          </div>
-          <div class="col-sala">
-            <label>Despesas (-R$)</label>
-            <input type="tel" inputmode="numeric" class="sala-despesas" placeholder="0,00">
-          </div>
-          <div class="col-sala">
-            <label>Cartão (R$)</label>
-            <input type="tel" inputmode="numeric" class="sala-cartao" placeholder="0,00">
-          </div>
-          <div class="col-sala">
-            <label>Taxa parcelamento (R$)</label>
-            <input type="tel" inputmode="numeric" class="sala-taxa" placeholder="0,00">
-          </div>
-        </div>
-
-        <div class="resultado">
-          Resultado: <span class="valor">R$ 0,00</span> <span class="status">(Neutro)</span>
-          <div class="linha-pipo-pass">
-            <span>Pipo: <span class="pipo-valor">R$ 0,00</span></span>
-            &nbsp;|&nbsp;
-            <span>Pass: <span class="pass-valor">R$ 0,00</span></span>
-          </div>
-        </div>
-      `;
-
-      const nomeInput = card.querySelector(".sala-nome");
-      const brutoInput = card.querySelector(".sala-bruto");
-      const despesasInput = card.querySelector(".sala-despesas");
-      const cartaoInput = card.querySelector(".sala-cartao");
-      const taxaInput = card.querySelector(".sala-taxa");
-      const btnRemover = card.querySelector(".icone-remover");
-      const valorSpan = card.querySelector(".resultado .valor");
-      const statusSpan = card.querySelector(".resultado .status");
-      const resultadoDiv = card.querySelector(".resultado");
-      const pipoSpan = card.querySelector(".pipo-valor");
-      const passSpan = card.querySelector(".pass-valor");
-
-      if (sala.nome) nomeInput.value = sala.nome;
-      if (sala.bruto) { brutoInput.value = sala.bruto; formatarInputMonetario(brutoInput); }
-      if (sala.despesas) { despesasInput.value = sala.despesas; formatarInputMonetario(despesasInput); }
-      if (sala.cartao) { cartaoInput.value = sala.cartao; formatarInputMonetario(cartaoInput); }
-      if (sala.taxa) { taxaInput.value = sala.taxa; formatarInputMonetario(taxaInput); }
-
-      const atualizarResultado = () => {
-        salas[index].nome = (nomeInput.value || "").toUpperCase();
-
-        formatarInputMonetario(brutoInput);
-        formatarInputMonetario(despesasInput);
-        formatarInputMonetario(cartaoInput);
-        formatarInputMonetario(taxaInput);
-
-        salas[index].bruto = brutoInput.value || "";
-        salas[index].despesas = despesasInput.value || "";
-        salas[index].cartao = cartaoInput.value || "";
-        salas[index].taxa = taxaInput.value || "";
-
-        const res = calcularResultadoSala(salas[index]);
-
-        valorSpan.textContent = formatarMoeda(res);
-        resultadoDiv.classList.remove("verde", "vermelho", "neutro");
-
-        if (res < 0) {
-          resultadoDiv.classList.add("vermelho");
-          statusSpan.textContent = "(Prejuízo)";
-        } else if (res > 0) {
-          resultadoDiv.classList.add("verde");
-          statusSpan.textContent = "(Lucro)";
-        } else {
-          resultadoDiv.classList.add("neutro");
-          statusSpan.textContent = "(Neutro)";
-        }
-
-        // Pipo / Pass (2/3 e 1/3 do resultado final)
-        const pipo = (res / 3) * 2;
-        const pass = res / 3;
-        pipoSpan.textContent = formatarMoeda(pipo);
-        passSpan.textContent = formatarMoeda(pass);
-
-        atualizarTotalGeral();
-        salvarNoStorage();
-      };
-
-      nomeInput.addEventListener("input", () => {
-        nomeInput.value = nomeInput.value.toUpperCase();
-        atualizarResultado();
-      });
-
-      [brutoInput, despesasInput, cartaoInput, taxaInput].forEach(inp => {
-        inp.addEventListener("input", atualizarResultado);
-        inp.addEventListener("change", atualizarResultado);
-      });
-
-      btnRemover.addEventListener("click", () => {
-        if (!confirm("Remover esta sala?")) return;
-        salas.splice(index, 1);
-        renderizarSalas();
-        salvarNoStorage();
-      });
-
-      atualizarResultado();
-
-      return card;
-    }
-
-    function renderizarSalas() {
-      const lista = document.getElementById("listaSalas");
-      lista.innerHTML = "";
-
-      salas.forEach((sala, idx) => {
-        const card = criarCardSala(sala, idx);
-        lista.appendChild(card);
-      });
-
-      atualizarTotalGeral();
-    }
-
-    function abrirModal() {
-      const modal = document.getElementById("modalSalas");
-      const rel = document.getElementById("relConteudo");
-      const dataDe = document.getElementById("dataDe").value || "___/___/____";
-      const dataAte = document.getElementById("dataAte").value || "___/___/____";
-
-      let html = `Período: ${dataDe} até ${dataAte}<br><br>`;
-      let total = 0;
-
-      salas.forEach((sala, idx) => {
-        const bruto = parseCentavos(sala.bruto);
-        const despesas = parseCentavos(sala.despesas);
-        const cartao = parseCentavos(sala.cartao);
-        const taxa = parseCentavos(sala.taxa);
-        const res = calcularResultadoSala(sala);
-        total += res;
-
-        const pipo = (res / 3) * 2;
-        const pass = res / 3;
-
-        const classeRes = res < 0 ? "vermelho" : res > 0 ? "verde" : "neutro";
-
-        html += `<strong>Sala ${idx + 1} - ${sala.nome || "SEM NOME"}</strong><br>`;
-        html += `Bruto: ${formatarMoeda(bruto)}<br>`;
-        html += `Despesas: -${formatarMoeda(despesas)}<br>`;
-        html += `Cartão: ${formatarMoeda(cartao)}<br>`;
-        html += `Taxa parcelamento: -${formatarMoeda(taxa)}<br>`;
-        html += `Resultado: <span class="${classeRes}">${formatarMoeda(res)}</span><br>`;
-        html += `Pipo: ${formatarMoeda(pipo)} | Pass: ${formatarMoeda(pass)}<br>`;
-        html += `----------------------------------------<br><br>`;
-      });
-
-      const classeTotal = total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro";
-      html += `<strong>TOTAL GERAL: <span class="${classeTotal}">${formatarMoeda(total)}</span></strong>`;
-
-      rel.innerHTML = html;
-      modal.classList.add("aberta");
-    }
-
-    function fecharModal() {
-      document.getElementById("modalSalas").classList.remove("aberta");
-    }
-
-    function limparTudo() {
-      if (!confirm("Deseja limpar todas as salas e datas?")) return;
-      salas = [];
-      document.getElementById("dataDe").value = "";
-      document.getElementById("dataAte").value = "";
-      renderizarSalas();
-      salvarNoStorage();
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      inicializarPagina("Cálculo de Salas", "operacao");
-
-      carregarDoStorage();
-      if (!salas.length) {
-        salas.push({ nome: "", bruto: "", despesas: "", cartao: "", taxa: "" });
-      }
-      renderizarSalas();
-
-      document.getElementById("dataDe").addEventListener("change", salvarNoStorage);
-      document.getElementById("dataAte").addEventListener("change", salvarNoStorage);
-
-      document.getElementById("btnAdicionar").addEventListener("click", () => {
-        salas.push({ nome: "", bruto: "", despesas: "", cartao: "", taxa: "" });
-        renderizarSalas();
-        salvarNoStorage();
-      });
-
-      document.getElementById("btnRelatorio").addEventListener("click", () => {
-        if (!salas.length) {
-          if (window.toast) toast.warn("Adicione pelo menos uma sala.");
-          return;
-        }
-        abrirModal();
-      });
-
-      document.getElementById("btnLimpar").addEventListener("click", limparTudo);
-      document.getElementById("btnFecharModal").addEventListener("click", fecharModal);
-      document.getElementById("modalSalas").addEventListener("click", (e) => {
-        if (e.target.id === "modalSalas") fecharModal();
-      });
-
-      atualizarTotalGeral();
-    });
-  </script>
+  <script type="module" src="./calculoSalas.js"></script>
 
 </body>
 
