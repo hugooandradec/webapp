@@ -299,7 +299,7 @@ function abrirModal() {
     html += `Bruto: <span class="verde">${formatarMoeda(bruto)}</span><br>`;
     html += `Despesas: <span class="vermelho">-${formatarMoeda(despesas)}</span><br>`;
     html += `Cartão: <span style="color:#2563eb;">${formatarMoeda(cartao)}</span><br>`;
-    html += `Taxa parcelamento: <span class="vermelho">-${formatarMoeda(taxa)}</span><br>`;
+    html += `Taxa parcelamento cartão: <span class="vermelho">-${formatarMoeda(taxa)}</span><br>`;
     html += `Resultado: <span class="${classeRes}"><strong>${formatarMoeda(res)}</strong></span><br><br>`;
     html += `Pipo: <span class="${classePipoPass}"><strong>${formatarMoeda(pipo)}</strong></span> | `;
     html += `Pass: <span class="${classePipoPass}"><strong>${formatarMoeda(pass)}</strong></span><br>`;
