@@ -9,7 +9,8 @@
 
   <link rel="manifest" href="../manifest.json" />
   <link rel="icon" href="../../common/img/favicon.ico" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
   <!-- Toast -->
   <script defer src="../../common/js/toast.js"></script>
@@ -19,8 +20,7 @@
       --roxo: #6a1b9a;
       --verde: #16a34a;
       --vermelho: #dc2626;
-      --azul: #2563eb;
-      --cinza-btn: #777;
+      --cinza-btn: #aaa;
       --danger: #d9534f;
     }
 
@@ -33,7 +33,7 @@
       margin: 0;
       padding: 0;
       background: #f8f8f8;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
       overflow-x: hidden;
     }
 
@@ -51,7 +51,7 @@
       color: var(--roxo);
       text-align: center;
       margin-bottom: 16px;
-      font-size: 1.6rem;
+      font-size: 1.5rem;
       font-weight: 900;
     }
 
@@ -60,17 +60,16 @@
       align-items: center;
       gap: 8px;
       margin: 10px 0;
-      flex-wrap: wrap;
     }
 
     .linha label {
       font-weight: 700;
-      min-width: 40px;
+      min-width: 70px;
     }
 
     .linha span.sub {
-      font-size: 0.85rem;
-      color: #555;
+      font-size: 0.8rem;
+      color: #666;
       font-weight: 600;
     }
 
@@ -199,7 +198,7 @@
       border-bottom-color: var(--roxo);
     }
 
-    /* Campos monetários em coluna */
+    /* Campos monetários */
     .grid-sala {
       display: flex;
       flex-direction: column;
@@ -217,7 +216,7 @@
     .col-sala label {
       font-weight: 700;
       color: #444;
-      min-width: 150px;
+      min-width: 140px;
     }
 
     .col-sala input {
@@ -245,16 +244,21 @@
       font-weight: 800;
     }
 
+    .linha-pipo-pass {
+      margin-top: 4px;
+      font-size: 0.9rem;
+    }
+
+    .linha-pipo-pass span {
+      font-weight: 700;
+    }
+
     .verde {
       color: var(--verde);
     }
 
     .vermelho {
       color: var(--vermelho);
-    }
-
-    .azul {
-      color: var(--azul);
     }
 
     .neutro {
@@ -268,7 +272,7 @@
       text-align: right;
     }
 
-    /* Modal fullscreen */
+    /* Modal — fullscreen */
     #modalSalas {
       position: fixed;
       inset: 0;
@@ -323,7 +327,7 @@
       }
 
       .col-sala label {
-        min-width: 120px;
+        min-width: 115px;
         font-size: 0.85rem;
       }
     }
@@ -331,6 +335,7 @@
 </head>
 
 <body>
+
   <main>
     <h1>Cálculo de Salas</h1>
     <h2>Cálculo de Salas</h2>
@@ -338,6 +343,7 @@
     <div class="linha">
       <label>Data:</label>
       <input id="dataDe" type="date" />
+
       <span class="sub">até</span>
       <input id="dataAte" type="date" />
     </div>
@@ -364,18 +370,20 @@
   </main>
 
   <!-- Modal -->
-  <div id="modalSalas">
+  <div id="modalSalas" class="modal">
     <div class="cx">
-      <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <header style="display:flex;justify-content:space-between;align-items:center;">
         <h3 style="margin:0;">Relatório de Salas</h3>
-        <button id="btnFecharModal" class="btn cinza" type="button">Fechar</button>
+        <button id="btnFecharModal" class="btn cinza">Fechar</button>
       </header>
+
       <div id="relConteudo" class="rel"></div>
     </div>
   </div>
 
   <!-- JS separado -->
-  <script type="module" src="../js/calculoSalas.js?v=1"></script>
+  <script type="module" src="../js/calculoSalas.js"></script>
+
 </body>
 
 </html>
