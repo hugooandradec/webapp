@@ -1,6 +1,6 @@
 // js/calculoSalas.js
 // Cálculo de Salas (Bingos)
-// Resultado = Bruto - Despesas - Cartão - Taxa de parcelamento
+// Resultado = (Bruto / 2) + 10% - Despesas - 6% do Cartão - Taxa de parcelamento
 // Pipo = 2/3 do resultado, Pass = 1/3 do resultado
 
 import { inicializarPagina } from "../../common/js/navegacao.js";
@@ -47,6 +47,11 @@ function formatarDataBR(iso) {
 
 /* ===== Regras de cálculo ===== */
 
+// REGRA CORRETA:
+// (Bruto / 2) + 10% em cima da metade
+//   - Despesas
+//   - 6% do Cartão
+//   - Taxa de parcelamento
 function calcularResultadoSala(sala) {
   const bruto = parseCentavos(sala.bruto);
   const despesas = parseCentavos(sala.despesas);
@@ -55,8 +60,12 @@ function calcularResultadoSala(sala) {
 
   if (!bruto && !despesas && !cartao && !taxa) return 0;
 
-  // Resultado = Bruto - Despesas - Cartão - Taxa
-  return bruto - despesas - cartao - taxa;
+  const metade = bruto / 2;
+  const com10 = metade * 1.10;      // metade + 10%
+  const taxaCartao = cartao * 0.06; // 6% do valor passado no cartão
+
+  // Resultado final
+  return com10 - despesas - taxaCartao - taxa;
 }
 
 function calcularPipoPass(resultado) {
