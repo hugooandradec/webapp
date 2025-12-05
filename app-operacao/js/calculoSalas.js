@@ -1,6 +1,6 @@
 // js/calculoSalas.js
 // Cálculo de Salas (Bingos)
-// Resultado = (Bruto / 2) + 10% - Despesas - 6% do Cartão - Taxa de parcelamento
+// Resultado = (Bruto / 2) + 10% - Despesas - 6% do Cartão - Taxa de parcelamento de cartão
 // Pipo = 2/3 do resultado, Pass = 1/3 do resultado
 
 import { inicializarPagina } from "../../common/js/navegacao.js";
@@ -51,7 +51,7 @@ function formatarDataBR(iso) {
 // (Bruto / 2) + 10% em cima da metade
 //   - Despesas
 //   - 6% do Cartão
-//   - Taxa de parcelamento
+//   - Taxa de parcelamento de cartão
 function calcularResultadoSala(sala) {
   const bruto = parseCentavos(sala.bruto);
   const despesas = parseCentavos(sala.despesas);
@@ -159,7 +159,7 @@ function criarCardSala(sala, index) {
         <input type="tel" inputmode="numeric" class="sala-cartao" placeholder="0,00">
       </div>
       <div class="col-sala">
-        <label>Taxa parcelamento (-R$)</label>
+        <label>Taxa parcelamento cartão (-R$)</label>
         <input type="tel" inputmode="numeric" class="sala-taxa" placeholder="0,00">
       </div>
     </div>
