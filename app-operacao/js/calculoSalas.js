@@ -1,20 +1,24 @@
 // js/calculoSalas.js
+// Cálculo de Salas (Bingos)
+// Resultado = Bruto - Despesas - Cartão - Taxa de parcelamento
+// Pipo = 2/3 do resultado, Pass = 1/3 do resultado
+
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
-const STORAGE_KEY = "calculo_salas_v1";
+const STORAGE_KEY = "calculo_salas_v2";
 let salas = [];
 
-/* ==== HELPERS DE MOEDA / DATA ==== */
+/* ===== Helpers de moeda / datas ===== */
 
-function parseCentavos(v) {
-  if (!v) return 0;
-  const limpo = v.toString().replace(/\D/g, "");
+function parseCentavos(str) {
+  if (!str) return 0;
+  const limpo = str.toString().replace(/\D/g, "");
   if (!limpo) return 0;
   return Number(limpo) / 100;
 }
 
-function formatarMoeda(v) {
-  return (Number(v) || 0).toLocaleString("pt-BR", {
+function formatarMoeda(valor) {
+  return (Number(valor) || 0).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2
@@ -36,41 +40,40 @@ function formatarInputMonetario(input) {
 
 function formatarDataBR(iso) {
   if (!iso) return "___/___/____";
-  const [ano, mes, dia] = iso.split("-");
-  if (!ano || !mes || !dia) return "___/___/____";
-  return `${dia}/${mes}/${ano}`;
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return "___/___/____";
+  return `${d}/${m}/${y}`;
 }
 
-/* ==== CÁLCULO =====
-   valor1 = (bruto/2) + 10% da metade - despesas
-   valor2 = 6% do cartão
-   resultado = valor1 - valor2 - taxaParcelamento
-*/
+/* ===== Regras de cálculo ===== */
+
 function calcularResultadoSala(sala) {
   const bruto = parseCentavos(sala.bruto);
   const despesas = parseCentavos(sala.despesas);
   const cartao = parseCentavos(sala.cartao);
-  const taxaParc = parseCentavos(sala.taxaParcelamento);
+  const taxa = parseCentavos(sala.taxa);
 
-  if (!bruto && !despesas && !cartao && !taxaParc) return 0;
+  if (!bruto && !despesas && !cartao && !taxa) return 0;
 
-  const metade = bruto / 2;
-  const com10 = metade * 1.1;
-  const valor1 = com10 - despesas;
-  const valor2 = cartao * 0.06;
-
-  return valor1 - valor2 - taxaParc;
+  // Resultado = Bruto - Despesas - Cartão - Taxa
+  return bruto - despesas - cartao - taxa;
 }
 
-/* ==== STORAGE ==== */
+function calcularPipoPass(resultado) {
+  const terco = resultado / 3;
+  return {
+    pipo: terco * 2,
+    pass: terco
+  };
+}
+
+/* ===== Storage ===== */
 
 function salvarNoStorage() {
   const dataDe = document.getElementById("dataDe").value || "";
   const dataAte = document.getElementById("dataAte").value || "";
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({ dataDe, dataAte, salas })
-  );
+  const payload = { dataDe, dataAte, salas };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
 
 function carregarDoStorage() {
@@ -87,7 +90,7 @@ function carregarDoStorage() {
   }
 }
 
-/* ==== TOTAL GERAL ==== */
+/* ===== Renderização ===== */
 
 function atualizarTotalGeral() {
   const elTotal = document.getElementById("totalGeral");
@@ -101,7 +104,8 @@ function atualizarTotalGeral() {
 
   if (!salas.length) return;
 
-  elTotal.textContent = "TOTAL GERAL: " + formatarMoeda(total);
+  const texto = "TOTAL GERAL: " + formatarMoeda(total);
+  elTotal.textContent = texto;
 
   if (total < 0) {
     elTotal.classList.add("vermelho");
@@ -112,8 +116,6 @@ function atualizarTotalGeral() {
   }
 }
 
-/* ==== UI: CRIAR CARD ==== */
-
 function criarCardSala(sala, index) {
   const card = document.createElement("div");
   card.className = "card";
@@ -123,7 +125,7 @@ function criarCardSala(sala, index) {
       <span>Sala ${index + 1}</span>
       <div style="display:flex;align-items:center;gap:8px;">
         <small>preencha os valores e veja o resultado</small>
-        <button class="icone-remover" title="Remover sala" type="button">
+        <button class="icone-remover" title="Remover sala">
           <i class="fa-solid fa-trash"></i>
         </button>
       </div>
@@ -149,12 +151,16 @@ function criarCardSala(sala, index) {
       </div>
       <div class="col-sala">
         <label>Taxa parcelamento (-R$)</label>
-        <input type="tel" inputmode="numeric" class="sala-taxa-parc" placeholder="0,00">
+        <input type="tel" inputmode="numeric" class="sala-taxa" placeholder="0,00">
       </div>
     </div>
 
     <div class="resultado">
       Resultado: <span class="valor">R$ 0,00</span> <span class="status">(Neutro)</span>
+    </div>
+    <div class="linha-pipo-pass">
+      Pipo: <span class="pipo-valor">R$ 0,00</span> |
+      Pass: <span class="pass-valor">R$ 0,00</span>
     </div>
   `;
 
@@ -162,47 +168,37 @@ function criarCardSala(sala, index) {
   const brutoInput = card.querySelector(".sala-bruto");
   const despesasInput = card.querySelector(".sala-despesas");
   const cartaoInput = card.querySelector(".sala-cartao");
-  const taxaParcInput = card.querySelector(".sala-taxa-parc");
+  const taxaInput = card.querySelector(".sala-taxa");
   const btnRemover = card.querySelector(".icone-remover");
   const valorSpan = card.querySelector(".resultado .valor");
   const statusSpan = card.querySelector(".resultado .status");
   const resultadoDiv = card.querySelector(".resultado");
+  const pipoSpan = card.querySelector(".pipo-valor");
+  const passSpan = card.querySelector(".pass-valor");
 
-  // popular se veio do storage
   if (sala.nome) nomeInput.value = sala.nome;
-  if (sala.bruto) {
-    brutoInput.value = sala.bruto;
-    formatarInputMonetario(brutoInput);
-  }
-  if (sala.despesas) {
-    despesasInput.value = sala.despesas;
-    formatarInputMonetario(despesasInput);
-  }
-  if (sala.cartao) {
-    cartaoInput.value = sala.cartao;
-    formatarInputMonetario(cartaoInput);
-  }
-  if (sala.taxaParcelamento) {
-    taxaParcInput.value = sala.taxaParcelamento;
-    formatarInputMonetario(taxaParcInput);
-  }
+  if (sala.bruto) { brutoInput.value = sala.bruto; formatarInputMonetario(brutoInput); }
+  if (sala.despesas) { despesasInput.value = sala.despesas; formatarInputMonetario(despesasInput); }
+  if (sala.cartao) { cartaoInput.value = sala.cartao; formatarInputMonetario(cartaoInput); }
+  if (sala.taxa) { taxaInput.value = sala.taxa; formatarInputMonetario(taxaInput); }
 
   const atualizarResultado = () => {
     salas[index].nome = (nomeInput.value || "").toUpperCase();
 
-    [brutoInput, despesasInput, cartaoInput, taxaParcInput].forEach(inp => {
-      formatarInputMonetario(inp);
-    });
+    formatarInputMonetario(brutoInput);
+    formatarInputMonetario(despesasInput);
+    formatarInputMonetario(cartaoInput);
+    formatarInputMonetario(taxaInput);
 
     salas[index].bruto = brutoInput.value || "";
     salas[index].despesas = despesasInput.value || "";
     salas[index].cartao = cartaoInput.value || "";
-    salas[index].taxaParcelamento = taxaParcInput.value || "";
+    salas[index].taxa = taxaInput.value || "";
 
     const res = calcularResultadoSala(salas[index]);
     valorSpan.textContent = formatarMoeda(res);
-    resultadoDiv.classList.remove("verde", "vermelho", "neutro");
 
+    resultadoDiv.classList.remove("verde", "vermelho", "neutro");
     if (res < 0) {
       resultadoDiv.classList.add("vermelho");
       statusSpan.textContent = "(Prejuízo)";
@@ -214,16 +210,28 @@ function criarCardSala(sala, index) {
       statusSpan.textContent = "(Neutro)";
     }
 
+    // Pipo / Pass (2/3 e 1/3 do resultado)
+    const { pipo, pass } = calcularPipoPass(res);
+    pipoSpan.textContent = formatarMoeda(pipo);
+    passSpan.textContent = formatarMoeda(pass);
+
+    [pipoSpan, passSpan].forEach((span) => {
+      span.classList.remove("verde", "vermelho", "neutro");
+      if (res < 0) span.classList.add("vermelho");
+      else if (res > 0) span.classList.add("verde");
+      else span.classList.add("neutro");
+    });
+
     atualizarTotalGeral();
     salvarNoStorage();
   };
 
   nomeInput.addEventListener("input", () => {
-    nomeInput.value = nomeInput.value.toUpperCase();
+    nomeInput.value = (nomeInput.value || "").toUpperCase();
     atualizarResultado();
   });
 
-  [brutoInput, despesasInput, cartaoInput, taxaParcInput].forEach((inp) => {
+  [brutoInput, despesasInput, cartaoInput, taxaInput].forEach((inp) => {
     inp.addEventListener("input", atualizarResultado);
     inp.addEventListener("change", atualizarResultado);
   });
@@ -252,13 +260,13 @@ function renderizarSalas() {
   atualizarTotalGeral();
 }
 
-/* ==== MODAL / RELATÓRIO ==== */
+/* ===== Modal ===== */
 
 function abrirModal() {
   const modal = document.getElementById("modalSalas");
   const rel = document.getElementById("relConteudo");
-  const dataDeIso = document.getElementById("dataDe").value;
-  const dataAteIso = document.getElementById("dataAte").value;
+  const dataDeIso = document.getElementById("dataDe").value || "";
+  const dataAteIso = document.getElementById("dataAte").value || "";
 
   const dataDe = formatarDataBR(dataDeIso);
   const dataAte = formatarDataBR(dataAteIso);
@@ -270,28 +278,22 @@ function abrirModal() {
     const bruto = parseCentavos(sala.bruto);
     const despesas = parseCentavos(sala.despesas);
     const cartao = parseCentavos(sala.cartao);
-    const taxaParc = parseCentavos(sala.taxaParcelamento);
+    const taxa = parseCentavos(sala.taxa);
     const res = calcularResultadoSala(sala);
+    const { pipo, pass } = calcularPipoPass(res);
     total += res;
 
     const classeRes = res < 0 ? "vermelho" : res > 0 ? "verde" : "neutro";
-
-    // Pipo / Pass (2/3 e 1/3 do resultado)
-    const terco = res / 3;
-    const pipo = terco * 2;
-    const pass = terco;
-
-    const classePipo = pipo < 0 ? "vermelho" : pipo > 0 ? "verde" : "neutro";
-    const classePass = pass < 0 ? "vermelho" : pass > 0 ? "verde" : "neutro";
+    const classePipoPass = classeRes;
 
     html += `<strong>Sala ${idx + 1} - ${(sala.nome || "SEM NOME").toUpperCase()}</strong><br>`;
     html += `Bruto: <span class="verde">${formatarMoeda(bruto)}</span><br>`;
     html += `Despesas: <span class="vermelho">-${formatarMoeda(despesas)}</span><br>`;
-    html += `Cartão: <span class="azul">${formatarMoeda(cartao)}</span><br>`;
-    html += `Taxa parcelamento: <span class="vermelho">-${formatarMoeda(taxaParc)}</span><br>`;
-    html += `Resultado: <strong><span class="${classeRes}">${formatarMoeda(res)}</span></strong><br><br>`;
-    html += `<strong>Pipo: <span class="${classePipo}">${formatarMoeda(pipo)}</span> | ` +
-            `Pass: <span class="${classePass}">${formatarMoeda(pass)}</span></strong><br>`;
+    html += `Cartão: <span style="color:#2563eb;">${formatarMoeda(cartao)}</span><br>`;
+    html += `Taxa parcelamento: <span class="vermelho">-${formatarMoeda(taxa)}</span><br>`;
+    html += `Resultado: <span class="${classeRes}"><strong>${formatarMoeda(res)}</strong></span><br><br>`;
+    html += `Pipo: <span class="${classePipoPass}"><strong>${formatarMoeda(pipo)}</strong></span> | `;
+    html += `Pass: <span class="${classePipoPass}"><strong>${formatarMoeda(pass)}</strong></span><br>`;
     html += `----------------------------------------<br><br>`;
   });
 
@@ -315,20 +317,14 @@ function limparTudo() {
   salvarNoStorage();
 }
 
-/* ==== INIT ==== */
+/* ===== INIT ===== */
 
 document.addEventListener("DOMContentLoaded", () => {
   inicializarPagina("Cálculo de Salas", "operacao");
 
   carregarDoStorage();
   if (!salas.length) {
-    salas.push({
-      nome: "",
-      bruto: "",
-      despesas: "",
-      cartao: "",
-      taxaParcelamento: ""
-    });
+    salas.push({ nome: "", bruto: "", despesas: "", cartao: "", taxa: "" });
   }
   renderizarSalas();
 
@@ -336,13 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("dataAte").addEventListener("change", salvarNoStorage);
 
   document.getElementById("btnAdicionar").addEventListener("click", () => {
-    salas.push({
-      nome: "",
-      bruto: "",
-      despesas: "",
-      cartao: "",
-      taxaParcelamento: ""
-    });
+    salas.push({ nome: "", bruto: "", despesas: "", cartao: "", taxa: "" });
     renderizarSalas();
     salvarNoStorage();
   });
