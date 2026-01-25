@@ -4,7 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Fecho por Pontos</title>
+  <meta name="theme-color" content="#6a1b9a" />
 
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
   <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
@@ -13,164 +16,211 @@
       --roxo: #6a1b9a;
       --verde: #16a34a;
       --vermelho: #dc2626;
+      --cinza-btn: #aaa;
+      --danger: #d9534f;
     }
 
-    body {
+    * { box-sizing: border-box; }
+    html, body {
       margin: 0;
-      background: #f6f6f6;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      padding: 0;
+      background: #f8f8f8;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      overflow-x: hidden;
     }
 
     main {
-      max-width: 720px;
+      max-width: 980px;
       margin: 0 auto;
       padding: 16px;
     }
 
-    h2 {
-      text-align: center;
+    h1 { display:none; }
+    h2{
       color: var(--roxo);
-      font-weight: 900;
+      text-align:center;
       margin-bottom: 16px;
-    }
-
-    .cards {
-      display: grid;
-      gap: 12px;
-    }
-
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      border: 1px solid #eee;
-      padding: 12px;
-    }
-
-    .card h3 {
-      margin: 0 0 8px;
-      font-size: 1rem;
+      font-size: 1.5rem;
       font-weight: 900;
-      color: #444;
     }
 
-    .linha {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 6px 0;
-      font-size: 0.9rem;
+    .acoes{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin: 8px 0 16px;
+      padding: 4px 0;
+      justify-content: center;
     }
 
-    .linha label {
-      min-width: 90px;
-      font-weight: 700;
-    }
-
-    .linha input {
-      flex: 1;
-      border: none;
-      border-bottom: 2px solid #ddd;
-      padding: 6px 0;
-      text-align: right;
-      font-size: 0.95rem;
-      background: transparent;
-      outline: none;
-    }
-
-    .linha input:focus {
-      border-bottom-color: var(--roxo);
-    }
-
-    .resultado {
-      margin-top: 6px;
-      font-weight: 900;
-      text-align: right;
-    }
-
-    .verde { color: var(--verde); }
-    .vermelho { color: var(--vermelho); }
-
-    .total-geral {
-      margin-top: 18px;
-      font-size: 1.1rem;
-      font-weight: 900;
-      text-align: right;
-    }
-
-    .acoes {
-      display: flex;
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    .btn {
-      border: none;
+    .btn{
+      padding: 10px 16px;
+      border:none;
       border-radius: 10px;
-      padding: 10px 14px;
       font-weight: 800;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size: .92rem;
+      white-space: nowrap;
+    }
+    .btn.roxo{ background: var(--roxo); color:#fff; }
+    .btn.cinza{ background: var(--cinza-btn); color:#fff; }
+    .btn.danger{ background: var(--danger); color:#fff; }
+    .btn i{ font-size: 1rem; }
+
+    .cards{ display:grid; gap: 12px; }
+
+    .card{
+      background:#fff;
+      border-radius:12px;
+      border:1px solid #eee;
+      padding: 12px;
+      overflow:hidden;
+    }
+
+    .card-titulo{
+      display:flex;
+      justify-content: space-between;
+      align-items:center;
+      font-weight: 900;
+      font-size: .98rem;
+      color:#444;
+      margin-bottom: 8px;
+    }
+
+    .grid{
+      display:flex;
+      flex-direction: column;
       gap: 6px;
     }
 
-    .btn.roxo { background: var(--roxo); color: #fff; }
-    .btn.cinza { background: #999; color: #fff; }
+    .linha{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      font-size: .9rem;
+    }
+
+    .linha label{
+      min-width: 96px;
+      font-weight: 800;
+      color:#444;
+    }
+
+    /* ✅ estilo "Lançamento": digita no começo */
+    .linha input{
+      flex:1;
+      border:none;
+      border-bottom: 2px solid #dcdcdc;
+      padding: 6px 0;
+      font-size: .95rem;
+      outline:none;
+      background: transparent;
+      text-align: left;            /* <<<<< aqui */
+      font-variant-numeric: tabular-nums;
+    }
+    .linha input:focus{ border-bottom-color: var(--roxo); }
+
+    .resultado{
+      margin-top: 10px;
+      font-weight: 900;
+      font-size: .95rem;
+      text-align: right;
+    }
+
+    .verde{ color: var(--verde); }
+    .vermelho{ color: var(--vermelho); }
+    .neutro{ color:#555; }
+
+    .total-geral{
+      margin-top: 18px;
+      font-weight: 900;
+      font-size: 1.05rem;
+      text-align:right;
+    }
 
     /* Modal fullscreen */
-    #modal {
+    #modalFecho{
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,.7);
-      display: none;
+      display:none;
+      justify-content:center;
+      align-items:center;
+      padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
       z-index: 1000;
     }
+    #modalFecho.aberta{ display:flex !important; }
 
-    #modal.aberto {
-      display: flex;
-    }
-
-    #modal .cx {
-      background: #fff;
-      width: 100%;
-      height: 100%;
+    #modalFecho .cx{
+      background:#fff;
+      border-radius: 8px;
+      width: min(96vw, 520px);
+      max-height: 88dvh;
+      overflow:auto;
+      position: relative;
       padding: 16px;
-      overflow: auto;
+      box-shadow: 0 16px 40px rgba(0,0,0,.25);
+      -webkit-overflow-scrolling: touch;
     }
 
-    .rel {
+    .rel{
       font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: .9rem;
+      line-height: 1.25;
       white-space: pre-wrap;
-      font-size: 0.9rem;
+    }
+
+    @media (max-width: 600px){
+      #modalFecho{ padding:0; align-items: stretch; }
+      #modalFecho .cx{
+        width:100vw;
+        height:100svh;
+        max-height:100svh;
+        border-radius: 0;
+        padding: 12px;
+        box-shadow:none;
+      }
+      main{ padding: 12px; }
+      .linha label{ min-width: 92px; font-size: .85rem; }
     }
   </style>
 </head>
 
 <body>
-<main>
-  <h2>Fecho por Pontos</h2>
+  <div id="cabecalho"></div>
 
-  <div id="lista" class="cards"></div>
+  <main>
+    <h1>Fecho por Pontos</h1>
+    <h2>Fecho por Pontos</h2>
 
-  <div id="totalGeral" class="total-geral"></div>
+    <div class="acoes">
+      <button id="btnRelatorio" class="btn roxo">
+        <i class="fa-solid fa-file-lines"></i> Relatório
+      </button>
 
-  <div class="acoes">
-    <button id="btnRelatorio" class="btn roxo">
-      <i class="fa-solid fa-file-lines"></i> Relatório
-    </button>
-    <button id="btnLimpar" class="btn cinza">
-      <i class="fa-solid fa-trash"></i> Limpar
-    </button>
+      <button id="btnLimpar" class="btn cinza">
+        <i class="fa-solid fa-trash"></i> Limpar
+      </button>
+    </div>
+
+    <div id="lista" class="cards"></div>
+    <div id="totalGeral" class="total-geral"></div>
+  </main>
+
+  <div id="modalFecho" class="modal">
+    <div class="cx">
+      <header style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <h3 style="margin:0;">Relatório — Fecho por Pontos</h3>
+        <button id="btnFecharModal" class="btn cinza">Fechar</button>
+      </header>
+
+      <div id="relConteudo" class="rel"></div>
+    </div>
   </div>
-</main>
 
-<div id="modal">
-  <div class="cx">
-    <button id="fechar" class="btn cinza">Fechar</button>
-    <pre id="relatorio" class="rel"></pre>
-  </div>
-</div>
-
-<script type="module" src="../js/fechoPontos.js"></script>
+  <script type="module" src="../js/fechoPontos.js"></script>
 </body>
 </html>
