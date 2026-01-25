@@ -1,9 +1,10 @@
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
 const PONTOS = ["Tubiacanga", "MR", "Amarelos", "Fabinho", "Seven", "Praça"];
-const STORAGE_KEY = "fecho_pontos_v2";
+const STORAGE_KEY = "fecho_pontos_v3_centavos";
 
-let dados = {}; // { ponto: { fecho:"", despesas:"" } }
+let dados = {}; 
+// { ponto: { fechoCent: 0, despesasCent: 0 } }  // sempre em centavos (inteiro)
 
 function salvar() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
@@ -20,52 +21,44 @@ function carregar() {
   }
 }
 
-function limparTextoMonetario(str) {
-  // ✅ só números e vírgula
-  let v = (str || "").toString();
-
-  // remove tudo que não for número ou vírgula
-  v = v.replace(/[^\d,]/g, "");
-
-  // permite só UMA vírgula
-  const partes = v.split(",");
-  if (partes.length > 2) {
-    v = partes[0] + "," + partes.slice(1).join("");
-  }
-
-  return v;
+function soDigitos(str) {
+  return (str || "").toString().replace(/\D/g, "");
 }
 
-function parseBR(str) {
-  // "5421,22" => 5421.22
-  const v = (str || "").toString().trim();
-  if (!v) return 0;
-  const num = parseFloat(v.replace(/\./g, "").replace(",", "."));
-  return Number.isFinite(num) ? num : 0;
-}
-
-function formatarBR(num) {
-  return (Number(num) || 0).toLocaleString("pt-BR", {
+function formatarMoedaDeCentavos(centavos) {
+  const v = (Number(centavos) || 0) / 100;
+  return v.toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
 }
 
-function formatarMoeda(num) {
-  return (Number(num) || 0).toLocaleString("pt-BR", {
+function formatarMoeda(centavos) {
+  const v = (Number(centavos) || 0) / 100;
+  return v.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
     minimumFractionDigits: 2
   });
 }
 
+function getCentavos(ponto, campo) {
+  return Number(dados[ponto]?.[campo] || 0);
+}
+
+function setCentavos(ponto, campo, centavos) {
+  if (!dados[ponto]) dados[ponto] = { fechoCent: 0, despesasCent: 0 };
+  dados[ponto][campo] = Math.max(0, Number(centavos) || 0);
+}
+
 function calcularTotais() {
   let soma = 0;
 
   PONTOS.forEach((p) => {
-    const fecho = parseBR(dados[p]?.fecho);
-    const despesas = parseBR(dados[p]?.despesas);
+    const fecho = getCentavos(p, "fechoCent");
+    const despesas = getCentavos(p, "despesasCent");
     const total = fecho - despesas;
+    soma += total;
 
     const totalSpan = document.querySelector(`[data-total="${p}"]`);
     if (totalSpan) {
@@ -73,13 +66,61 @@ function calcularTotais() {
       totalSpan.classList.remove("verde", "vermelho", "neutro");
       totalSpan.classList.add(total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro");
     }
-
-    soma += total;
   });
 
   const totalGeralEl = document.getElementById("totalGeral");
   totalGeralEl.textContent = "TOTAL GERAL: " + formatarMoeda(soma);
-  totalGeralEl.className = "total-geral " + (soma < 0 ? "vermelho" : soma > 0 ? "verde" : "neutro");
+  totalGeralEl.className =
+    "total-geral " + (soma < 0 ? "vermelho" : soma > 0 ? "verde" : "neutro");
+}
+
+function aplicarMascaraCentavos(input, ponto, campoCentavos) {
+  // pega só dígitos do que está no input e transforma em centavos
+  const digits = soDigitos(input.value);
+
+  // se vazio: 0
+  const centavos = digits ? Number(digits) : 0;
+  setCentavos(ponto, campoCentavos, centavos);
+
+  // mostra sempre formatado "x.xxx,yy"
+  input.value = digits ? formatarMoedaDeCentavos(centavos) : "";
+
+  salvar();
+  calcularTotais();
+}
+
+function bindMascara(input, ponto, campoCentavos) {
+  // teclado numérico
+  input.setAttribute("inputmode", "numeric");
+  input.setAttribute("autocomplete", "off");
+  input.setAttribute("autocorrect", "off");
+  input.setAttribute("spellcheck", "false");
+
+  // impede letras (cola também vai ser limpo no input)
+  input.addEventListener("beforeinput", (e) => {
+    if (typeof e.data === "string" && /\D/.test(e.data)) {
+      // deixa passar backspace/delete (e.data null)
+      e.preventDefault();
+    }
+  });
+
+  input.addEventListener("input", () => {
+    aplicarMascaraCentavos(input, ponto, campoCentavos);
+
+    // mantém cursor no fim (melhor UX nessa máscara)
+    requestAnimationFrame(() => {
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    });
+  });
+
+  // ao focar, joga cursor pro fim
+  input.addEventListener("focus", () => {
+    requestAnimationFrame(() => {
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    });
+  });
 }
 
 function criarTelaUmaVez() {
@@ -87,7 +128,11 @@ function criarTelaUmaVez() {
   lista.innerHTML = "";
 
   PONTOS.forEach((ponto) => {
-    if (!dados[ponto]) dados[ponto] = { fecho: "", despesas: "" };
+    if (!dados[ponto]) dados[ponto] = { fechoCent: 0, despesasCent: 0 };
+
+    const fechoCent = getCentavos(ponto, "fechoCent");
+    const despesasCent = getCentavos(ponto, "despesasCent");
+    const total = fechoCent - despesasCent;
 
     const card = document.createElement("div");
     card.className = "card";
@@ -100,14 +145,10 @@ function criarTelaUmaVez() {
           <label>Fecho (%):</label>
           <input
             type="text"
-            inputmode="decimal"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false"
             placeholder="0,00"
             data-ponto="${ponto}"
-            data-campo="fecho"
-            value="${dados[ponto].fecho || ""}"
+            data-campo="fechoCent"
+            value="${fechoCent ? formatarMoedaDeCentavos(fechoCent) : ""}"
           />
         </div>
 
@@ -115,19 +156,17 @@ function criarTelaUmaVez() {
           <label>Despesas:</label>
           <input
             type="text"
-            inputmode="decimal"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false"
             placeholder="0,00"
             data-ponto="${ponto}"
-            data-campo="despesas"
-            value="${dados[ponto].despesas || ""}"
+            data-campo="despesasCent"
+            value="${despesasCent ? formatarMoedaDeCentavos(despesasCent) : ""}"
           />
         </div>
 
         <div class="resultado">
-          Total: <span data-total="${ponto}" class="neutro">${formatarMoeda(0)}</span>
+          Total: <span data-total="${ponto}" class="${total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro"}">
+            ${formatarMoeda(total)}
+          </span>
         </div>
       </div>
     `;
@@ -135,39 +174,11 @@ function criarTelaUmaVez() {
     lista.appendChild(card);
   });
 
-  // binds (SEM re-render)
+  // bind máscara em todos
   document.querySelectorAll("input[data-ponto]").forEach((inp) => {
     const ponto = inp.dataset.ponto;
     const campo = inp.dataset.campo;
-
-    inp.addEventListener("beforeinput", (e) => {
-      // bloqueia letras na fonte
-      if (typeof e.data === "string" && /[^\d,]/.test(e.data)) {
-        e.preventDefault();
-      }
-    });
-
-    inp.addEventListener("input", () => {
-      const limpo = limparTextoMonetario(inp.value);
-
-      // mantém cursor no lugar mesmo limpando
-      const start = inp.selectionStart ?? limpo.length;
-      inp.value = limpo;
-      inp.setSelectionRange(Math.min(start, limpo.length), Math.min(start, limpo.length));
-
-      dados[ponto][campo] = inp.value;
-      salvar();
-      calcularTotais();
-    });
-
-    // formata bonitinho quando sai do campo (igual sensação do Lançamento)
-    inp.addEventListener("blur", () => {
-      const n = parseBR(inp.value);
-      inp.value = inp.value ? formatarBR(n) : "";
-      dados[ponto][campo] = inp.value;
-      salvar();
-      calcularTotais();
-    });
+    bindMascara(inp, ponto, campo);
   });
 
   calcularTotais();
@@ -183,8 +194,8 @@ function abrirModal() {
   let soma = 0;
 
   PONTOS.forEach((ponto) => {
-    const fecho = parseBR(dados[ponto]?.fecho);
-    const despesas = parseBR(dados[ponto]?.despesas);
+    const fecho = getCentavos(ponto, "fechoCent");
+    const despesas = getCentavos(ponto, "despesasCent");
     const total = fecho - despesas;
     soma += total;
 
@@ -213,7 +224,7 @@ function limparTudo() {
   dados = {};
   salvar();
   carregar();
-  criarTelaUmaVez(); // recria tudo (ok, aqui pode)
+  criarTelaUmaVez();
 }
 
 /* ===== INIT ===== */
