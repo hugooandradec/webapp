@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fecho por Pontos</title>
+
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <style>
+    :root {
+      --roxo: #6a1b9a;
+      --verde: #16a34a;
+      --vermelho: #dc2626;
+    }
+
+    body {
+      margin: 0;
+      background: #f6f6f6;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    h2 {
+      text-align: center;
+      color: var(--roxo);
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+
+    .cards {
+      display: grid;
+      gap: 12px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #eee;
+      padding: 12px;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+      font-weight: 900;
+      color: #444;
+    }
+
+    .linha {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 6px 0;
+      font-size: 0.9rem;
+    }
+
+    .linha label {
+      min-width: 90px;
+      font-weight: 700;
+    }
+
+    .linha input {
+      flex: 1;
+      border: none;
+      border-bottom: 2px solid #ddd;
+      padding: 6px 0;
+      text-align: right;
+      font-size: 0.95rem;
+      background: transparent;
+      outline: none;
+    }
+
+    .linha input:focus {
+      border-bottom-color: var(--roxo);
+    }
+
+    .resultado {
+      margin-top: 6px;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .verde { color: var(--verde); }
+    .vermelho { color: var(--vermelho); }
+
+    .total-geral {
+      margin-top: 18px;
+      font-size: 1.1rem;
+      font-weight: 900;
+      text-align: right;
+    }
+
+    .acoes {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn.roxo { background: var(--roxo); color: #fff; }
+    .btn.cinza { background: #999; color: #fff; }
+
+    /* Modal fullscreen */
+    #modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      display: none;
+      z-index: 1000;
+    }
+
+    #modal.aberto {
+      display: flex;
+    }
+
+    #modal .cx {
+      background: #fff;
+      width: 100%;
+      height: 100%;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    .rel {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+<main>
+  <h2>Fecho por Pontos</h2>
+
+  <div id="lista" class="cards"></div>
+
+  <div id="totalGeral" class="total-geral"></div>
+
+  <div class="acoes">
+    <button id="btnRelatorio" class="btn roxo">
+      <i class="fa-solid fa-file-lines"></i> Relatório
+    </button>
+    <button id="btnLimpar" class="btn cinza">
+      <i class="fa-solid fa-trash"></i> Limpar
+    </button>
+  </div>
+</main>
+
+<div id="modal">
+  <div class="cx">
+    <button id="fechar" class="btn cinza">Fechar</button>
+    <pre id="relatorio" class="rel"></pre>
+  </div>
+</div>
+
+<script src="fechoPontos.js"></script>
+</body>
+</html>
