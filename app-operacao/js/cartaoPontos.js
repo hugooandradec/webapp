@@ -240,16 +240,17 @@ function abrirModal() {
 
     html += `<strong>${(it.ponto || "(sem ponto)")}</strong><br>`;
     html += `Máquina: <strong>${(it.maquina || "(sem máquina)")}</strong><br>`;
-    html += `Bruto: <strong>${formatarMoeda(bruto)}</strong><br>`;
-    html += `Líquido (-6%): <strong>${formatarMoeda(liquido)}</strong><br>`;
+    html += `Bruto: <span class="azul"><strong>${formatarMoeda(bruto)}</strong></span><br>`;
+    html += `Líquido (-6%): <span class="verde"><strong>${formatarMoeda(liquido)}</strong></span><br>`;
     html += `----------------------------------------<br><br>`;
   }
 
-  html += `<strong>TOTAL LÍQUIDO: ${formatarMoeda(soma)}</strong>`;
+  html += `<strong>TOTAL LÍQUIDO: <span class="verde">${formatarMoeda(soma)}</span></strong>`;
 
   rel.innerHTML = html;
   modal.classList.add("aberta");
 }
+
 
 function fecharModal() {
   document.getElementById("modalCartao").classList.remove("aberta");
