@@ -39,9 +39,45 @@
     h2{
       color: var(--roxo);
       text-align:center;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
       font-size: 1.5rem;
       font-weight: 900;
+    }
+
+    /* ====== Data (igual Salas) ====== */
+    .linha-data {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .linha-data label {
+      font-weight: 800;
+      min-width: 52px;
+    }
+
+    .linha-data span.sub {
+      font-size: 0.85rem;
+      color: #666;
+      font-weight: 700;
+    }
+
+    input[type="date"] {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #dcdcdc;
+      outline: none;
+      font-size: 0.95rem;
+      background: #fff;
+    }
+
+    .barra {
+      height: 1px;
+      background: #ddd;
+      margin: 12px 0;
     }
 
     .acoes{
@@ -104,12 +140,11 @@
     }
 
     .linha label{
-      min-width: 96px;
+      min-width: 110px;
       font-weight: 800;
       color:#444;
     }
 
-    /* ✅ estilo "Lançamento": digita no começo */
     .linha input{
       flex:1;
       border:none;
@@ -118,7 +153,7 @@
       font-size: .95rem;
       outline:none;
       background: transparent;
-      text-align: left;            /* <<<<< aqui */
+      text-align: left;
       font-variant-numeric: tabular-nums;
     }
     .linha input:focus{ border-bottom-color: var(--roxo); }
@@ -141,7 +176,7 @@
       text-align:right;
     }
 
-    /* Modal fullscreen */
+    /* Modal — fullscreen */
     #modalFecho{
       position: fixed;
       inset: 0;
@@ -184,7 +219,7 @@
         box-shadow:none;
       }
       main{ padding: 12px; }
-      .linha label{ min-width: 92px; font-size: .85rem; }
+      .linha label{ min-width: 104px; font-size: .85rem; }
     }
   </style>
 </head>
@@ -195,6 +230,16 @@
   <main>
     <h1>Comissão dos Pontos</h1>
     <h2>Comissão dos Pontos</h2>
+
+    <!-- Datas (igual Salas) -->
+    <div class="linha-data">
+      <label>Data:</label>
+      <input id="dataDe" type="date" />
+      <span class="sub">até</span>
+      <input id="dataAte" type="date" />
+    </div>
+
+    <div class="barra"></div>
 
     <div class="acoes">
       <button id="btnRelatorio" class="btn roxo">

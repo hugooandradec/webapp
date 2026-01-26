@@ -1,11 +1,15 @@
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
 const PONTOS = ["Tubiacanga", "MR", "Amarelos", "Fabinho", "Seven", "Praça"];
-const STORAGE_KEY = "comissao_pontos_v1_centavos";
+const STORAGE_KEY = "comissao_pontos_v2_centavos_com_datas";
 
-// dados sempre em centavos (inteiro)
-let dados = {}; 
-// { ponto: { comissaoCent: 0, despesasCent: 0 } }
+// dados em centavos (inteiro) + datas ISO
+let dados = {};
+// {
+//   dataDe: "2026-01-19",
+//   dataAte: "2026-01-25",
+//   pontos: { Tubiacanga: { comissaoCent: 0, despesasCent: 0 }, ... }
+// }
 
 /* =====================
    STORAGE
@@ -16,12 +20,20 @@ function salvar() {
 
 function carregar() {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) { dados = {}; return; }
+  if (!raw) {
+    dados = { dataDe: "", dataAte: "", pontos: {} };
+    return;
+  }
   try {
     const parsed = JSON.parse(raw);
-    dados = parsed && typeof parsed === "object" ? parsed : {};
+    // compat mínimo
+    dados = {
+      dataDe: parsed?.dataDe || "",
+      dataAte: parsed?.dataAte || "",
+      pontos: parsed?.pontos && typeof parsed.pontos === "object" ? parsed.pontos : {}
+    };
   } catch {
-    dados = {};
+    dados = { dataDe: "", dataAte: "", pontos: {} };
   }
 }
 
@@ -49,15 +61,21 @@ function formatarMoeda(centavos) {
   });
 }
 
-function getCentavos(ponto, campo) {
-  return Number(dados[ponto]?.[campo] || 0);
+function formatarDataBR(iso) {
+  if (!iso) return "___/___/____";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return "___/___/____";
+  return `${d}/${m}/${y}`;
+}
+
+function getPonto(ponto) {
+  if (!dados.pontos[ponto]) dados.pontos[ponto] = { comissaoCent: 0, despesasCent: 0 };
+  return dados.pontos[ponto];
 }
 
 function setCentavos(ponto, campo, valor) {
-  if (!dados[ponto]) {
-    dados[ponto] = { comissaoCent: 0, despesasCent: 0 };
-  }
-  dados[ponto][campo] = Math.max(0, Number(valor) || 0);
+  const p = getPonto(ponto);
+  p[campo] = Math.max(0, Number(valor) || 0);
 }
 
 /* =====================
@@ -67,8 +85,9 @@ function calcularTotais() {
   let soma = 0;
 
   PONTOS.forEach((ponto) => {
-    const comissao = getCentavos(ponto, "comissaoCent");
-    const despesas = getCentavos(ponto, "despesasCent");
+    const p = getPonto(ponto);
+    const comissao = Number(p.comissaoCent || 0);
+    const despesas = Number(p.despesasCent || 0);
     const total = comissao - despesas;
     soma += total;
 
@@ -76,9 +95,7 @@ function calcularTotais() {
     if (totalSpan) {
       totalSpan.textContent = formatarMoeda(total);
       totalSpan.classList.remove("verde", "vermelho", "neutro");
-      totalSpan.classList.add(
-        total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro"
-      );
+      totalSpan.classList.add(total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro");
     }
   });
 
@@ -102,7 +119,6 @@ function aplicarMascaraCentavos(input, ponto, campo) {
   salvar();
   calcularTotais();
 
-  // mantém cursor no final
   requestAnimationFrame(() => {
     const len = input.value.length;
     input.setSelectionRange(len, len);
@@ -115,16 +131,11 @@ function bindMascara(input, ponto, campo) {
   input.setAttribute("autocorrect", "off");
   input.setAttribute("spellcheck", "false");
 
-  // bloqueia letras
   input.addEventListener("beforeinput", (e) => {
-    if (typeof e.data === "string" && /\D/.test(e.data)) {
-      e.preventDefault();
-    }
+    if (typeof e.data === "string" && /\D/.test(e.data)) e.preventDefault();
   });
 
-  input.addEventListener("input", () => {
-    aplicarMascaraCentavos(input, ponto, campo);
-  });
+  input.addEventListener("input", () => aplicarMascaraCentavos(input, ponto, campo));
 
   input.addEventListener("focus", () => {
     requestAnimationFrame(() => {
@@ -142,12 +153,9 @@ function criarTelaUmaVez() {
   lista.innerHTML = "";
 
   PONTOS.forEach((ponto) => {
-    if (!dados[ponto]) {
-      dados[ponto] = { comissaoCent: 0, despesasCent: 0 };
-    }
-
-    const comissaoCent = getCentavos(ponto, "comissaoCent");
-    const despesasCent = getCentavos(ponto, "despesasCent");
+    const p = getPonto(ponto);
+    const comissaoCent = Number(p.comissaoCent || 0);
+    const despesasCent = Number(p.despesasCent || 0);
     const total = comissaoCent - despesasCent;
 
     const card = document.createElement("div");
@@ -183,9 +191,7 @@ function criarTelaUmaVez() {
 
         <div class="resultado">
           Total:
-          <span
-            data-total="${ponto}"
-            class="${total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro"}">
+          <span data-total="${ponto}" class="${total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro"}">
             ${formatarMoeda(total)}
           </span>
         </div>
@@ -196,12 +202,31 @@ function criarTelaUmaVez() {
   });
 
   document.querySelectorAll("input[data-ponto]").forEach((inp) => {
-    const ponto = inp.dataset.ponto;
-    const campo = inp.dataset.campo;
-    bindMascara(inp, ponto, campo);
+    bindMascara(inp, inp.dataset.ponto, inp.dataset.campo);
   });
 
   calcularTotais();
+}
+
+/* =====================
+   DATAS
+===================== */
+function bindDatas() {
+  const elDe = document.getElementById("dataDe");
+  const elAte = document.getElementById("dataAte");
+
+  elDe.value = dados.dataDe || "";
+  elAte.value = dados.dataAte || "";
+
+  elDe.addEventListener("change", () => {
+    dados.dataDe = elDe.value || "";
+    salvar();
+  });
+
+  elAte.addEventListener("change", () => {
+    dados.dataAte = elAte.value || "";
+    salvar();
+  });
 }
 
 /* =====================
@@ -211,12 +236,16 @@ function abrirModal() {
   const modal = document.getElementById("modalFecho");
   const rel = document.getElementById("relConteudo");
 
-  let html = "";
+  const dataDe = formatarDataBR(dados.dataDe || "");
+  const dataAte = formatarDataBR(dados.dataAte || "");
+
+  let html = `Período: ${dataDe} até ${dataAte}<br><br>`;
   let soma = 0;
 
   PONTOS.forEach((ponto) => {
-    const comissao = getCentavos(ponto, "comissaoCent");
-    const despesas = getCentavos(ponto, "despesasCent");
+    const p = getPonto(ponto);
+    const comissao = Number(p.comissaoCent || 0);
+    const despesas = Number(p.despesasCent || 0);
     const total = comissao - despesas;
     soma += total;
 
@@ -244,10 +273,11 @@ function fecharModal() {
    LIMPAR
 ===================== */
 function limparTudo() {
-  if (!confirm("Deseja limpar todos os valores?")) return;
-  dados = {};
+  if (!confirm("Deseja limpar todos os valores e datas?")) return;
+  dados = { dataDe: "", dataAte: "", pontos: {} };
   salvar();
   carregar();
+  bindDatas();
   criarTelaUmaVez();
 }
 
@@ -258,6 +288,7 @@ document.addEventListener("DOMContentLoaded", () => {
   inicializarPagina("Comissão dos Pontos", "operacao");
 
   carregar();
+  bindDatas();
   criarTelaUmaVez();
 
   document.getElementById("btnRelatorio").addEventListener("click", abrirModal);
@@ -267,4 +298,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modalFecho").addEventListener("click", (e) => {
     if (e.target.id === "modalFecho") fecharModal();
   });
+
+  calcularTotais();
 });
