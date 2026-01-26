@@ -131,7 +131,7 @@ function criarCard(item) {
     <div class="grid">
       <div class="linha">
         <label>Ponto:</label>
-        <input type="text" placeholder="Ex: Tubiacanga" value="${item.ponto || ""}" data-ponto="${item.id}" />
+        <input type="text" placeholder="Nome do ponto" value="${item.ponto || ""}" data-ponto="${item.id}" />
       </div>
 
       <div class="linha">
