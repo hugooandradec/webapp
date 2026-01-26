@@ -17,9 +17,7 @@
       --verde:#16a34a;
       --vermelho:#dc2626;
       --cinza-btn:#aaa;
-      --azul:#1976d2;
     }
-
     *{ box-sizing:border-box; }
     html,body{
       margin:0; padding:0;
@@ -27,7 +25,6 @@
       font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
       overflow-x:hidden;
     }
-
     main{ max-width:980px; margin:0 auto; padding:16px; }
     h1{ display:none; }
     h2{
@@ -43,7 +40,6 @@
       justify-content:center;
       margin: 8px 0 16px;
     }
-
     .btn{
       padding:10px 16px;
       border:none;
@@ -66,18 +62,29 @@
       border-radius:12px;
       border:1px solid #eee;
       padding:12px;
+      overflow:hidden;
     }
-
     .card-topo{
       display:flex;
       justify-content:space-between;
       align-items:center;
+      gap:10px;
       margin-bottom:8px;
     }
-
     .card-topo strong{
       font-size:.98rem;
       color:#444;
+    }
+    .btn-mini{
+      border:none;
+      background:#f1f1f1;
+      border-radius:8px;
+      padding:8px 10px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
     }
 
     .grid{
@@ -85,21 +92,19 @@
       flex-direction:column;
       gap:8px;
     }
-
     .linha{
       display:flex;
       align-items:center;
       gap:8px;
       font-size:.9rem;
     }
-
     .linha label{
-      min-width:90px;
+      min-width:92px;
       font-weight:800;
       color:#444;
     }
 
-    /* input monetário */
+    /* inputs minimalistas */
     .linha input{
       flex:1;
       border:none;
@@ -114,15 +119,14 @@
     .linha input:focus{ border-bottom-color:var(--roxo); }
 
     .resultado{
-      margin-top:8px;
+      margin-top:6px;
       font-weight:900;
       text-align:right;
       font-size:.95rem;
     }
-
     .verde{ color:var(--verde); }
     .vermelho{ color:var(--vermelho); }
-    .azul{ color:var(--azul); }
+    .neutro{ color:#555; }
 
     .total-geral{
       margin-top:18px;
@@ -131,7 +135,7 @@
       text-align:right;
     }
 
-    /* ===== MODAL FULLSCREEN COLORIDO ===== */
+    /* Modal fullscreen */
     #modalCartao{
       position:fixed;
       inset:0;
@@ -146,7 +150,7 @@
 
     #modalCartao .cx{
       background:#fff;
-      border-radius:10px;
+      border-radius:8px;
       width:min(96vw, 520px);
       max-height:88dvh;
       overflow:auto;
@@ -155,19 +159,10 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    #modalCartao header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:12px;
-      color:var(--roxo);
-      font-weight:900;
-    }
-
     .rel{
       font-family: ui-monospace, Menlo, Consolas, monospace;
       font-size:.9rem;
-      line-height:1.35;
+      line-height:1.25;
       white-space: pre-wrap;
     }
 
@@ -182,7 +177,7 @@
         box-shadow:none;
       }
       main{ padding:12px; }
-      .linha label{ min-width:80px; font-size:.85rem; }
+      .linha label{ min-width:84px; font-size:.85rem; }
     }
   </style>
 </head>
@@ -191,27 +186,32 @@
   <div id="cabecalho"></div>
 
   <main>
-    <h1>Cartão</h1>
+    <h1>Cartão — Máquinas</h1>
     <h2>Cartão — Máquinas</h2>
 
     <div class="acoes">
+      <button id="btnNova" class="btn roxo">
+        <i class="fa-solid fa-plus"></i> Nova Máquina
+      </button>
+
       <button id="btnRelatorio" class="btn roxo">
         <i class="fa-solid fa-file-lines"></i> Relatório
       </button>
+
       <button id="btnLimpar" class="btn cinza">
         <i class="fa-solid fa-trash"></i> Limpar
       </button>
     </div>
 
     <div id="lista" class="cards"></div>
-    <div id="totalGeral" class="total-geral"></div>
+
+    <div id="totalLiquido" class="total-geral"></div>
   </main>
 
-  <!-- MODAL -->
   <div id="modalCartao">
     <div class="cx">
-      <header>
-        <span>Relatório — Cartão</span>
+      <header style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <h3 style="margin:0;">Relatório — Cartão</h3>
         <button id="btnFecharModal" class="btn cinza">Fechar</button>
       </header>
 

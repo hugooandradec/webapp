@@ -131,7 +131,7 @@ function criarCard(item) {
     <div class="grid">
       <div class="linha">
         <label>Ponto:</label>
-        <input type="text" placeholder="Nome do ponto" value="${item.ponto || ""}" data-ponto="${item.id}" />
+        <input type="text" placeholder="Nome do Ponto" value="${item.ponto || ""}" data-ponto="${item.id}" />
       </div>
 
       <div class="linha">
@@ -242,16 +242,10 @@ function abrirModal() {
     html += `Máquina: <strong>${(it.maquina || "(sem máquina)")}</strong><br>`;
     html += `Bruto: <span class="azul"><strong>${formatarMoeda(bruto)}</strong></span><br>`;
     html += `Líquido (-6%): <span class="verde"><strong>${formatarMoeda(liquido)}</strong></span><br>`;
-    html += `<div style="margin:6px 0;border-bottom:1px dashed #ccc;"></div>`;
+    html += `----------------------------------------<br><br>`;
   }
 
-  html += `
-    <br>
-    <strong>
-      TOTAL LÍQUIDO:
-      <span class="verde">${formatarMoeda(soma)}</span>
-    </strong>
-  `;
+  html += `<strong>TOTAL LÍQUIDO: <span class="verde">${formatarMoeda(soma)}</span></strong>`;
 
   rel.innerHTML = html;
   modal.classList.add("aberta");
