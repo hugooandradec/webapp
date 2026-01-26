@@ -142,7 +142,7 @@ function criarTelaUmaVez() {
 
       <div class="grid">
         <div class="linha">
-          <label>Fecho (%):</label>
+          <label>Comissão (%):</label>
           <input
             type="text"
             placeholder="0,00"
