@@ -1,11 +1,15 @@
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
 const PONTOS = ["Tubiacanga", "MR", "Amarelos", "Fabinho", "Seven", "Praça"];
-const STORAGE_KEY = "fecho_pontos_v3_centavos";
+const STORAGE_KEY = "comissao_pontos_v1_centavos";
 
+// dados sempre em centavos (inteiro)
 let dados = {}; 
-// { ponto: { fechoCent: 0, despesasCent: 0 } }  // sempre em centavos (inteiro)
+// { ponto: { comissaoCent: 0, despesasCent: 0 } }
 
+/* =====================
+   STORAGE
+===================== */
 function salvar() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
 }
@@ -21,11 +25,14 @@ function carregar() {
   }
 }
 
+/* =====================
+   HELPERS
+===================== */
 function soDigitos(str) {
   return (str || "").toString().replace(/\D/g, "");
 }
 
-function formatarMoedaDeCentavos(centavos) {
+function formatarNumeroDeCentavos(centavos) {
   const v = (Number(centavos) || 0) / 100;
   return v.toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
@@ -46,25 +53,32 @@ function getCentavos(ponto, campo) {
   return Number(dados[ponto]?.[campo] || 0);
 }
 
-function setCentavos(ponto, campo, centavos) {
-  if (!dados[ponto]) dados[ponto] = { fechoCent: 0, despesasCent: 0 };
-  dados[ponto][campo] = Math.max(0, Number(centavos) || 0);
+function setCentavos(ponto, campo, valor) {
+  if (!dados[ponto]) {
+    dados[ponto] = { comissaoCent: 0, despesasCent: 0 };
+  }
+  dados[ponto][campo] = Math.max(0, Number(valor) || 0);
 }
 
+/* =====================
+   CÁLCULOS
+===================== */
 function calcularTotais() {
   let soma = 0;
 
-  PONTOS.forEach((p) => {
-    const fecho = getCentavos(p, "fechoCent");
-    const despesas = getCentavos(p, "despesasCent");
-    const total = fecho - despesas;
+  PONTOS.forEach((ponto) => {
+    const comissao = getCentavos(ponto, "comissaoCent");
+    const despesas = getCentavos(ponto, "despesasCent");
+    const total = comissao - despesas;
     soma += total;
 
-    const totalSpan = document.querySelector(`[data-total="${p}"]`);
+    const totalSpan = document.querySelector(`[data-total="${ponto}"]`);
     if (totalSpan) {
       totalSpan.textContent = formatarMoeda(total);
       totalSpan.classList.remove("verde", "vermelho", "neutro");
-      totalSpan.classList.add(total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro");
+      totalSpan.classList.add(
+        total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro"
+      );
     }
   });
 
@@ -74,47 +88,44 @@ function calcularTotais() {
     "total-geral " + (soma < 0 ? "vermelho" : soma > 0 ? "verde" : "neutro");
 }
 
-function aplicarMascaraCentavos(input, ponto, campoCentavos) {
-  // pega só dígitos do que está no input e transforma em centavos
+/* =====================
+   MÁSCARA DE CENTAVOS
+===================== */
+function aplicarMascaraCentavos(input, ponto, campo) {
   const digits = soDigitos(input.value);
-
-  // se vazio: 0
   const centavos = digits ? Number(digits) : 0;
-  setCentavos(ponto, campoCentavos, centavos);
 
-  // mostra sempre formatado "x.xxx,yy"
-  input.value = digits ? formatarMoedaDeCentavos(centavos) : "";
+  setCentavos(ponto, campo, centavos);
+
+  input.value = digits ? formatarNumeroDeCentavos(centavos) : "";
 
   salvar();
   calcularTotais();
+
+  // mantém cursor no final
+  requestAnimationFrame(() => {
+    const len = input.value.length;
+    input.setSelectionRange(len, len);
+  });
 }
 
-function bindMascara(input, ponto, campoCentavos) {
-  // teclado numérico
+function bindMascara(input, ponto, campo) {
   input.setAttribute("inputmode", "numeric");
   input.setAttribute("autocomplete", "off");
   input.setAttribute("autocorrect", "off");
   input.setAttribute("spellcheck", "false");
 
-  // impede letras (cola também vai ser limpo no input)
+  // bloqueia letras
   input.addEventListener("beforeinput", (e) => {
     if (typeof e.data === "string" && /\D/.test(e.data)) {
-      // deixa passar backspace/delete (e.data null)
       e.preventDefault();
     }
   });
 
   input.addEventListener("input", () => {
-    aplicarMascaraCentavos(input, ponto, campoCentavos);
-
-    // mantém cursor no fim (melhor UX nessa máscara)
-    requestAnimationFrame(() => {
-      const len = input.value.length;
-      input.setSelectionRange(len, len);
-    });
+    aplicarMascaraCentavos(input, ponto, campo);
   });
 
-  // ao focar, joga cursor pro fim
   input.addEventListener("focus", () => {
     requestAnimationFrame(() => {
       const len = input.value.length;
@@ -123,22 +134,29 @@ function bindMascara(input, ponto, campoCentavos) {
   });
 }
 
+/* =====================
+   TELA
+===================== */
 function criarTelaUmaVez() {
   const lista = document.getElementById("lista");
   lista.innerHTML = "";
 
   PONTOS.forEach((ponto) => {
-    if (!dados[ponto]) dados[ponto] = { fechoCent: 0, despesasCent: 0 };
+    if (!dados[ponto]) {
+      dados[ponto] = { comissaoCent: 0, despesasCent: 0 };
+    }
 
-    const fechoCent = getCentavos(ponto, "fechoCent");
+    const comissaoCent = getCentavos(ponto, "comissaoCent");
     const despesasCent = getCentavos(ponto, "despesasCent");
-    const total = fechoCent - despesasCent;
+    const total = comissaoCent - despesasCent;
 
     const card = document.createElement("div");
     card.className = "card";
 
     card.innerHTML = `
-      <div class="card-titulo"><span>${ponto}</span></div>
+      <div class="card-titulo">
+        <span>${ponto}</span>
+      </div>
 
       <div class="grid">
         <div class="linha">
@@ -147,8 +165,8 @@ function criarTelaUmaVez() {
             type="text"
             placeholder="0,00"
             data-ponto="${ponto}"
-            data-campo="fechoCent"
-            value="${fechoCent ? formatarMoedaDeCentavos(fechoCent) : ""}"
+            data-campo="comissaoCent"
+            value="${comissaoCent ? formatarNumeroDeCentavos(comissaoCent) : ""}"
           />
         </div>
 
@@ -159,12 +177,15 @@ function criarTelaUmaVez() {
             placeholder="0,00"
             data-ponto="${ponto}"
             data-campo="despesasCent"
-            value="${despesasCent ? formatarMoedaDeCentavos(despesasCent) : ""}"
+            value="${despesasCent ? formatarNumeroDeCentavos(despesasCent) : ""}"
           />
         </div>
 
         <div class="resultado">
-          Total: <span data-total="${ponto}" class="${total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro"}">
+          Total:
+          <span
+            data-total="${ponto}"
+            class="${total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro"}">
             ${formatarMoeda(total)}
           </span>
         </div>
@@ -174,7 +195,6 @@ function criarTelaUmaVez() {
     lista.appendChild(card);
   });
 
-  // bind máscara em todos
   document.querySelectorAll("input[data-ponto]").forEach((inp) => {
     const ponto = inp.dataset.ponto;
     const campo = inp.dataset.campo;
@@ -184,8 +204,9 @@ function criarTelaUmaVez() {
   calcularTotais();
 }
 
-/* ===== Modal ===== */
-
+/* =====================
+   MODAL
+===================== */
 function abrirModal() {
   const modal = document.getElementById("modalFecho");
   const rel = document.getElementById("relConteudo");
@@ -194,15 +215,15 @@ function abrirModal() {
   let soma = 0;
 
   PONTOS.forEach((ponto) => {
-    const fecho = getCentavos(ponto, "fechoCent");
+    const comissao = getCentavos(ponto, "comissaoCent");
     const despesas = getCentavos(ponto, "despesasCent");
-    const total = fecho - despesas;
+    const total = comissao - despesas;
     soma += total;
 
     const classeTotal = total < 0 ? "vermelho" : total > 0 ? "verde" : "neutro";
 
     html += `<strong>${ponto}</strong><br>`;
-    html += `Fecho: <span class="verde"><strong>${formatarMoeda(fecho)}</strong></span><br>`;
+    html += `Comissão: <span class="verde"><strong>${formatarMoeda(comissao)}</strong></span><br>`;
     html += `Despesas: <span class="vermelho"><strong>-${formatarMoeda(despesas)}</strong></span><br>`;
     html += `Total: <span class="${classeTotal}"><strong>${formatarMoeda(total)}</strong></span><br>`;
     html += `----------------------------------------<br><br>`;
@@ -219,6 +240,9 @@ function fecharModal() {
   document.getElementById("modalFecho").classList.remove("aberta");
 }
 
+/* =====================
+   LIMPAR
+===================== */
 function limparTudo() {
   if (!confirm("Deseja limpar todos os valores?")) return;
   dados = {};
@@ -227,10 +251,11 @@ function limparTudo() {
   criarTelaUmaVez();
 }
 
-/* ===== INIT ===== */
-
+/* =====================
+   INIT
+===================== */
 document.addEventListener("DOMContentLoaded", () => {
-  inicializarPagina("Fecho por Pontos", "operacao");
+  inicializarPagina("Comissão dos Pontos", "operacao");
 
   carregar();
   criarTelaUmaVez();
