@@ -1,155 +1,130 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>lançamento</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lançamento</title>
 
-  <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="manifest" href="../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
+  <meta name="theme-color" content="#6a1b9a" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+    inicializarPagina("Lançamento", "operacao");
+  </script>
+
+  <script defer src="../../common/js/toast.js"></script>
+  <script type="module" src="../js/lancamento.js"></script>
 
   <style>
-    :root{
-      --roxo:#6a1b9a;
-      --verde:#16a34a;
-      --vermelho:#dc2626;
-      --cinza:#aaa;
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
+    main { padding: 16px; }
+    h2 { text-align: center; color: #6a1b9a; }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    input {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-bottom: 2px solid #ccc;
+      background: transparent;
+      font-size: 16px;
+      margin-bottom: 12px;
     }
-
-    *{ box-sizing:border-box; }
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
-      background:#f8f8f8;
+    input:focus { outline: none; border-bottom-color: #6a1b9a; }
+    .btn {
+      background: #6a1b9a;
+      color: #fff;
+      padding: 12px;
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
     }
-
-    main{
-      max-width:900px;
-      margin:0 auto;
-      padding:16px;
+    .btn:hover { background: #4a137a; }
+    .resumo, .resumo-box {
+      background: #fff;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 16px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.1);
     }
-
-    h2{
-      color:var(--roxo);
-      text-align:center;
-      margin-bottom:16px;
-      font-weight:900;
+    .linha-lancamento {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
     }
-
-    label{
-      font-weight:800;
-      font-size:.9rem;
-      text-transform:lowercase;
+    .acoes button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      margin-left: 8px;
     }
-
-    input{
-      width:100%;
-      border:none;
-      border-bottom:2px solid #ddd;
-      padding:8px 0;
-      margin-bottom:16px;
-      font-size:.95rem;
-      background:transparent;
-      outline:none;
+    .editar { color: #6a1b9a; }
+    .excluir { color: #c0392b; }
+    #modal-relatorio {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
     }
-
-    input:focus{
-      border-bottom-color:var(--roxo);
+    #modal-relatorio.aberta { display: flex; }
+    #conteudo-relatorio {
+      background: #fff;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      padding: 16px;
+      position: relative;
     }
-
-    .btn{
-      width:100%;
-      padding:12px;
-      border:none;
-      border-radius:8px;
-      font-weight:900;
-      cursor:pointer;
-      margin-top:8px;
-    }
-
-    .btn.roxo{ background:var(--roxo); color:#fff; }
-    .btn.cinza{ background:var(--cinza); color:#fff; }
-
-    .card{
-      background:#fff;
-      border-radius:12px;
-      padding:14px;
-      margin-top:16px;
-      border:1px solid #eee;
-    }
-
-    .resumo p{
-      margin:6px 0;
-      font-weight:700;
-      text-transform:lowercase;
-    }
-
-    .verde{ color:var(--verde); }
-    .vermelho{ color:var(--vermelho); }
-
-    /* modal */
-    #modal{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.7);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:1000;
-    }
-    #modal.aberto{ display:flex; }
-
-    #modal .box{
-      background:#fff;
-      width:min(95vw,520px);
-      max-height:90vh;
-      overflow:auto;
-      border-radius:10px;
-      padding:16px;
-      font-family:ui-monospace, Menlo, Consolas, monospace;
-    }
-
-    #modal header{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      margin-bottom:12px;
-      font-weight:900;
-      text-transform:lowercase;
+    .fechar-x {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      border: none;
+      background: none;
+      font-size: 22px;
+      cursor: pointer;
     }
   </style>
 </head>
 
 <body>
-  <main>
-    <h2>lançamento</h2>
+<main>
+  <h2>Lançamento</h2>
 
-    <label>data</label>
-    <input type="date" id="data">
+  <label for="data">Data</label>
+  <input id="data" type="date">
 
-    <label>valor inicial</label>
-    <input type="number" id="valorInicial" placeholder="r$">
+  <label for="valorInicial">Valor Inicial</label>
+  <input id="valorInicial" type="number" placeholder="R$">
 
-    <button class="btn roxo" onclick="novaEntrada()">nova entrada</button>
+  <div id="container-nova-entrada"></div>
+  <button class="btn" onclick="adicionarEntrada()">Nova Entrada</button>
 
+  <div class="resumo">
+    <h3>Entradas</h3>
     <div id="entradas"></div>
-
-    <div class="card resumo" id="resumo"></div>
-
-    <button class="btn roxo" onclick="abrirModal()">visualizar relatório</button>
-    <button class="btn cinza" onclick="limparTudo()">limpar tudo</button>
-  </main>
-
-  <div id="modal">
-    <div class="box">
-      <header>
-        <span>relatório</span>
-        <button class="btn cinza" onclick="fecharModal()">fechar</button>
-      </header>
-      <div id="conteudoModal"></div>
-    </div>
   </div>
 
-  <script src="lancamento.js"></script>
+  <div class="resumo-box" id="resumoLancamento"></div>
+
+  <button class="btn" onclick="visualizarRelatorio()">Visualizar Relatório</button>
+  <button class="btn" style="background:#999" onclick="limparLancamentos()">Limpar Tudo</button>
+</main>
+
+<div id="modal-relatorio">
+  <div id="conteudo-relatorio"></div>
+</div>
 </body>
 </html>
