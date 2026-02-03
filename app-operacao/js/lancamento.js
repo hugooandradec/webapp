@@ -1,100 +1,150 @@
-let entradas = [];
+document.addEventListener("DOMContentLoaded", () => {
+  carregarDoStorage();
+  ["data", "valorInicial"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("input", () => {
+      salvarNoStorage();
+      atualizarTotais();
+    });
+  });
+});
 
-const corPos = "#16a34a";
-const corNeg = "#dc2626";
+const STORAGE_KEY = "lancamentos";
+const RAW_STORAGE_KEY = "lancamentos_raw";
+const listaLancamentos = [];
+let historicoRaw = [];
 
-function formatarMoeda(v){
-  return (Number(v)||0).toLocaleString("pt-BR",{
-    style:"currency",
-    currency:"BRL"
+const corPos = "#1b8f2e";
+const corNeg = "#c0392b";
+
+function formatarMoeda(v) {
+  return (Number(v) || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL"
   });
 }
-
-function novaEntrada(){
-  const box = document.createElement("div");
-  box.className = "card";
-
-  box.innerHTML = `
-    <label>ponto</label>
-    <input type="text" class="ponto">
-
-    <label>entrada</label>
-    <input type="number" class="entrada" placeholder="r$">
-
-    <label>saída</label>
-    <input type="number" class="saida" placeholder="r$">
-
-    <button class="btn roxo">salvar</button>
-  `;
-
-  box.querySelector("button").onclick = () => {
-    const ponto = box.querySelector(".ponto").value.toLowerCase();
-    const entrada = Number(box.querySelector(".entrada").value)||0;
-    const saida = Number(box.querySelector(".saida").value)||0;
-
-    entradas.push({ ponto, entrada, saida });
-    box.remove();
-    atualizarResumo();
-  };
-
-  document.getElementById("entradas").appendChild(box);
+function parseValor(v) {
+  return parseFloat((v || "0").replace(",", ".")) || 0;
+}
+function normalizarPonto(v) {
+  return (v || "").trim().toLowerCase();
 }
 
-function atualizarResumo(){
-  const valorInicial = Number(document.getElementById("valorInicial").value)||0;
-
-  const totalEntrada = entradas.reduce((s,e)=>s+e.entrada,0);
-  const totalSaida = entradas.reduce((s,e)=>s+e.saida,0);
-  const total = valorInicial + totalEntrada - totalSaida;
-
-  document.getElementById("resumo").innerHTML = `
-    <p>valor inicial: <span class="verde">${formatarMoeda(valorInicial)}</span></p>
-    <p>total entrada: <span class="verde">${formatarMoeda(totalEntrada)}</span></p>
-    <p>total saída: <span class="vermelho">-${formatarMoeda(totalSaida)}</span></p>
-    <p>valor total: <span style="color:${total<0?corNeg:corPos}">${formatarMoeda(total)}</span></p>
-  `;
+/* ===== STORAGE ===== */
+function salvarNoStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(listaLancamentos));
+  localStorage.setItem(RAW_STORAGE_KEY, JSON.stringify(historicoRaw));
+  localStorage.setItem("dataLancamento", document.getElementById("data").value);
+  localStorage.setItem("valorInicialLancamento", document.getElementById("valorInicial").value);
 }
 
-function abrirModal(){
-  let html = "";
-  let totalEntrada = 0;
-  let totalSaida = 0;
+function carregarDoStorage() {
+  document.getElementById("data").value = localStorage.getItem("dataLancamento") || "";
+  document.getElementById("valorInicial").value = localStorage.getItem("valorInicialLancamento") || "";
 
-  entradas.forEach(e=>{
-    totalEntrada += e.entrada;
-    totalSaida += e.saida;
+  historicoRaw = JSON.parse(localStorage.getItem(RAW_STORAGE_KEY) || "[]");
+  rebuildAgregado();
+  atualizarLista();
+}
 
-    html += `
-      ponto: ${e.ponto}<br>
-      entrada: ${formatarMoeda(e.entrada)}<br>
-      saída: ${formatarMoeda(e.saida)}<br>
-      -----------------------------<br>
-    `;
+/* ===== AGREGAÇÃO ===== */
+function rebuildAgregado() {
+  const mapa = new Map();
+  for (const e of historicoRaw) {
+    const k = normalizarPonto(e.ponto);
+    if (!mapa.has(k)) mapa.set(k, { ponto: k, dinheiro: 0, saida: 0 });
+    mapa.get(k).dinheiro += e.dinheiro;
+    mapa.get(k).saida += e.saida;
+  }
+  listaLancamentos.length = 0;
+  mapa.forEach(v => listaLancamentos.push(v));
+}
+
+/* ===== ENTRADA ===== */
+window.adicionarEntrada = function () {
+  document.getElementById("container-nova-entrada").innerHTML = `
+    <label>Ponto</label>
+    <input id="ponto" placeholder="Nome do ponto">
+    <label>Dinheiro</label>
+    <input id="dinheiro" type="number" placeholder="R$">
+    <label>Saída</label>
+    <input id="saida" type="number" placeholder="R$">
+    <button class="btn" onclick="salvarEntrada()">Salvar Entrada</button>
+  `;
+};
+
+window.salvarEntrada = function () {
+  const ponto = normalizarPonto(ponto.value);
+  if (!ponto) return toast?.error("Informe o ponto.");
+
+  historicoRaw.push({
+    id: crypto.randomUUID(),
+    ponto,
+    dinheiro: parseValor(dinheiro.value),
+    saida: parseValor(saida.value)
   });
 
-  const valorInicial = Number(document.getElementById("valorInicial").value)||0;
-  const total = valorInicial + totalEntrada - totalSaida;
+  rebuildAgregado();
+  salvarNoStorage();
+  atualizarLista();
+  document.getElementById("container-nova-entrada").innerHTML = "";
+};
 
-  html += `
-    <br>
-    valor inicial: ${formatarMoeda(valorInicial)}<br>
-    total entrada: ${formatarMoeda(totalEntrada)}<br>
-    total saída: ${formatarMoeda(totalSaida)}<br>
-    valor total: ${formatarMoeda(total)}
+/* ===== LISTA ===== */
+function atualizarLista() {
+  const el = document.getElementById("entradas");
+  el.innerHTML = "";
+  listaLancamentos.forEach((e, i) => {
+    el.innerHTML += `
+      <div class="linha-lancamento">
+        <strong>${e.ponto}</strong>
+        ${formatarMoeda(e.dinheiro - e.saida)}
+        <div class="acoes">
+          <button class="excluir" onclick="excluirLancamento(${i})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>`;
+  });
+  atualizarTotais();
+}
+
+/* ===== TOTAIS ===== */
+function atualizarTotais() {
+  const total = listaLancamentos.reduce(
+    (s, e) => s + e.dinheiro - e.saida, 0
+  );
+  document.getElementById("resumoLancamento").innerHTML = `
+    <strong>Valor Total:</strong>
+    <span style="color:${total < 0 ? corNeg : corPos}">
+      ${formatarMoeda(total)}
+    </span>`;
+}
+
+/* ===== AÇÕES ===== */
+window.excluirLancamento = function (i) {
+  const key = listaLancamentos[i].ponto;
+  historicoRaw = historicoRaw.filter(e => normalizarPonto(e.ponto) !== key);
+  rebuildAgregado();
+  salvarNoStorage();
+  atualizarLista();
+};
+
+window.visualizarRelatorio = function () {
+  document.getElementById("conteudo-relatorio").innerHTML = `
+    <button class="fechar-x" onclick="fecharRelatorio()">✖</button>
+    ${document.getElementById("resumoLancamento").innerHTML}
   `;
+  document.getElementById("modal-relatorio").classList.add("aberta");
+};
 
-  document.getElementById("conteudoModal").innerHTML = html;
-  document.getElementById("modal").classList.add("aberto");
-}
+window.fecharRelatorio = () =>
+  document.getElementById("modal-relatorio").classList.remove("aberta");
 
-function fecharModal(){
-  document.getElementById("modal").classList.remove("aberto");
-}
-
-function limparTudo(){
-  if(!confirm("limpar tudo?")) return;
-  entradas = [];
-  document.getElementById("entradas").innerHTML = "";
-  document.getElementById("resumo").innerHTML = "";
-  document.getElementById("valorInicial").value = "";
-}
+window.limparLancamentos = function () {
+  if (!confirm("Limpar tudo?")) return;
+  historicoRaw = [];
+  listaLancamentos.length = 0;
+  localStorage.clear();
+  atualizarLista();
+};
