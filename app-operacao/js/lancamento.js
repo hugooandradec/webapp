@@ -368,15 +368,33 @@ window.visualizarHistorico = function (index) {
   const itens = historicoRaw.filter(e => normalizarPonto(e.ponto) === key);
 
   const linhas = itens.map(e => {
-    const entrada = Number(e.dinheiro) || 0;
-    const saida = Number(e.saida) || 0;
+    let entrada = Number(e.dinheiro) || 0;
+    let saida = Number(e.saida) || 0;
+
+    // ✅ REGRA VISUAL:
+    // se veio "entrada negativa", exibe como saída positiva
+    if (entrada < 0) {
+      saida += Math.abs(entrada);
+      entrada = 0;
+    }
+
     const sub = entrada - saida;
 
     return `<tr>
       <td style="text-align:left; padding:8px 6px; border-bottom:1px solid #eee;">${formatarDataHora(e.ts)}</td>
-      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;"><span style="color:${entrada ? corPos : '#777'}">${entrada ? formatarMoeda(entrada) : "-"}</span></td>
-      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;"><span style="color:${saida ? corNeg : '#777'}">${saida ? "-" + formatarMoeda(saida) : "-"}</span></td>
-      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee; font-weight:700; ${sub < 0 ? `color:${corNeg}` : `color:${corPos}` }">${formatarMoeda(sub)}</td>
+
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">
+        ${entrada ? `<span style="color:${corPos}">${formatarMoeda(entrada)}</span>` : "-"}
+      </td>
+
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">
+        ${saida ? `<span style="color:${corNeg}">-${formatarMoeda(saida)}</span>` : "-"}
+      </td>
+
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee; font-weight:700;
+                 ${sub < 0 ? `color:${corNeg}` : `color:${corPos}` }">
+        ${formatarMoeda(sub)}
+      </td>
     </tr>`;
   }).join("");
 
@@ -406,8 +424,10 @@ window.visualizarHistorico = function (index) {
       </table>
     </div>
   `;
+
   abrirModal(html);
 };
+
 
 /* ===== LIMPAR ===== */
 window.limparLancamentos = function () {
