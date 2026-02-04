@@ -29,10 +29,10 @@ const corNeg = "#c0392b";
 const roxo = "#6a1b9a";
 
 /* ===== ESTADO ===== */
-const STORAGE_KEY = "lancamentos";       // agregado
-const RAW_STORAGE_KEY = "lancamentos_raw"; // bruto
-const listaLancamentos = [];             // { ponto, dinheiro, saida }
-let historicoRaw = [];                   // itens brutos (pode ter lixo antigo, será ignorado)
+const STORAGE_KEY = "lancamentos";
+const RAW_STORAGE_KEY = "lancamentos_raw";
+const listaLancamentos = [];   // agregado
+let historicoRaw = [];         // bruto
 
 /* ===== INIT ===== */
 document.addEventListener("DOMContentLoaded", () => {
@@ -67,7 +67,7 @@ function carregarDoStorage() {
   atualizarLista();
 }
 
-/* ===== AGREGAÇÃO (IGNORA cartão/outros antigos) ===== */
+/* ===== AGREGAÇÃO ===== */
 function rebuildAgregadoFromRaw() {
   const mapa = new Map();
   const ordem = [];
@@ -81,8 +81,8 @@ function rebuildAgregadoFromRaw() {
     }
 
     const acc = mapa.get(k);
-    acc.dinheiro += Number(e.dinheiro) || 0; // Entrada
-    acc.saida += Number(e.saida) || 0;       // Saída
+    acc.dinheiro += Number(e.dinheiro) || 0;
+    acc.saida += Number(e.saida) || 0;
   }
 
   listaLancamentos.length = 0;
@@ -92,11 +92,14 @@ function rebuildAgregadoFromRaw() {
 /* ===== UI ENTRADA ===== */
 window.adicionarEntrada = function (lanc = {}, idx = null) {
   const box = document.getElementById("container-nova-entrada");
+  const pontoNorm = normalizarPonto(lanc.ponto ?? "");
+
   box.innerHTML = `
     <input type="hidden" id="editIndex" value="${idx ?? ""}">
+    <input type="hidden" id="pontoOriginal" value="${pontoNorm}">
 
     <label for="ponto">Ponto</label>
-    <input id="ponto" type="text" placeholder="Nome do ponto" value="${lanc.ponto ?? ""}" />
+    <input id="ponto" type="text" placeholder="Nome do ponto" value="${pontoNorm}" />
 
     <label for="dinheiro">Entrada</label>
     <input id="dinheiro" type="number" placeholder="R$" value="${lanc.dinheiro ?? ""}" />
@@ -110,12 +113,13 @@ window.adicionarEntrada = function (lanc = {}, idx = null) {
 };
 
 window.salvarEntrada = function () {
-  const ponto = normalizarPonto(document.getElementById("ponto").value);
+  const pontoNovo = normalizarPonto(document.getElementById("ponto").value);
   const entrada = parseValor(document.getElementById("dinheiro").value);
   const saida = parseValor(document.getElementById("saida").value);
   const editIdx = document.getElementById("editIndex").value;
+  const pontoOriginal = normalizarPonto(document.getElementById("pontoOriginal")?.value || "");
 
-  if (!ponto) {
+  if (!pontoNovo) {
     window.toast?.error?.("informe o nome do ponto.");
     return;
   }
@@ -123,35 +127,49 @@ window.salvarEntrada = function () {
   const base = {
     id: crypto?.randomUUID?.() || String(Date.now()),
     ts: Date.now(),
-    ponto,
+    ponto: pontoNovo,
     dinheiro: entrada,
     saida
   };
 
-  // editar = registra delta no RAW pra manter histórico
+  // ====== EDITAR ======
   if (editIdx !== "") {
     const idx = Number(editIdx);
     const antigo = listaLancamentos[idx];
+    if (!antigo) return;
 
-    if (antigo) {
-      historicoRaw.push({
-        ...base,
-        dinheiro: entrada - (Number(antigo.dinheiro) || 0),
-        saida: saida - (Number(antigo.saida) || 0),
+    const keyAntiga = normalizarPonto(pontoOriginal || antigo.ponto);
+    const keyNova = normalizarPonto(pontoNovo);
 
-        // compat com versões antigas:
-        cartao: 0,
-        outros: 0
+    // ✅ Se mudou o nome: renomeia o histórico inteiro do ponto antigo para o novo
+    if (keyAntiga && keyNova && keyAntiga !== keyNova) {
+      historicoRaw = historicoRaw.map(r => {
+        const k = normalizarPonto(r.ponto);
+        if (k === keyAntiga) return { ...r, ponto: keyNova };
+        return r;
       });
-
-      rebuildAgregadoFromRaw();
-      window.toast?.success?.("Entrada atualizada.");
     }
-  } else {
+
+    // Depois de renomear, recalcula o agregado e pega o "atual" do novo nome
+    rebuildAgregadoFromRaw();
+    const atualNovo = listaLancamentos.find(x => normalizarPonto(x.ponto) === keyNova) || { dinheiro: 0, saida: 0 };
+
+    // ✅ Aplica o delta para chegar no valor editado final
     historicoRaw.push({
       ...base,
+      dinheiro: entrada - (Number(atualNovo.dinheiro) || 0),
+      saida: saida - (Number(atualNovo.saida) || 0),
+      cartao: 0,
+      outros: 0
+    });
 
-      // compat com versões antigas:
+    rebuildAgregadoFromRaw();
+    window.toast?.success?.("Entrada atualizada.");
+  }
+  // ====== NOVO ======
+  else {
+    historicoRaw.push({
+      ...base,
       cartao: 0,
       outros: 0
     });
@@ -198,7 +216,7 @@ function atualizarLista() {
   atualizarTotais();
 }
 
-/* ===== TOTAIS (AGORA É INICIAL + ENTRADA - SAÍDA) ===== */
+/* ===== TOTAIS ===== */
 function atualizarTotais() {
   const totalEntrada = listaLancamentos.reduce((s, e) => s + (Number(e.dinheiro) || 0), 0);
   const totalSaida = listaLancamentos.reduce((s, e) => s + (Number(e.saida) || 0), 0);
@@ -223,7 +241,7 @@ function atualizarTotais() {
   salvarNoStorage();
 }
 
-/* ===== AÇÕES LISTA ===== */
+/* ===== AÇÕES ===== */
 window.editarLancamento = (i) => {
   const it = listaLancamentos[i];
   if (!it) return;
@@ -244,7 +262,7 @@ window.excluirLancamento = (i) => {
   window.toast?.success?.("Lançamento removido.");
 };
 
-/* ===== MODAL CONTROLES ===== */
+/* ===== MODAL ===== */
 function abrirModal(html) {
   const conteudo = document.getElementById("conteudo-relatorio");
   conteudo.innerHTML = html;
@@ -268,7 +286,6 @@ window.fecharRelatorio = function () {
   document.body.style.overflow = "";
 };
 
-/* ===== MODAL "RESUMO" (SÓ ENTRADA/SAÍDA) ===== */
 window.visualizarRelatorio = function () {
   const dataIso = document.getElementById("data")?.value || "";
   let dataFmt = "-";
@@ -288,7 +305,6 @@ window.visualizarRelatorio = function () {
 
   const linhas = listaLancamentos.map(e => {
     const sub = (Number(e.dinheiro) || 0) - (Number(e.saida) || 0);
-
     return `<tr>
       <td style="text-transform:lowercase; padding:8px 6px; border-bottom:1px solid #eee;">${e.ponto}</td>
       <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">${e.dinheiro ? `<span style="color:${corPos}">${formatarMoeda(e.dinheiro)}</span>` : "-"}</td>
@@ -300,7 +316,6 @@ window.visualizarRelatorio = function () {
   const totalSub = totalEntrada - totalSaida;
 
   const html = `
-    <!-- X no canto direito, sem quadrado -->
     <button onclick="fecharRelatorio()"
       style="position:fixed; top:10px; right:14px; z-index:9999;
              background:transparent; border:none; padding:0;
@@ -342,11 +357,9 @@ window.visualizarRelatorio = function () {
       </table>
     </div>
   `;
-
   abrirModal(html);
 };
 
-/* ===== HISTÓRICO (SÓ ENTRADA/SAÍDA) ===== */
 window.visualizarHistorico = function (index) {
   const it = listaLancamentos[index];
   if (!it) return;
@@ -393,7 +406,6 @@ window.visualizarHistorico = function (index) {
       </table>
     </div>
   `;
-
   abrirModal(html);
 };
 
