@@ -14,10 +14,20 @@ function parseValor(v) {
 function normalizarPonto(n) {
   return (n || "").trim().toLowerCase();
 }
+function formatarDataHora(ts) {
+  const n = Number(ts);
+  if (!n || Number.isNaN(n)) return "--";
+  const dt = new Date(n);
+  if (Number.isNaN(dt.getTime())) return "--";
+  const data = dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const hora = dt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return `${data} ${hora}`;
+}
 
 const corPos = "#1b8f2e";
 const corNeg = "#c0392b";
 const corAzul = "#1976d2";
+const roxo = "#6a1b9a";
 
 /* ===== ESTADO ===== */
 const STORAGE_KEY = "lancamentos";
@@ -121,14 +131,19 @@ window.salvarEntrada = function () {
     return;
   }
 
+  const base = {
+    id: crypto?.randomUUID?.() || String(Date.now()),
+    ts: Date.now(),
+    ponto
+  };
+
   if (editIdx !== "") {
     const idx = Number(editIdx);
     const antigo = listaLancamentos[idx];
+
     if (antigo) {
       historicoRaw.push({
-        id: crypto?.randomUUID?.() || String(Date.now()),
-        ts: Date.now(),
-        ponto,
+        ...base,
         dinheiro: dinheiro - (Number(antigo.dinheiro) || 0),
         cartao: cartao - (Number(antigo.cartao) || 0),
         outros: outros - (Number(antigo.outros) || 0),
@@ -140,9 +155,7 @@ window.salvarEntrada = function () {
     }
   } else {
     historicoRaw.push({
-      id: crypto?.randomUUID?.() || String(Date.now()),
-      ts: Date.now(),
-      ponto,
+      ...base,
       dinheiro,
       cartao,
       outros,
@@ -202,6 +215,9 @@ function atualizarTotais() {
   const totalSaida = listaLancamentos.reduce((s, e) => s + (Number(e.saida) || 0), 0);
 
   const valorInicial = parseValor(document.getElementById("valorInicial").value);
+
+  // ⚠️ Mantive seu cálculo principal SEM cartão (como já vinha no app):
+  // Valor Total = Inicial + Entrada + Outros - Saída
   const valorTotal = valorInicial + totalEntrada + totalOutros - totalSaida;
 
   let dataResumo = document.getElementById("data").value || "";
@@ -242,51 +258,10 @@ window.excluirLancamento = (i) => {
   window.toast?.success?.("Lançamento removido.");
 };
 
-/* ===== HISTÓRICO ===== */
-window.visualizarHistorico = function (index) {
-  const it = listaLancamentos[index];
-  if (!it) return;
-
-  const key = normalizarPonto(it.ponto);
-  const itens = historicoRaw.filter(e => normalizarPonto(e.ponto) === key);
-
-  const linhas = itens.map(e => {
-    const dt = new Date(e.ts);
-    const data = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const hora = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const sub = (Number(e.dinheiro) || 0) + (Number(e.outros) || 0) - (Number(e.saida) || 0);
-
-    return `<tr>
-      <td style="text-align:left">${data} ${hora}</td>
-      <td style="text-align:right"><span style="color:${e.dinheiro ? corPos : '#777'}">${e.dinheiro ? formatarMoeda(e.dinheiro) : "-"}</span></td>
-      <td style="text-align:right"><span style="color:${e.cartao ? corAzul : '#777'}">${e.cartao ? formatarMoeda(e.cartao) : "-"}</span></td>
-      <td style="text-align:right"><span style="color:${e.outros ? corPos : '#777'}">${e.outros ? formatarMoeda(e.outros) : "-"}</span></td>
-      <td style="text-align:right"><span style="color:${e.saida ? corNeg : '#777'}">${e.saida ? "-" + formatarMoeda(e.saida) : "-"}</span></td>
-      <td style="text-align:right;font-weight:700;${sub < 0 ? `color:${corNeg}` : `color:${corPos}` }">${formatarMoeda(sub)}</td>
-    </tr>`;
-  }).join("");
-
-  const html = `
-    <button class="fechar-x" onclick="fecharRelatorio()">✖</button>
-    <div style="font-family: Arial; font-size:14px; padding-bottom:70px;">
-      <h3 style="color:#6a1b9a; text-align:center; margin:0 0 10px;">Histórico — ${it.ponto}</h3>
-      <table style="width:100%; border-collapse:collapse; font-size:13px; background:#fff;">
-        <thead><tr style="background:#f2f2f7">
-          <th style="text-align:left; padding:8px 6px; border-bottom:1px solid #eee">Data</th>
-          <th style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee">Entrada</th>
-          <th style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee">Cartão</th>
-          <th style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee">Outros</th>
-          <th style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee">Saída</th>
-          <th style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee">Subtotal</th>
-        </tr></thead>
-        <tbody>
-          ${linhas || `<tr><td colspan="6" style="text-align:center; padding:12px;">Sem entradas.</td></tr>`}
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  document.getElementById("conteudo-relatorio").innerHTML = html;
+/* ===== MODAL CONTROLES ===== */
+function abrirModal(html) {
+  const conteudo = document.getElementById("conteudo-relatorio");
+  conteudo.innerHTML = html;
   document.getElementById("modal-relatorio").classList.add("aberta");
 
   document.documentElement.style.overflow = "hidden";
@@ -299,9 +274,8 @@ window.visualizarHistorico = function (index) {
     }
   };
   window.addEventListener("keydown", onEsc);
-};
+}
 
-/* ===== MODAL CONTROLES ===== */
 window.fecharRelatorio = function () {
   document.getElementById("modal-relatorio").classList.remove("aberta");
   document.documentElement.style.overflow = "";
@@ -326,25 +300,36 @@ window.visualizarRelatorio = function () {
   const totalOutros = listaLancamentos.reduce((s, e) => s + (Number(e.outros) || 0), 0);
   const totalSaida = listaLancamentos.reduce((s, e) => s + (Number(e.saida) || 0), 0);
 
+  // Mantém o "Valor Total" do card (sem cartão)
   const valorTotal = valorInicial + totalEntrada + totalOutros - totalSaida;
 
+  // ✅ Subtotal do ponto (tabela) agora é: Entrada + Cartão + Outros - Saída
   const linhas = listaLancamentos.map(e => {
-    const sub = (Number(e.dinheiro) || 0) + (Number(e.outros) || 0) - (Number(e.saida) || 0);
+    const sub = (Number(e.dinheiro) || 0) + (Number(e.cartao) || 0) + (Number(e.outros) || 0) - (Number(e.saida) || 0);
 
     return `<tr>
-      <td style="text-transform:lowercase">${e.ponto}</td>
-      <td class="num">${e.dinheiro ? `<span style="color:${corPos}">${formatarMoeda(e.dinheiro)}</span>` : "-"}</td>
-      <td class="num">${e.cartao ? `<span style="color:${corAzul}">${formatarMoeda(e.cartao)}</span>` : "-"}</td>
-      <td class="num">${e.outros ? `<span style="color:${corPos}">${formatarMoeda(e.outros)}</span>` : "-"}</td>
-      <td class="num">${e.saida ? `<span style="color:${corNeg}">-${formatarMoeda(e.saida)}</span>` : "-"}</td>
-      <td class="num" style="font-weight:700; ${sub < 0 ? `color:${corNeg}` : `color:${corPos}` }">${formatarMoeda(sub)}</td>
+      <td style="text-transform:lowercase; padding:8px 6px; border-bottom:1px solid #eee;">${e.ponto}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">${e.dinheiro ? `<span style="color:${corPos}">${formatarMoeda(e.dinheiro)}</span>` : "-"}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">${e.cartao ? `<span style="color:${corAzul}">${formatarMoeda(e.cartao)}</span>` : "-"}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">${e.outros ? `<span style="color:${corPos}">${formatarMoeda(e.outros)}</span>` : "-"}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">${e.saida ? `<span style="color:${corNeg}">-${formatarMoeda(e.saida)}</span>` : "-"}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee; font-weight:700; ${sub < 0 ? `color:${corNeg}` : `color:${corPos}` }">${formatarMoeda(sub)}</td>
     </tr>`;
   }).join("");
 
+  const totalSub = totalEntrada + totalCartao + totalOutros - totalSaida;
+
   const html = `
-    <button class="fechar-x" onclick="fecharRelatorio()">✖</button>
-    <div style="font-family: Arial; font-size:14px; padding-bottom:70px;">
-      <h3 style="color:#6a1b9a; text-align:center; margin:0 0 10px;">Resumo</h3>
+    <!-- X no canto direito, sem quadrado -->
+    <button onclick="fecharRelatorio()"
+      style="position:fixed; top:10px; right:14px; z-index:9999;
+             background:transparent; border:none; padding:0;
+             font-size:28px; line-height:1; color:${roxo}; cursor:pointer;">
+      ×
+    </button>
+
+    <div style="font-family: Arial; font-size:14px; padding:16px;">
+      <h3 style="color:${roxo}; text-align:center; margin:0 0 10px;">Resumo</h3>
 
       <div style="margin:0 0 10px;">
         <p><strong>Data:</strong> ${dataFmt}</p>
@@ -369,12 +354,12 @@ window.visualizarRelatorio = function () {
         <tfoot>
           <tr style="background:#f2f2f7; font-weight:700">
             <td style="text-align:left;  padding:8px 6px;">Total</td>
-            <td class="num" style="padding:8px 6px; color:${corPos}">${formatarMoeda(totalEntrada)}</td>
-            <td class="num" style="padding:8px 6px; color:${corAzul}">${formatarMoeda(totalCartao)}</td>
-            <td class="num" style="padding:8px 6px; color:${corPos}">${formatarMoeda(totalOutros)}</td>
-            <td class="num" style="padding:8px 6px; color:${corNeg}">-${formatarMoeda(totalSaida)}</td>
-            <td class="num" style="padding:8px 6px; ${(totalEntrada + totalOutros - totalSaida) < 0 ? `color:${corNeg}` : `color:${corPos}` }">
-              ${formatarMoeda(totalEntrada + totalOutros - totalSaida)}
+            <td style="text-align:right; padding:8px 6px; color:${corPos}">${formatarMoeda(totalEntrada)}</td>
+            <td style="text-align:right; padding:8px 6px; color:${corAzul}">${formatarMoeda(totalCartao)}</td>
+            <td style="text-align:right; padding:8px 6px; color:${corPos}">${formatarMoeda(totalOutros)}</td>
+            <td style="text-align:right; padding:8px 6px; color:${corNeg}">-${formatarMoeda(totalSaida)}</td>
+            <td style="text-align:right; padding:8px 6px; ${(totalSub) < 0 ? `color:${corNeg}` : `color:${corPos}` }">
+              ${formatarMoeda(totalSub)}
             </td>
           </tr>
         </tfoot>
@@ -382,19 +367,66 @@ window.visualizarRelatorio = function () {
     </div>
   `;
 
-  document.getElementById("conteudo-relatorio").innerHTML = html;
-  document.getElementById("modal-relatorio").classList.add("aberta");
+  abrirModal(html);
+};
 
-  document.documentElement.style.overflow = "hidden";
-  document.body.style.overflow = "hidden";
+/* ===== HISTÓRICO ===== */
+window.visualizarHistorico = function (index) {
+  const it = listaLancamentos[index];
+  if (!it) return;
 
-  const onEsc = (ev) => {
-    if (ev.key === "Escape") {
-      window.removeEventListener("keydown", onEsc);
-      fecharRelatorio();
-    }
-  };
-  window.addEventListener("keydown", onEsc);
+  const key = normalizarPonto(it.ponto);
+  const itens = historicoRaw.filter(e => normalizarPonto(e.ponto) === key);
+
+  const linhas = itens.map(e => {
+    const entrada = Number(e.dinheiro) || 0;
+    const cartao = Number(e.cartao) || 0;
+    const outros = Number(e.outros) || 0;
+    const saida = Number(e.saida) || 0;
+
+    // ✅ Subtotal correto também no histórico
+    const sub = entrada + cartao + outros - saida;
+
+    return `<tr>
+      <td style="text-align:left; padding:8px 6px; border-bottom:1px solid #eee;">${formatarDataHora(e.ts)}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;"><span style="color:${entrada ? corPos : '#777'}">${entrada ? formatarMoeda(entrada) : "-"}</span></td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;"><span style="color:${cartao ? corAzul : '#777'}">${cartao ? formatarMoeda(cartao) : "-"}</span></td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;"><span style="color:${outros ? corPos : '#777'}">${outros ? formatarMoeda(outros) : "-"}</span></td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;"><span style="color:${saida ? corNeg : '#777'}">${saida ? "-" + formatarMoeda(saida) : "-"}</span></td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee; font-weight:700; ${sub < 0 ? `color:${corNeg}` : `color:${corPos}` }">${formatarMoeda(sub)}</td>
+    </tr>`;
+  }).join("");
+
+  const html = `
+    <button onclick="fecharRelatorio()"
+      style="position:fixed; top:10px; right:14px; z-index:9999;
+             background:transparent; border:none; padding:0;
+             font-size:28px; line-height:1; color:${roxo}; cursor:pointer;">
+      ×
+    </button>
+
+    <div style="font-family: Arial; font-size:14px; padding:16px;">
+      <h3 style="color:${roxo}; text-align:center; margin:0 0 10px;">Histórico — ${it.ponto}</h3>
+
+      <table style="width:100%; border-collapse:collapse; font-size:13px; background:#fff;">
+        <thead>
+          <tr style="background:#f2f2f7">
+            <th style="text-align:left;  padding:8px 6px;">Data</th>
+            <th style="text-align:right; padding:8px 6px;">Entrada</th>
+            <th style="text-align:right; padding:8px 6px;">Cartão</th>
+            <th style="text-align:right; padding:8px 6px;">Outros</th>
+            <th style="text-align:right; padding:8px 6px;">Saída</th>
+            <th style="text-align:right; padding:8px 6px;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhas || `<tr><td colspan="6" style="text-align:center; padding:12px;">Sem entradas.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  abrirModal(html);
 };
 
 /* ===== LIMPAR ===== */
