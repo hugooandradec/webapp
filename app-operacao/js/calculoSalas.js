@@ -10,11 +10,21 @@ let salas = [];
 
 /* ===== Helpers de moeda / datas ===== */
 
+// ✅ Agora aceita sinal negativo digitado (ex.: -1.234,56)
 function parseCentavos(str) {
-  if (!str) return 0;
-  const limpo = str.toString().replace(/\D/g, "");
+  if (str === null || str === undefined) return 0;
+
+  const s = str.toString().trim();
+  if (!s) return 0;
+
+  // aceita "-" no começo (ou em qualquer lugar, mas só considera se houver)
+  const negativo = s.includes("-");
+
+  const limpo = s.replace(/\D/g, "");
   if (!limpo) return 0;
-  return Number(limpo) / 100;
+
+  const valor = Number(limpo) / 100;
+  return negativo ? -valor : valor;
 }
 
 function formatarMoeda(valor) {
@@ -25,17 +35,29 @@ function formatarMoeda(valor) {
   });
 }
 
+// ✅ Formata mantendo o "-" se o usuário digitou negativo.
+// Ex.: "-1234" -> "-12,34"
 function formatarInputMonetario(input) {
-  let v = (input.value || "").toString().replace(/\D/g, "");
-  if (!v) {
-    input.value = "";
+  const raw = (input.value || "").toString();
+
+  // mantém negativo se existir
+  const negativo = raw.includes("-");
+
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) {
+    // se o cara digitou só "-" deixa ele brincar
+    input.value = raw.trim() === "-" ? "-" : "";
     return;
   }
-  const num = Number(v) / 100;
-  input.value = num.toLocaleString("pt-BR", {
+
+  const num = Number(digits) / 100;
+  const absFmt = num.toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+
+  // se deu 0,00 não força "-"
+  input.value = (negativo && num !== 0) ? `-${absFmt}` : absFmt;
 }
 
 function formatarDataBR(iso) {
@@ -64,7 +86,7 @@ function calcularResultadoSala(sala) {
   const com10 = metade * 1.10;      // metade + 10%
   const taxaCartao = cartao * 0.06; // 6% do valor passado no cartão
 
-  // Resultado final
+  // Resultado final (se despesas/taxa forem negativas, subtrair negativo vira soma — ok)
   return com10 - despesas - taxaCartao - taxa;
 }
 
@@ -116,13 +138,9 @@ function atualizarTotalGeral() {
   const texto = "TOTAL GERAL: " + formatarMoeda(total);
   elTotal.textContent = texto;
 
-  if (total < 0) {
-    elTotal.classList.add("vermelho");
-  } else if (total > 0) {
-    elTotal.classList.add("verde");
-  } else {
-    elTotal.classList.add("neutro");
-  }
+  if (total < 0) elTotal.classList.add("vermelho");
+  else if (total > 0) elTotal.classList.add("verde");
+  else elTotal.classList.add("neutro");
 }
 
 function criarCardSala(sala, index) {
@@ -148,19 +166,19 @@ function criarCardSala(sala, index) {
     <div class="grid-sala">
       <div class="col-sala">
         <label>Bruto (R$)</label>
-        <input type="tel" inputmode="numeric" class="sala-bruto" placeholder="0,00">
+        <input type="text" inputmode="decimal" class="sala-bruto" placeholder="0,00">
       </div>
       <div class="col-sala">
         <label>Despesas (-R$)</label>
-        <input type="tel" inputmode="numeric" class="sala-despesas" placeholder="0,00">
+        <input type="text" inputmode="decimal" class="sala-despesas" placeholder="0,00">
       </div>
       <div class="col-sala">
         <label>Cartão (R$)</label>
-        <input type="tel" inputmode="numeric" class="sala-cartao" placeholder="0,00">
+        <input type="text" inputmode="decimal" class="sala-cartao" placeholder="0,00">
       </div>
       <div class="col-sala">
         <label>Taxa parcelamento cartão (-R$)</label>
-        <input type="tel" inputmode="numeric" class="sala-taxa" placeholder="0,00">
+        <input type="text" inputmode="decimal" class="sala-taxa" placeholder="0,00">
       </div>
     </div>
 
@@ -219,7 +237,6 @@ function criarCardSala(sala, index) {
       statusSpan.textContent = "(Neutro)";
     }
 
-    // Pipo / Pass (2/3 e 1/3 do resultado)
     const { pipo, pass } = calcularPipoPass(res);
     pipoSpan.textContent = formatarMoeda(pipo);
     passSpan.textContent = formatarMoeda(pass);
@@ -253,7 +270,6 @@ function criarCardSala(sala, index) {
   });
 
   atualizarResultado();
-
   return card;
 }
 
@@ -293,16 +309,15 @@ function abrirModal() {
     total += res;
 
     const classeRes = res < 0 ? "vermelho" : res > 0 ? "verde" : "neutro";
-    const classePipoPass = classeRes;
 
     html += `<strong>Sala ${idx + 1} - ${(sala.nome || "SEM NOME").toUpperCase()}</strong><br>`;
-    html += `Bruto: <span class="verde">${formatarMoeda(bruto)}</span><br>`;
-    html += `Despesas: <span class="vermelho">-${formatarMoeda(despesas)}</span><br>`;
+    html += `Bruto: <span class="${bruto < 0 ? "vermelho" : "verde"}">${formatarMoeda(bruto)}</span><br>`;
+    html += `Despesas: <span class="${despesas < 0 ? "verde" : "vermelho"}">${formatarMoeda(despesas)}</span><br>`;
     html += `Cartão: <span style="color:#2563eb;">${formatarMoeda(cartao)}</span><br>`;
-    html += `Taxa parcelamento cartão: <span class="vermelho">-${formatarMoeda(taxa)}</span><br>`;
+    html += `Taxa parcelamento cartão: <span class="${taxa < 0 ? "verde" : "vermelho"}">${formatarMoeda(taxa)}</span><br>`;
     html += `Resultado: <span class="${classeRes}"><strong>${formatarMoeda(res)}</strong></span><br><br>`;
-    html += `Pipo: <span class="${classePipoPass}"><strong>${formatarMoeda(pipo)}</strong></span> | `;
-    html += `Pass: <span class="${classePipoPass}"><strong>${formatarMoeda(pass)}</strong></span><br>`;
+    html += `Pipo: <span class="${classeRes}"><strong>${formatarMoeda(pipo)}</strong></span> | `;
+    html += `Pass: <span class="${classeRes}"><strong>${formatarMoeda(pass)}</strong></span><br>`;
     html += `----------------------------------------<br><br>`;
   });
 
