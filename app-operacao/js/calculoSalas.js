@@ -82,13 +82,20 @@ function calcularResultadoSala(sala) {
 
   if (!bruto && !despesas && !cartao && !taxa) return 0;
 
-  const metade = bruto / 2;
-  const com10 = metade * 1.10;      // metade + 10%
-  const taxaCartao = cartao * 0.06; // 6% do valor passado no cartão
+  const taxaCartao = cartao * 0.06;
 
-  // Resultado final (se despesas/taxa forem negativas, subtrair negativo vira soma — ok)
+  // 🔴 PREJUÍZO: bruto negativo entra inteiro
+  if (bruto < 0) {
+    return bruto - despesas - taxaCartao - taxa;
+  }
+
+  // 🟢 LUCRO: regra normal
+  const metade = bruto / 2;
+  const com10 = metade * 1.10;
+
   return com10 - despesas - taxaCartao - taxa;
 }
+
 
 function calcularPipoPass(resultado) {
   const terco = resultado / 3;
