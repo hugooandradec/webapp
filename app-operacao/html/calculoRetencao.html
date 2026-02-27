@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -15,89 +14,70 @@
   <script type="module" src="../js/calculoRetencao.js"></script>
 
   <style>
-    :root {
-      --roxo: #6a1b9a;
-      --verde: #16a34a;
-      --vermelho: #dc2626;
-      --cinza-btn: #aaa;
-      --borda: #e7e7ef;
+    :root{
+      --roxo:#6a1b9a;
+      --verde:#16a34a;
+      --vermelho:#dc2626;
+      --cinza-btn:#aaa;
+      --bg:#f8f8f8;
+      --borda:#e7e7ef;
+    }
+    *{ box-sizing:border-box; }
+    html,body{
+      margin:0; padding:0;
+      background:var(--bg);
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+      overflow-x:hidden;
+    }
+    main{ max-width:980px; margin:0 auto; padding:16px; }
+    h1{ display:none; }
+
+    h2{
+      color:var(--roxo);
+      text-align:center;
+      margin: 0 0 12px;
+      font-size:1.5rem;
+      font-weight:900;
     }
 
-    * { box-sizing: border-box; }
+    .linha{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin:10px 0;
+    }
+    .linha label{ font-weight:900; min-width:70px; }
 
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #f8f8f8;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      overflow-x: hidden;
+    input[type="date"], input[type="text"]{
+      width:100%;
+      padding:6px 10px;
+      border-radius:6px;
+      border:1px solid #dcdcdc;
+      outline:none;
+      font-size:0.95rem;
     }
 
-    main {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-
-    h1 { display: none; }
-
-    h2 {
-      color: var(--roxo);
-      text-align: center;
-      margin-bottom: 16px;
-      font-size: 1.5rem;
-      font-weight: 900;
-    }
-
-    .linha {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 10px 0;
-    }
-
-    .linha label {
-      font-weight: 700;
-      min-width: 70px;
-    }
-
-    input[type="date"],
-    input[type="text"] {
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 1px solid #dcdcdc;
-      outline: none;
-      font-size: 0.95rem;
-      width: 100%;
-    }
-
-    .barra {
-      height: 1px;
-      background: #ddd;
-      margin: 12px 0;
-    }
+    .barra{ height:1px; background:#ddd; margin:12px 0; }
 
     /* ===== Botões ===== */
-    .btn {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 10px;
-      font-weight: 800;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.92rem;
-      white-space: nowrap;
+    .btn{
+      padding:11px 14px;
+      border:none;
+      border-radius:12px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:0.95rem;
+      white-space:nowrap;
     }
+    .btn i{ font-size:1rem; }
+    .btn.roxo{ background:var(--roxo); color:#fff; }
+    .btn.cinza{ background:var(--cinza-btn); color:#fff; }
+    .btn.vermelho{ background:#e35656; color:#fff; }
 
-    .btn.roxo { background: var(--roxo); color: #fff; }
-    .btn.cinza { background: var(--cinza-btn); color: #fff; }
-    .btn.vermelho { background: #d9534f; color: #fff; }
-
-    .btn i { font-size: 1rem; }
-
-    /* ===== Importar por texto ===== */
+    /* ===== Caixa do texto ===== */
     .texto-box{
       background:#fff;
       border:1px solid #eee;
@@ -122,10 +102,11 @@
     }
     .acoes-topo{
       display:flex;
-      flex-wrap:wrap;
       gap:10px;
+      flex-wrap:wrap;
       justify-content:flex-end;
     }
+
     textarea{
       width:100%;
       min-height:140px;
@@ -145,123 +126,106 @@
     }
 
     /* ===== Cards ===== */
-    .cards { display: grid; gap: 12px; }
-
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      border: 1px solid #eee;
-      padding: 12px;
-      overflow: hidden;
+    .cards{ display:grid; gap:12px; margin-top:14px; }
+    .card{
+      background:#fff;
+      border-radius:14px;
+      border:1px solid #eee;
+      padding:12px;
+      overflow:hidden;
     }
-
-    .card-titulo {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 800;
-      font-size: 0.95rem;
-      margin-bottom: 6px;
-      color: #444;
-    }
-
-    .card-titulo small {
-      font-weight: 400;
-      font-size: 0.75rem;
-      color: #777;
-      margin-right: 8px;
-    }
-
-    .icone-remover {
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      color: #999;
-      padding: 4px;
-    }
-
-    .icone-remover i { font-size: 0.9rem; }
-
-    .col { flex: 1; }
-
-    .col label {
-      display: block;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .col input {
-      width: 100%;
-      border: none;
-      border-bottom: 2px solid #dcdcdc;
-      padding: 6px 0;
-      outline: none;
-      background: transparent;
-      text-align: center;
-      font-size: 0.95rem;
-      text-transform: uppercase;
-    }
-
-    .col input:focus { border-bottom-color: var(--roxo); }
-
-    .resumo {
-      margin-top: 10px;
-      font-weight: 700;
-      font-size: 0.9rem;
-    }
-
-    .total-linha {
-      margin-top: 16px;
-      font-weight: 900;
-      font-size: 1rem;
-      text-align: right;
-    }
-
-    /* ===== botões embaixo (somente se tiver máquina) ===== */
-    .acoes-bottom{
+    .card-titulo{
       display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-weight:900;
+      font-size:0.95rem;
+      margin-bottom:10px;
+      color:#444;
+      gap:12px;
       flex-wrap:wrap;
+    }
+    .card-titulo small{
+      font-weight:600;
+      font-size:0.78rem;
+      color:#777;
+    }
+    .icone-remover{
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      color:#999;
+      padding:4px;
+    }
+    .icone-remover i{ font-size:0.95rem; }
+
+    .linha-flex{ display:flex; gap:16px; margin-bottom:10px; flex-wrap:wrap; }
+    .col{ flex:1; min-width:160px; }
+    .col label{ display:block; font-weight:900; margin-bottom:4px; }
+    .col input{
+      width:100%;
+      border:none;
+      border-bottom:2px solid #dcdcdc;
+      padding:8px 0;
+      outline:none;
+      background:transparent;
+      text-align:center;
+      font-size:0.95rem;
+      text-transform:uppercase;
+    }
+    .col input:focus{ border-bottom-color:var(--roxo); }
+
+    .resumo{ margin-top:6px; font-weight:900; font-size:0.92rem; }
+
+    /* ===== Ret. Média (fica acima dos botões e some se não tiver máquina) ===== */
+    #linhaTotal{
+      margin-top:16px;
+      font-weight:1000;
+      font-size:1rem;
+      text-align:right;
+      border-top:1px solid var(--borda);
+      padding-top:12px;
+    }
+    #linhaTotal.oculta{ display:none; }
+
+    /* ===== Botões de baixo ===== */
+    #acoesBottom{
+      display:flex;
       gap:10px;
-      margin:10px 0 6px;
-      padding-top: 10px;
-      border-top: 1px solid var(--borda);
+      flex-wrap:wrap;
+      margin:12px 0 6px;
     }
-    .acoes-bottom.oculta{ display:none; }
+    #acoesBottom.oculta{ display:none; }
 
-    /* ===== Modal — fullscreen ===== */
-    #modalRet {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .7);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
-      z-index: 1000;
+    /* ===== Modal fullscreen ===== */
+    #modalRet{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.7);
+      display:none;
+      justify-content:center;
+      align-items:center;
+      padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+      z-index:1000;
     }
-
-    #modalRet.aberta { display: flex !important; }
-
-    #modalRet .cx {
-      background: #fff;
-      border-radius: 8px;
-      width: min(96vw, 520px);
-      max-height: 88dvh;
-      overflow: auto;
-      position: relative;
-      padding: 16px;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, .25);
-      -webkit-overflow-scrolling: touch;
+    #modalRet.aberta{ display:flex !important; }
+    #modalRet .cx{
+      background:#fff;
+      border-radius:12px;
+      padding:16px;
+      width:min(96vw,520px);
+      max-height:88dvh;
+      overflow:auto;
+      box-shadow:0 16px 40px rgba(0,0,0,.25);
+      -webkit-overflow-scrolling:touch;
     }
-
     .modal-header{
       display:flex;
       justify-content:space-between;
       align-items:center;
       gap:10px;
     }
-    .modal-header h3{ margin:0; }
-
+    .modal-header h3{ margin:0; font-size:1.05rem; }
     .btn-fechar-x{
       border:none;
       background:transparent;
@@ -275,32 +239,32 @@
     }
     .btn-fechar-x:hover{ background:#f1f1f6; }
 
-    .rel {
+    .rel{
       font-family: ui-monospace, Menlo, Consolas, monospace;
-      font-size: 0.9rem;
-      line-height: 1.25;
-      white-space: pre-wrap;
-      margin-top: 12px;
+      font-size:0.9rem;
+      line-height:1.25;
+      white-space:pre-wrap;
+      margin-top:12px;
     }
 
-    .valor-entrada { color: var(--verde); font-weight: 700; }
-    .valor-saida { color: var(--vermelho); font-weight: 700; }
-    .valor-retencao, .valor-ret-media { color: #4aa3ff; font-weight: 700; }
+    .valor-entrada{ color:var(--verde); font-weight:900; }
+    .valor-saida{ color:var(--vermelho); font-weight:900; }
+    .valor-retencao,.valor-ret-media{ color:#4aa3ff; font-weight:900; }
 
-    @media (max-width: 600px) {
-      #modalRet { padding: 0; align-items: stretch; }
-      #modalRet .cx {
-        width: 100vw;
-        height: 100svh;
-        max-height: 100svh;
-        border-radius: 0;
-        padding: 12px;
-        box-shadow: none;
+    @media (max-width:600px){
+      #modalRet{ padding:0; align-items:stretch; }
+      #modalRet .cx{
+        width:100vw;
+        height:100svh;
+        max-height:100svh;
+        border-radius:0;
+        padding:12px;
+        box-shadow:none;
       }
-      main { padding: 12px; }
-      .btn { width: 100%; justify-content: center; }
-      .acoes-topo { justify-content: flex-start; }
-      .acoes-bottom { flex-direction: column; }
+      main{ padding:12px; }
+      .acoes-topo{ justify-content:flex-start; }
+      .btn{ width:100%; justify-content:center; }
+      #acoesBottom{ flex-direction:column; }
     }
   </style>
 </head>
@@ -350,13 +314,13 @@
 
     <div id="listaMaquinas" class="cards"></div>
 
-    <!-- ✅ Ret. Média primeiro -->
-    <div id="linhaTotal" class="total-linha">
+    <!-- ✅ Ret. Média acima dos botões e pode sumir -->
+    <div id="linhaTotal" class="oculta">
       Ret. Média: <span>0.00%</span>
     </div>
 
-    <!-- ✅ Botões embaixo AGORA ficam abaixo da Ret. Média -->
-    <div id="acoesBottom" class="acoes-bottom oculta">
+    <!-- ✅ botões de baixo (já some quando não tem máquina) -->
+    <div id="acoesBottom" class="oculta">
       <button id="btnAdicionar2" class="btn roxo" type="button">
         <i class="fa-solid fa-plus"></i> Adicionar máquina
       </button>
@@ -371,13 +335,12 @@
     </div>
   </main>
 
-  <div id="modalRet" class="modal">
+  <div id="modalRet">
     <div class="cx">
       <div class="modal-header">
         <h3>Relatório de Retenção</h3>
         <button id="btnFecharModal" class="btn-fechar-x" type="button" aria-label="Fechar">X</button>
       </div>
-
       <div id="relConteudo" class="rel"></div>
     </div>
   </div>
