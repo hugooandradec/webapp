@@ -1,5 +1,6 @@
 // preFecho.js
 // Script do Pré-Fecho com persistência em localStorage + OCR dos prints
+// AGORA: também importa por TEXTO colado (formato do relatório/WhatsApp)
 
 const STORAGE_KEY = "preFecho_dados_v1";
 let contadorMaquinas = 0;
@@ -18,6 +19,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const btnImportar = document.getElementById("btnImportar");
   const inputPrint = document.getElementById("inputPrintPre");
+
+  // NOVO (texto)
+  const btnImportarTexto = document.getElementById("btnImportarTexto");
+  const textoFonte = document.getElementById("textoFonte");
 
   // Data atual (se não tiver nada salvo ainda)
   if (inputData && !inputData.value) {
@@ -61,6 +66,21 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnLimpar) {
     btnLimpar.addEventListener("click", () => {
       limparTudo(listaMaquinas, totalGeralEl);
+      if (textoFonte) textoFonte.value = "";
+    });
+  }
+
+  // NOVO: Importar TEXTO
+  if (btnImportarTexto) {
+    btnImportarTexto.addEventListener("click", () => {
+      const txt = (textoFonte?.value || "").trim();
+      if (!txt) {
+        alert("Cole o texto primeiro 🙂");
+        return;
+      }
+      importarTextoPre(txt, listaMaquinas, totalGeralEl, inputCliente);
+      salvarNoStorage();
+      reposicionarBarraAcoes();
     });
   }
 
@@ -85,9 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Fechar modal clicando no fundo
   if (modal) {
     modal.addEventListener("click", (e) => {
-      if (e.target === modal) {
-        modal.classList.remove("aberta");
-      }
+      if (e.target === modal) modal.classList.remove("aberta");
     });
   }
 
@@ -101,7 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
 /* ===========================
    Barra de ações abaixo da última máquina
 =========================== */
-
 function reposicionarBarraAcoes() {
   const lista = document.getElementById("listaMaquinas");
   const acoes = document.getElementById("acoesBar");
@@ -119,7 +136,6 @@ function reposicionarBarraAcoes() {
 /* ===========================
    Criação de Máquina
 =========================== */
-
 function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
   contadorMaquinas++;
 
@@ -212,9 +228,9 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     [entradaAnterior, entradaAtual, saidaAnterior, saidaAtual].forEach(sanitizarNumero);
 
     const entAnt = parseNumero(entradaAnterior.value);
-    const entAt = parseNumero(entradaAtual.value);
+    const entAt  = parseNumero(entradaAtual.value);
     const saiAnt = parseNumero(saidaAnterior.value);
-    const saiAt = parseNumero(saidaAtual.value);
+    const saiAt  = parseNumero(saidaAtual.value);
 
     // Diferenças brutas de relógio
     const difEntradaBruta = entAt - entAnt;
@@ -256,7 +272,7 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     inp.addEventListener("change", salvarNoStorage);
   });
 
-  // Se veio do storage ou do OCR, preenche com os valores salvos
+  // Se veio do storage ou importação, preenche com os valores salvos
   if (dadosMaquina) {
     if (seloInput)        seloInput.value        = (dadosMaquina.selo || "").toUpperCase();
     if (jogoInput)        jogoInput.value        = (dadosMaquina.jogo || "").toUpperCase();
@@ -272,7 +288,6 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
 /* ===========================
    TOTAL GERAL
 =========================== */
-
 function atualizarTotalGeral(totalGeralEl) {
   let total = 0;
 
@@ -288,7 +303,6 @@ function atualizarTotalGeral(totalGeralEl) {
 /* ===========================
    RELATÓRIO (MODAL) – COMPACTO
 =========================== */
-
 function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo, modal) {
   const data = inputData?.value || "";
   const cliente = (inputCliente?.value || "").trim().toUpperCase();
@@ -348,7 +362,6 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
 /* ===========================
    LIMPAR TUDO
 =========================== */
-
 function limparTudo(listaMaquinas, totalGeralEl) {
   // Zera campos principais
   const inputCliente = document.getElementById("cliente");
@@ -364,9 +377,7 @@ function limparTudo(listaMaquinas, totalGeralEl) {
   }
 
   // Remove máquinas
-  if (listaMaquinas) {
-    listaMaquinas.innerHTML = "";
-  }
+  if (listaMaquinas) listaMaquinas.innerHTML = "";
   contadorMaquinas = 0;
 
   // Zera total
@@ -388,7 +399,6 @@ function limparTudo(listaMaquinas, totalGeralEl) {
 /* ===========================
    Persistência em localStorage
 =========================== */
-
 function obterEstado() {
   const data = document.getElementById("data")?.value || "";
   const cliente = document.getElementById("cliente")?.value || "";
@@ -435,9 +445,7 @@ function carregarDoStorage(listaMaquinas, totalGeralEl) {
     contadorMaquinas = 0;
 
     if (Array.isArray(dados.maquinas)) {
-      dados.maquinas.forEach((m) => {
-        adicionarMaquina(listaMaquinas, totalGeralEl, m);
-      });
+      dados.maquinas.forEach((m) => adicionarMaquina(listaMaquinas, totalGeralEl, m));
     }
 
     atualizarTotalGeral(totalGeralEl);
@@ -448,23 +456,139 @@ function carregarDoStorage(listaMaquinas, totalGeralEl) {
 }
 
 /* ===========================
-   OCR – Importar print (mesma lógica do Retenção)
-   - Cliente: linha "CLIENTE: ..."
-   - Cabeçalho máquina: "1-1E033 (Seven America)" etc
-   - (E) e (S): pega SEMPRE o número depois do hífen
-   - Entrada -> ENTRADA ANTERIOR
-   - Saída   -> SAÍDA ANTERIOR
+   IMPORTAR POR TEXTO (NOVO)
+   Formato:
+   *0008 | KAMALEON*
+   038 - HALLOWEN 2018
+   E    30609700   31171300___...
+   S    19863586   20437476___...
 =========================== */
+function importarTextoPre(txt, listaMaquinas, totalGeralEl, inputCliente) {
+  const texto = (txt || "").toString();
 
+  // 1) Nome do ponto: pega entre "|" e "*" na primeira linha estrelada
+  const nomePonto = extrairNomePonto(texto);
+  if (nomePonto && inputCliente) {
+    inputCliente.value = nomePonto.toUpperCase();
+  }
+
+  // 2) Extrair máquinas
+  const maquinas = extrairMaquinasRelatorio(texto);
+
+  if (!maquinas.length) {
+    alert("Não consegui identificar nenhuma máquina nesse texto 😩\nConfere se tem linhas tipo: 038 - JOGO e depois E/S com 2 colunas.");
+    return;
+  }
+
+  // 3) Substitui a lista atual por este texto (pra não misturar)
+  listaMaquinas.innerHTML = "";
+  contadorMaquinas = 0;
+
+  maquinas.forEach((m) => {
+    adicionarMaquina(listaMaquinas, totalGeralEl, {
+      selo: m.selo,
+      jogo: m.jogo,
+      // Preenche ANTERIOR = 1ª coluna, ATUAL = 2ª coluna
+      entradaAnterior: m.entradaAnterior,
+      entradaAtual: m.entradaAtual,
+      saidaAnterior: m.saidaAnterior,
+      saidaAtual: m.saidaAtual,
+    });
+  });
+
+  atualizarTotalGeral(totalGeralEl);
+  salvarNoStorage();
+  reposicionarBarraAcoes();
+
+  try { window.toast?.success?.(`Importei ${maquinas.length} máquina(s) do texto!`); } catch(e){}
+}
+
+function extrairNomePonto(texto) {
+  const linhas = texto.replace(/\r/g, "\n").split("\n").map(l => l.trim()).filter(Boolean);
+
+  // Ex: *0008 | KAMALEON*
+  for (const l of linhas) {
+    const m = l.match(/^\*[^|]*\|\s*(.+?)\s*\*$/);
+    if (m && m[1]) return m[1].trim();
+    // variação sem fechar com *
+    const m2 = l.match(/^\*[^|]*\|\s*(.+?)\s*$/);
+    if (m2 && m2[1]) return m2[1].replace(/\*+$/,"").trim();
+  }
+
+  // fallback: "Nome do ponto: ..."
+  const m3 = texto.match(/NOME\s+DO\s+PONTO\s*:\s*(.+)$/im);
+  if (m3 && m3[1]) return m3[1].trim();
+
+  return "";
+}
+
+function extrairMaquinasRelatorio(texto) {
+  const linhas = texto.replace(/\r/g, "\n").split("\n");
+
+  const maquinas = [];
+  let i = 0;
+
+  while (i < linhas.length) {
+    const linha = (linhas[i] || "").trim();
+
+    // Header máquina: "038 - HALLOWEN 2018"
+    const h = linha.match(/^(\d{3})\s*-\s*(.+)$/);
+    if (!h) { i++; continue; }
+
+    const selo = (h[1] || "").trim().toUpperCase();
+    const jogo = (h[2] || "").trim().toUpperCase();
+
+    let entradaAnterior = "";
+    let entradaAtual = "";
+    let saidaAnterior = "";
+    let saidaAtual = "";
+
+    // Procura E e S nas próximas linhas (até achar outro header ou separador grande)
+    let j = i + 1;
+    for (; j < Math.min(i + 10, linhas.length); j++) {
+      const l2 = (linhas[j] || "").trim();
+
+      // Se achou outra máquina antes, para
+      if (/^\d{3}\s*-\s*/.test(l2)) break;
+
+      // Linha E: "E    30609700   31171300___..."
+      const e = l2.match(/^E\s+(\d+)\s+(\d+)/i);
+      if (e) {
+        entradaAnterior = (e[1] || "").trim();
+        entradaAtual = (e[2] || "").trim();
+        continue;
+      }
+
+      // Linha S: "S    19863586   20437476___..."
+      const s = l2.match(/^S\s+(\d+)\s+(\d+)/i);
+      if (s) {
+        saidaAnterior = (s[1] || "").trim();
+        saidaAtual = (s[2] || "").trim();
+        continue;
+      }
+    }
+
+    // Só adiciona se tiver pelo menos um par E/S
+    if (entradaAtual || saidaAtual || entradaAnterior || saidaAnterior) {
+      maquinas.push({ selo, jogo, entradaAnterior, entradaAtual, saidaAnterior, saidaAtual });
+    }
+
+    i = j; // continua dali
+  }
+
+  return maquinas;
+}
+
+/* ===========================
+   OCR – Importar print (mesma lógica do Retenção)
+=========================== */
 async function importarPrintPre(file, listaMaquinas, totalGeralEl, inputCliente) {
   if (!window.Tesseract) {
     alert("Biblioteca de OCR (Tesseract.js) não carregada.");
     return;
   }
 
-  try {
-    if (window.toast) toast.info("Lendo imagem, aguarde...");
-  } catch (e) {}
+  try { if (window.toast) toast.info("Lendo imagem, aguarde..."); } catch (e) {}
 
   let texto = "";
   try {
@@ -486,41 +610,29 @@ async function importarPrintPre(file, listaMaquinas, totalGeralEl, inputCliente)
     .map((l) => l.trim())
     .filter(Boolean);
 
-  console.log("Linhas OCR normalizadas (pré-fecho):", linhas);
-
   // ===== Cliente =====
-  const linhaCliente = linhas.find((l) =>
-    l.toUpperCase().startsWith("CLIENTE")
-  );
+  const linhaCliente = linhas.find((l) => l.toUpperCase().startsWith("CLIENTE"));
   if (linhaCliente && inputCliente) {
     const idx = linhaCliente.indexOf(":");
     let nome = idx >= 0 ? linhaCliente.slice(idx + 1) : linhaCliente;
     nome = nome.trim();
-    if (nome) {
-      inputCliente.value = nome.toUpperCase();
-    }
+    if (nome) inputCliente.value = nome.toUpperCase();
   }
 
   const maquinasEncontradas = [];
 
-  // ===== Máquinas (1-1E033 (...), 2-1B158 (...)) =====
   for (let i = 0; i < linhas.length; i++) {
     const linha = linhas[i];
     const linhaUpper = linha.toUpperCase();
 
-    const cabecalhoMatch = linhaUpper.match(
-      /\b\d+\s*[-–]\s*([A-Z0-9]{2}\d{3})\b/
-    );
+    const cabecalhoMatch = linhaUpper.match(/\b\d+\s*[-–]\s*([A-Z0-9]{2}\d{3})\b/);
     if (!cabecalhoMatch) continue;
 
     let selo = cabecalhoMatch[1].toUpperCase();
 
     // Corrige OCR: "1E033" -> "IE033", "1B158" -> "IB158"
-    if (selo[0] === "1") {
-      selo = "I" + selo.slice(1);
-    }
+    if (selo[0] === "1") selo = "I" + selo.slice(1);
 
-    // jogo entre parênteses
     let jogo = "";
     const firstPar = linha.indexOf("(");
     const lastPar = linha.lastIndexOf(")");
@@ -533,7 +645,6 @@ async function importarPrintPre(file, listaMaquinas, totalGeralEl, inputCliente)
     let entradaAtualOCR = "";
     let saidaAtualOCR = "";
 
-    // procura (E) e (S) nas próximas linhas
     for (let j = i + 1; j < Math.min(i + 8, linhas.length); j++) {
       const l2 = linhas[j];
       const l2Norm = l2.toUpperCase().replace(/\s+/g, "");
@@ -564,8 +675,6 @@ async function importarPrintPre(file, listaMaquinas, totalGeralEl, inputCliente)
     }
   }
 
-  console.log("Máquinas encontradas no OCR (pré-fecho):", maquinasEncontradas);
-
   if (!maquinasEncontradas.length) {
     limparToast();
     alert(
@@ -583,8 +692,6 @@ async function importarPrintPre(file, listaMaquinas, totalGeralEl, inputCliente)
     adicionarMaquina(listaMaquinas, totalGeralEl, {
       selo: m.selo,
       jogo: m.jogo,
-      // No pré-fecho, os números do print vão para ANTERIOR,
-      // e você preenche o ATUAL na hora do recolhe.
       entradaAnterior: m.entrada || "",
       entradaAtual: "",
       saidaAnterior: m.saida || "",
@@ -601,14 +708,9 @@ async function importarPrintPre(file, listaMaquinas, totalGeralEl, inputCliente)
 /* ===========================
    Helpers
 =========================== */
-
 function parseNumero(valor) {
   if (!valor) return 0;
-  const limpo = valor
-    .toString()
-    .replace(/\s/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
+  const limpo = valor.toString().replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
   const n = parseFloat(limpo);
   return isNaN(n) ? 0 : n;
 }
@@ -624,11 +726,7 @@ function formatarMoeda(n) {
 
 function moedaParaNumero(txt) {
   if (!txt) return 0;
-  const limpo = txt
-    .toString()
-    .replace(/[^0-9,-]/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".");
+  const limpo = txt.toString().replace(/[^0-9,-]/g, "").replace(/\./g, "").replace(",", ".");
   const n = parseFloat(limpo);
   return isNaN(n) ? 0 : n;
 }
@@ -636,12 +734,8 @@ function moedaParaNumero(txt) {
 function aplicarCorValor(el, valor) {
   const LIMIAR = 0.005;
   el.classList.remove("positivo", "negativo");
-
-  if (valor > LIMIAR) {
-    el.classList.add("positivo");
-  } else if (valor < -LIMIAR) {
-    el.classList.add("negativo");
-  }
+  if (valor > LIMIAR) el.classList.add("positivo");
+  else if (valor < -LIMIAR) el.classList.add("negativo");
 }
 
 function classeValorMonetario(txt) {
