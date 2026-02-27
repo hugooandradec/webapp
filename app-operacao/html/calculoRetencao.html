@@ -97,7 +97,7 @@
 
     .btn i { font-size: 1rem; }
 
-    /* ===== Importar por texto (box) ===== */
+    /* ===== Importar por texto ===== */
     .texto-box{
       background:#fff;
       border:1px solid #eee;
@@ -145,10 +145,7 @@
     }
 
     /* ===== Cards ===== */
-    .cards {
-      display: grid;
-      gap: 12px;
-    }
+    .cards { display: grid; gap: 12px; }
 
     .card {
       background: #fff;
@@ -225,8 +222,8 @@
       display:flex;
       flex-wrap:wrap;
       gap:10px;
-      margin:16px 0 6px;
-      padding-top: 8px;
+      margin:10px 0 6px;
+      padding-top: 10px;
       border-top: 1px solid var(--borda);
     }
     .acoes-bottom.oculta{ display:none; }
@@ -353,7 +350,12 @@
 
     <div id="listaMaquinas" class="cards"></div>
 
-    <!-- Botões embaixo (ocultos até ter máquina) -->
+    <!-- ✅ Ret. Média primeiro -->
+    <div id="linhaTotal" class="total-linha">
+      Ret. Média: <span>0.00%</span>
+    </div>
+
+    <!-- ✅ Botões embaixo AGORA ficam abaixo da Ret. Média -->
     <div id="acoesBottom" class="acoes-bottom oculta">
       <button id="btnAdicionar2" class="btn roxo" type="button">
         <i class="fa-solid fa-plus"></i> Adicionar máquina
@@ -366,10 +368,6 @@
       <button id="btnLimpar2" class="btn vermelho" type="button">
         <i class="fa-solid fa-trash"></i> Limpar Tudo
       </button>
-    </div>
-
-    <div id="linhaTotal" class="total-linha">
-      Ret. Média: <span>0.00%</span>
     </div>
   </main>
 
@@ -384,5 +382,4 @@
     </div>
   </div>
 </body>
-
 </html>
