@@ -1,13 +1,13 @@
 // js/calculoRetencao.js
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
-const STORAGE_KEY = "calculo_retencao_v3";
+const STORAGE_KEY = "calculo_retencao_v2";
 let retContador = 0;
 
 // cores
-const COR_ENTRADA = "#1b8f2e";
-const COR_SAIDA = "#c0392b";
-const COR_RETENCAO = "#4aa3ff";
+const COR_ENTRADA = "#1b8f2e"; // verde
+const COR_SAIDA = "#c0392b";   // vermelho
+const COR_RETENCAO = "#4aa3ff"; // azul claro
 
 // ===============================
 // HELPERS
@@ -47,101 +47,144 @@ function formatarDataBR(iso) {
   return `${dia}/${mes}/${ano}`;
 }
 
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function normalizarEspacos(s) {
+  return (s || "").replace(/\u00A0/g, " ").replace(/[ \t]+/g, " ").trim();
+}
+
+function limparToast() {
+  try {
+    if (window.toast?.dismissAll) window.toast.dismissAll();
+    else if (window.toast?.clearAll) window.toast.clearAll();
+  } catch (e) {}
+  try {
+    document
+      .querySelectorAll(".toast, .toast-container, [id*='toast']")
+      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
+  } catch (e) {}
 }
 
 // ===============================
-// UI: mostrar/ocultar botões de baixo
+// MOSTRAR/ESCONDER Ret. Média + Botões de baixo
 // ===============================
-function atualizarAcoesBottom() {
+function atualizarAcoesELinhaTotal() {
   const lista = document.getElementById("listaMaquinas");
-  const acoes = document.getElementById("acoesBottom");
-  if (!acoes || !lista) return;
+  const acoesBottom = document.getElementById("acoesBottom");
+  const linhaTotal = document.getElementById("linhaTotal");
 
-  const temMaquina = lista.querySelectorAll(".card").length > 0;
-  acoes.classList.toggle("oculta", !temMaquina);
+  const temMaquina = !!(lista && lista.children && lista.children.length > 0);
+
+  if (acoesBottom) acoesBottom.classList.toggle("oculta", !temMaquina);
+  if (linhaTotal) linhaTotal.classList.toggle("oculta", !temMaquina);
 }
 
 // ===============================
-// IMPORTAR TEXTO
+// IMPORTAR POR TEXTO (mesmo padrão do pré-fecho)
+// Pega:
+// - Ponto: primeira linha "*0008 | KAMALEON*"
+// - Máquinas: "038 - JOGO" + linhas E e S com 2 números
+// - Para retenção usamos a 2ª coluna (ATUAL) como valor da máquina
 // ===============================
-function extrairNomePonto(texto) {
-  const linhas = texto.replace(/\r/g, "\n").split("\n").map(l => l.trim()).filter(Boolean);
-
-  for (const l of linhas) {
-    const m = l.match(/^\*[^|]*\|\s*(.+?)\s*\*$/);
-    if (m && m[1]) return m[1].trim();
-
-    const m2 = l.match(/^\*[^|]*\|\s*(.+?)\s*$/);
-    if (m2 && m2[1]) return m2[1].replace(/\*+$/,"").trim();
-  }
-
+function extrairPontoDoTexto(texto) {
+  const linhas = (texto || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const first = linhas[0] || "";
+  // "*0008 | KAMALEON*" -> KAMALEON
+  const m = first.match(/\|\s*([^|*]+)\s*\*/);
+  if (m && m[1]) return m[1].trim().toUpperCase();
+  // fallback: tenta entre "| |"
+  const m2 = first.match(/\|\s*([^|]+)\s*\|/);
+  if (m2 && m2[1]) return m2[1].trim().toUpperCase();
   return "";
 }
 
-function extrairMaquinasTexto(texto) {
-  const linhas = texto.replace(/\r/g, "\n").split("\n");
+function extrairMaquinasDoTexto(texto) {
+  const linhas = (texto || "")
+    .split(/\r?\n/)
+    .map(l => normalizarEspacos(l))
+    .filter(Boolean);
+
   const maquinas = [];
-  let i = 0;
+  for (let i = 0; i < linhas.length; i++) {
+    const l = linhas[i];
 
-  while (i < linhas.length) {
-    const linha = (linhas[i] || "").trim();
+    // "038 - HALLOWEN 2018"
+    const cab = l.match(/^(\d{3})\s*-\s*(.+)$/);
+    if (!cab) continue;
 
-    // 038 - HALLOWEN 2018
-    const h = linha.match(/^(\d{3})\s*-\s*(.+)$/);
-    if (!h) { i++; continue; }
+    const selo = cab[1];
+    const jogo = (cab[2] || "").trim().toUpperCase();
 
-    const selo = (h[1] || "").trim().toUpperCase();
-    const jogo = (h[2] || "").trim().toUpperCase();
+    let entradaAtual = "";
+    let saidaAtual = "";
 
-    let entrada = "";
-    let saida = "";
+    // procura as próximas linhas E e S
+    for (let j = i + 1; j < Math.min(i + 6, linhas.length); j++) {
+      const lx = linhas[j];
 
-    let j = i + 1;
-    for (; j < Math.min(i + 12, linhas.length); j++) {
-      const l2 = (linhas[j] || "").trim();
-      if (/^\d{3}\s*-\s*/.test(l2)) break;
+      // "E    30609700   31171300___5.616,00"
+      // pega os 2 primeiros grupos grandes de números
+      if (!entradaAtual && /^E\b/i.test(lx)) {
+        const nums = lx.replace(/_/g, " ").match(/(\d{4,})/g) || [];
+        if (nums.length >= 2) entradaAtual = nums[1]; // 2ª coluna
+      }
 
-      const e = l2.match(/^E\s+(\d+)\s+(\d+)/i);
-      if (e) { entrada = (e[2] || "").trim(); continue; }
+      if (!saidaAtual && /^S\b/i.test(lx)) {
+        const nums = lx.replace(/_/g, " ").match(/(\d{4,})/g) || [];
+        if (nums.length >= 2) saidaAtual = nums[1]; // 2ª coluna
+      }
 
-      const s = l2.match(/^S\s+(\d+)\s+(\d+)/i);
-      if (s) { saida = (s[2] || "").trim(); continue; }
+      if (entradaAtual && saidaAtual) break;
     }
 
-    if (entrada || saida) maquinas.push({ selo, jogo, entrada, saida });
-    i = j;
+    // evita duplicados
+    if (maquinas.some(m => m.selo === selo)) continue;
+
+    // só adiciona se achou algo
+    if (entradaAtual || saidaAtual) {
+      maquinas.push({
+        selo,
+        jogo,
+        entrada: (entradaAtual || "").replace(/\D/g, ""),
+        saida: (saidaAtual || "").replace(/\D/g, "")
+      });
+    }
   }
 
   return maquinas;
 }
 
-function importarTextoRet(txt, lista, inputPonto) {
-  const texto = (txt || "").toString();
+function importarTextoRetencao() {
+  const ta = document.getElementById("textoFonte");
+  const lista = document.getElementById("listaMaquinas");
+  if (!ta || !lista) return;
 
-  const nomePonto = extrairNomePonto(texto);
-  if (nomePonto && inputPonto) inputPonto.value = nomePonto.toUpperCase();
+  const texto = ta.value || "";
+  if (!texto.trim()) {
+    if (window.toast) toast.warn("Cole o texto do fechamento primeiro.");
+    return;
+  }
 
-  const maquinas = extrairMaquinasTexto(texto);
+  // ponto
+  const ponto = extrairPontoDoTexto(texto);
+  const inputPonto = document.getElementById("ponto");
+  if (inputPonto && ponto) inputPonto.value = ponto.toUpperCase();
+
+  // máquinas
+  const maquinas = extrairMaquinasDoTexto(texto);
   if (!maquinas.length) {
-    alert("Não consegui identificar máquinas nesse texto 😩");
+    alert("Não consegui identificar máquinas no texto.\nConfere se está no formato:\n038 - JOGO\nE ... ...\nS ... ...");
     return;
   }
 
   lista.innerHTML = "";
   retContador = 0;
 
-  maquinas.forEach((m) => adicionarMaquina(lista, m));
+  maquinas.forEach(m => adicionarMaquina(lista, m));
 
   salvarRetencao();
   atualizarLinhaTotal();
-  atualizarAcoesBottom();
+  atualizarAcoesELinhaTotal();
+
+  if (window.toast) toast.success(`Importado: ${maquinas.length} máquina(s).`);
 }
 
 // ===============================
@@ -157,31 +200,31 @@ function adicionarMaquina(lista, dadosIniciais = null) {
   card.innerHTML = `
     <div class="card-titulo">
       <span>Máquina ${idx}</span>
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
         <small>digite E / S para ver a retenção</small>
-        <button class="icone-remover" title="Remover máquina">
+        <button class="icone-remover" title="Remover máquina" type="button">
           <i class="fa-solid fa-trash"></i>
         </button>
       </div>
     </div>
 
-    <div class="linha-flex" style="display:flex;gap:16px;margin-bottom:10px;">
-      <div class="col" style="flex:1;">
+    <div class="linha-flex">
+      <div class="col">
         <label>Selo:</label>
         <input type="text" class="ret-selo" placeholder="CÓDIGO DA MÁQUINA">
       </div>
-      <div class="col" style="flex:1;">
+      <div class="col">
         <label>Jogo:</label>
         <input type="text" class="ret-jogo" placeholder="TIPO DE JOGO">
       </div>
     </div>
 
-    <div class="linha-flex" style="display:flex;gap:16px;margin-bottom:10px;">
-      <div class="col" style="flex:1;">
+    <div class="linha-flex">
+      <div class="col">
         <label>E:</label>
         <input type="tel" inputmode="numeric" class="ret-entrada" placeholder="valor de entrada">
       </div>
-      <div class="col" style="flex:1;">
+      <div class="col">
         <label>S:</label>
         <input type="tel" inputmode="numeric" class="ret-saida" placeholder="valor de saída">
       </div>
@@ -200,10 +243,10 @@ function adicionarMaquina(lista, dadosIniciais = null) {
   const textoResumo = card.querySelector(".texto-resumo");
 
   if (dadosIniciais) {
-    if (dadosIniciais.selo) inputSelo.value = String(dadosIniciais.selo).toUpperCase();
-    if (dadosIniciais.jogo) inputJogo.value = String(dadosIniciais.jogo).toUpperCase();
-    if (dadosIniciais.entrada) inputEntrada.value = String(dadosIniciais.entrada).replace(/\D/g, "");
-    if (dadosIniciais.saida) inputSaida.value = String(dadosIniciais.saida).replace(/\D/g, "");
+    if (dadosIniciais.selo) inputSelo.value = dadosIniciais.selo;
+    if (dadosIniciais.jogo) inputJogo.value = dadosIniciais.jogo;
+    if (dadosIniciais.entrada) inputEntrada.value = dadosIniciais.entrada;
+    if (dadosIniciais.saida) inputSaida.value = dadosIniciais.saida;
   }
 
   const atualizarResumo = () => {
@@ -227,6 +270,7 @@ function adicionarMaquina(lista, dadosIniciais = null) {
 
     salvarRetencao();
     atualizarLinhaTotal();
+    atualizarAcoesELinhaTotal();
   };
 
   [inputEntrada, inputSaida].forEach((inp) => {
@@ -245,12 +289,11 @@ function adicionarMaquina(lista, dadosIniciais = null) {
     card.remove();
     salvarRetencao();
     atualizarLinhaTotal();
-    atualizarAcoesBottom();
+    atualizarAcoesELinhaTotal();
   });
 
   lista.appendChild(card);
   atualizarResumo();
-  atualizarAcoesBottom();
 }
 
 // ===============================
@@ -259,7 +302,6 @@ function adicionarMaquina(lista, dadosIniciais = null) {
 function salvarRetencao() {
   const data = document.getElementById("data")?.value || "";
   const ponto = document.getElementById("ponto")?.value || "";
-  const textoFonte = document.getElementById("textoFonte")?.value || "";
   const lista = document.getElementById("listaMaquinas");
   if (!lista) return;
 
@@ -272,30 +314,25 @@ function salvarRetencao() {
     maquinas.push({ selo, jogo, entrada, saida });
   });
 
-  const payload = { data, ponto, textoFonte, maquinas, contador: retContador };
+  const payload = { data, ponto, maquinas, contador: retContador };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
 
 function carregarRetencao(lista) {
   const raw = localStorage.getItem(STORAGE_KEY);
-
-  // ✅ não cria máquina automática (igual pré-fecho)
   if (!raw) {
+    // ✅ não cria máquina automática
+    retContador = 0;
+    lista.innerHTML = "";
     atualizarLinhaTotal();
-    atualizarAcoesBottom();
+    atualizarAcoesELinhaTotal();
     return;
   }
 
   try {
     const dados = JSON.parse(raw);
-
-    const inputData = document.getElementById("data");
-    const inputPonto = document.getElementById("ponto");
-    const tf = document.getElementById("textoFonte");
-
-    if (inputData && dados.data) inputData.value = dados.data;
-    if (inputPonto && dados.ponto) inputPonto.value = String(dados.ponto).toUpperCase();
-    if (tf && typeof dados.textoFonte === "string") tf.value = dados.textoFonte;
+    document.getElementById("data").value = dados.data || "";
+    document.getElementById("ponto").value = dados.ponto || "";
 
     retContador = 0;
     lista.innerHTML = "";
@@ -303,18 +340,18 @@ function carregarRetencao(lista) {
     if (Array.isArray(dados.maquinas) && dados.maquinas.length) {
       dados.maquinas.forEach((m) => adicionarMaquina(lista, m));
     }
-
   } catch (e) {
     console.error("Erro ao carregar retenção:", e);
+    retContador = 0;
     lista.innerHTML = "";
   }
 
   atualizarLinhaTotal();
-  atualizarAcoesBottom();
+  atualizarAcoesELinhaTotal();
 }
 
 // ===============================
-// TOTAL GERAL
+// TOTAL GERAL (Ret. Média)
 // ===============================
 function atualizarLinhaTotal() {
   const lista = document.getElementById("listaMaquinas");
@@ -336,10 +373,12 @@ function atualizarLinhaTotal() {
   });
 
   const span = linhaTotal.querySelector("span");
-  if (span) span.textContent = contRet ? formatarPercentual(somaRet / contRet) : "0.00%";
+  if (span) {
+    span.textContent = contRet ? formatarPercentual(somaRet / contRet) : "0.00%";
+    span.style.color = COR_RETENCAO;
+  }
 
   linhaTotal.style.color = "#000";
-  if (span) span.style.color = "#4aa3ff";
 }
 
 // ===============================
@@ -351,8 +390,8 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
   const ponto = inputPonto?.value || "-";
 
   const blocos = [];
-  blocos.push(`DATA: ${escapeHtml(dataBR)}`);
-  blocos.push(`PONTO: ${escapeHtml((ponto || "-").toUpperCase())}`);
+  blocos.push(`DATA: ${dataBR}`);
+  blocos.push(`PONTO: ${ponto || "-"}`);
   blocos.push("");
 
   let somaRet = 0;
@@ -363,40 +402,52 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
     const jogo = (card.querySelector(".ret-jogo")?.value || "-").toUpperCase();
     const entradaNum = parseNumeroCentavos(card.querySelector(".ret-entrada")?.value);
     const saidaNum = parseNumeroCentavos(card.querySelector(".ret-saida")?.value);
+
     const ret = entradaNum > 0 ? ((entradaNum - saidaNum) / entradaNum) * 100 : 0;
 
     if (entradaNum > 0) { somaRet += ret; contRet++; }
 
     blocos.push(`MÁQUINA ${idx + 1}`);
-    blocos.push(`SELO: ${escapeHtml(selo)}`);
-    blocos.push(`JOGO: ${escapeHtml(jogo)}`);
-    blocos.push(`E: <span class="valor-entrada">${escapeHtml(formatarMoeda(entradaNum))}</span>`);
-    blocos.push(`S: <span class="valor-saida">${escapeHtml(formatarMoeda(saidaNum))}</span>`);
-    blocos.push(`RET: <span class="valor-retencao">${escapeHtml(formatarPercentual(ret))}</span>`);
+    blocos.push(`SELO: ${selo}`);
+    blocos.push(`JOGO: ${jogo}`);
+    blocos.push(`E: ${formatarMoeda(entradaNum)}`);
+    blocos.push(`S: ${formatarMoeda(saidaNum)}`);
+    blocos.push(`RET: ${formatarPercentual(ret)}`);
     blocos.push("----------------------------------------");
     blocos.push("");
   });
 
   const retMedia = contRet ? somaRet / contRet : 0;
-  blocos.push(`Ret. Média: <span class="valor-ret-media">${escapeHtml(formatarPercentual(retMedia))}</span>`);
+  blocos.push(`Ret. Média: ${formatarPercentual(retMedia)}`);
 
-  return blocos.join("<br>");
+  // pinta no HTML depois
+  return blocos.join("\n");
+}
+
+function relatorioParaHTML(texto) {
+  // pinta linhas E/S/RET/Ret. Média
+  const linhas = (texto || "").split("\n");
+  return linhas.map(l => {
+    if (l.startsWith("E: ")) return `E: <span class="valor-entrada">${l.slice(3)}</span>`;
+    if (l.startsWith("S: ")) return `S: <span class="valor-saida">${l.slice(3)}</span>`;
+    if (l.startsWith("RET: ")) return `RET: <span class="valor-retencao">${l.slice(5)}</span>`;
+    if (l.startsWith("Ret. Média: ")) return `Ret. Média: <span class="valor-ret-media">${l.slice(11)}</span>`;
+    return l;
+  }).join("<br>");
 }
 
 // ===============================
-// LIMPAR TUDO
+// LIMPAR
 // ===============================
 function limparTudo(lista, inputData, inputPonto) {
   if (!confirm("Deseja limpar todas as máquinas e dados?")) return;
   retContador = 0;
   lista.innerHTML = "";
-  if (inputData) inputData.value = dataHojeISO(); // volta pra hoje automático
   if (inputPonto) inputPonto.value = "";
-  const tf = document.getElementById("textoFonte");
-  if (tf) tf.value = "";
+  // data continua (igual pré-fecho: sempre hoje)
   salvarRetencao();
   atualizarLinhaTotal();
-  atualizarAcoesBottom();
+  atualizarAcoesELinhaTotal();
 }
 
 // ===============================
@@ -406,16 +457,15 @@ document.addEventListener("DOMContentLoaded", () => {
   inicializarPagina("Cálculo de Retenção", "operacao");
 
   const btnAdd = document.getElementById("btnAdicionar");
-  const btnRel = document.getElementById("btnRelatorio");
-  const btnLimpar = document.getElementById("btnLimpar");
-  const btnImportarTexto = document.getElementById("btnImportarTexto");
-  const textoFonte = document.getElementById("textoFonte");
-
   const btnAdd2 = document.getElementById("btnAdicionar2");
+  const btnRel = document.getElementById("btnRelatorio");
   const btnRel2 = document.getElementById("btnRelatorio2");
+  const btnLimpar = document.getElementById("btnLimpar");
   const btnLimpar2 = document.getElementById("btnLimpar2");
+  const btnImportarTexto = document.getElementById("btnImportarTexto");
 
   const lista = document.getElementById("listaMaquinas");
+
   const modal = document.getElementById("modalRet");
   const btnFecharModal = document.getElementById("btnFecharModal");
   const relConteudo = document.getElementById("relConteudo");
@@ -423,42 +473,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputData = document.getElementById("data");
   const inputPonto = document.getElementById("ponto");
 
-  // ✅ data automática igual pré-fecho
+  // data automática (mas ainda editável se quiser)
   if (inputData && !inputData.value) inputData.value = dataHojeISO();
 
-  btnAdd?.addEventListener("click", () => {
-    adicionarMaquina(lista);
-    salvarRetencao();
-  });
-
-  btnImportarTexto?.addEventListener("click", () => {
-    const txt = (textoFonte?.value || "").trim();
-    if (!txt) return alert("Cole o fechamento primeiro 🙂");
-    importarTextoRet(txt, lista, inputPonto);
-  });
-
-  btnRel?.addEventListener("click", () => {
+  // eventos topo
+  const onAdd = () => { adicionarMaquina(lista); salvarRetencao(); atualizarLinhaTotal(); atualizarAcoesELinhaTotal(); };
+  const onRel = () => {
     if (!lista.children.length) {
       if (window.toast) toast.warn("Adicione pelo menos uma máquina.");
       return;
     }
-    const rel = criarRelatorioRetencao(lista, inputData, inputPonto);
-    relConteudo.innerHTML = rel;
+    const relTxt = criarRelatorioRetencao(lista, inputData, inputPonto);
+    relConteudo.innerHTML = relatorioParaHTML(relTxt);
     modal.classList.add("aberta");
-  });
+  };
+  const onLimpar = () => limparTudo(lista, inputData, inputPonto);
 
-  btnLimpar?.addEventListener("click", () => limparTudo(lista, inputData, inputPonto));
+  if (btnAdd) btnAdd.addEventListener("click", onAdd);
+  if (btnAdd2) btnAdd2.addEventListener("click", onAdd);
 
-  // botões de baixo chamam os de cima
-  btnAdd2?.addEventListener("click", () => btnAdd?.click());
-  btnRel2?.addEventListener("click", () => btnRel?.click());
-  btnLimpar2?.addEventListener("click", () => btnLimpar?.click());
+  if (btnRel) btnRel.addEventListener("click", onRel);
+  if (btnRel2) btnRel2.addEventListener("click", onRel);
 
-  // modal
-  btnFecharModal?.addEventListener("click", () => modal.classList.remove("aberta"));
-  modal?.addEventListener("click", (e) => {
-    if (e.target.id === "modalRet") modal.classList.remove("aberta");
-  });
+  if (btnLimpar) btnLimpar.addEventListener("click", onLimpar);
+  if (btnLimpar2) btnLimpar2.addEventListener("click", onLimpar);
+
+  if (btnFecharModal && modal) {
+    btnFecharModal.addEventListener("click", () => modal.classList.remove("aberta"));
+    modal.addEventListener("click", (e) => { if (e.target.id === "modalRet") modal.classList.remove("aberta"); });
+  }
+
+  if (btnImportarTexto) btnImportarTexto.addEventListener("click", importarTextoRetencao);
+
+  if (inputData) inputData.addEventListener("change", salvarRetencao);
 
   if (inputPonto) {
     inputPonto.addEventListener("input", () => {
@@ -468,7 +515,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   carregarRetencao(lista);
-  salvarRetencao();
+
+  // garante que Ret. Média e botões respeitem o estado inicial
   atualizarLinhaTotal();
-  atualizarAcoesBottom();
+  atualizarAcoesELinhaTotal();
 });
