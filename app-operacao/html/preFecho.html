@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pré-Fecho</title>
   <meta name="theme-color" content="#6a1b9a" />
+
   <link rel="manifest" href="../manifest.json" />
   <link rel="icon" href="../../common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -14,78 +15,224 @@
     inicializarPagina("Pré-Fecho", "operacao");
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
   <script defer src="../../common/js/toast.js"></script>
   <script type="module" src="../js/preFecho.js"></script>
 
   <style>
-    :root{ --roxo:#6a1b9a; --verde:#16a34a; --vermelho:#dc2626; }
-    html,body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#f8f8f8; }
-    main{ max-width:980px; margin:0 auto; padding:16px; }
+    :root{
+      --roxo:#6a1b9a;
+      --verde:#16a34a;
+      --vermelho:#dc2626;
+      --cinza:#aaa;
+      --cinza-esc:#777;
+      --bg:#f8f8f8;
+      --borda:#e7e7ef;
+    }
+    *{ box-sizing:border-box; }
+    html,body{
+      margin:0;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+      background:var(--bg);
+      overflow-x:hidden;
+    }
+    main{
+      max-width:980px;
+      margin:0 auto;
+      padding:16px;
+    }
     h1{ display:none; }
 
-    .linha{ display:flex; align-items:center; gap:8px; margin:10px 0; }
-    label{ font-weight:700; min-width:90px; }
+    .linha{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin:10px 0;
+    }
+    label{
+      font-weight:800;
+      min-width:90px;
+    }
     input[type="text"]{
-      flex:1; padding:10px 0; border:none; border-bottom:2px solid #dcdcdc;
-      background:transparent; outline:none;
+      flex:1;
+      padding:10px 0;
+      border:none;
+      border-bottom:2px solid #dcdcdc;
+      background:transparent;
+      outline:none;
     }
     input[type="text"]:focus{ border-bottom-color:var(--roxo); }
-    .barra{ height:1px; background:#e7e7ef; margin:14px 0; }
 
+    .barra{
+      height:1px;
+      background:var(--borda);
+      margin:14px 0;
+    }
+
+    /* ===== Botões ===== */
     .btn{
-      padding:12px 14px; border:none; border-radius:10px; font-weight:800; cursor:pointer;
-      display:inline-flex; align-items:center; gap:6px; font-size:0.95rem;
+      padding:11px 14px;
+      border:none;
+      border-radius:12px;
+      font-weight:900;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:0.95rem;
+      white-space:nowrap;
     }
     .btn i{ font-size:1rem; }
     .btn.roxo{ background:var(--roxo); color:#fff; }
-    .btn.cinza{ background:#aaa; color:#fff; }
+    .btn.cinza{ background:var(--cinza); color:#fff; }
+    .btn.vermelho{ background:#e35656; color:#fff; }
 
-    .acoes{ display:flex; flex-wrap:wrap; gap:10px; margin:20px 0 10px; padding:8px 0; }
-
-    .cards{ display:grid; gap:10px; }
-    .card{ background:#fff; border:1px solid #eee; border-radius:12px; padding:12px; }
-    .card-titulo{ font-weight:800; margin-bottom:8px; color:#444; display:flex; justify-content:space-between; align-items:center; }
-
-    .grid{ display:grid; grid-template-columns:1fr 1px 1fr; gap:10px; align-items:center; margin-top:6px; }
-    .grid .divv{ width:1px; background:#e7e7ef; height:100%; }
-
-    .linha2{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .linha2 input{
-      width:100%; padding:8px 0; border:none; border-bottom:2px solid #ddd;
-      text-align:center; background:transparent; outline:none;
+    /* ===== Caixa do texto ===== */
+    .texto-box{
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:14px;
+      padding:12px;
+      margin: 10px 0 12px;
+    }
+    .texto-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .texto-top strong{
+      color:#444;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:900;
+    }
+    .acoes-topo{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
     }
 
-    .total{ font-weight:900; text-align:right; margin:20px 0; font-size:1.1rem; }
-    .positivo{ color:var(--verde); } .negativo{ color:var(--vermelho); }
-
-    .texto-box{ background:#fff; border:1px solid #eee; border-radius:12px; padding:12px; margin:10px 0 12px; }
-    .texto-top{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; }
-    .texto-top strong{ color:#444; display:flex; align-items:center; gap:8px; }
     textarea{
-      width:100%; min-height:120px; resize:vertical; border:1px solid #e6e6ef; border-radius:10px;
-      padding:10px; outline:none; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-      font-size:0.85rem; line-height:1.25; background:#fafafa;
+      width:100%;
+      min-height:140px;
+      resize:vertical;
+      border:1px solid #e6e6ef;
+      border-radius:12px;
+      padding:10px;
+      outline:none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:0.85rem;
+      line-height:1.25;
+      background:#fafafa;
     }
-    textarea:focus{ border-color:var(--roxo); background:#fff; }
+    textarea:focus{
+      border-color:var(--roxo);
+      background:#fff;
+    }
 
+    /* ===== Lista / Cards ===== */
+    .cards{ display:grid; gap:12px; margin-top:14px; }
+    .card{
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:14px;
+      padding:12px;
+    }
+    .card-titulo{
+      font-weight:900;
+      margin-bottom:8px;
+      color:#444;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1px 1fr;
+      gap:10px;
+      align-items:center;
+      margin-top:6px;
+    }
+    .grid .divv{ width:1px; background:var(--borda); height:100%; }
+
+    .linha2{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+    .linha2 input{
+      width:100%;
+      padding:8px 0;
+      border:none;
+      border-bottom:2px solid #ddd;
+      text-align:center;
+      background:transparent;
+      outline:none;
+    }
+
+    .total{
+      font-weight:1000;
+      text-align:right;
+      margin:20px 0 8px;
+      font-size:1.1rem;
+    }
+    .positivo{ color:var(--verde); }
+    .negativo{ color:var(--vermelho); }
+
+    /* ===== Modal fullscreen ===== */
     #modalRelatorio{
-      position:fixed; inset:0; background:rgba(0,0,0,.7); display:none;
-      justify-content:center; align-items:center; padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.7);
+      display:none;
+      justify-content:center;
+      align-items:center;
+      padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
       z-index:1000;
     }
     #modalRelatorio.aberta{ display:flex !important; }
     #modalRelatorio .cx{
-      background:#fff; border-radius:10px; padding:16px; width:min(96vw,520px);
-      max-height:88dvh; overflow:auto; box-shadow:0 16px 40px rgba(0,0,0,.25); -webkit-overflow-scrolling:touch;
+      background:#fff;
+      border-radius:12px;
+      padding:16px;
+      width:min(96vw,520px);
+      max-height:88dvh;
+      overflow:auto;
+      box-shadow:0 16px 40px rgba(0,0,0,.25);
+      -webkit-overflow-scrolling:touch;
     }
-    .rel{ font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; white-space:normal; font-size:0.85rem; line-height:1.25; }
-    .rel .bloco-maquina{ padding:2px 0 4px; margin:4px 0; border-bottom:1px dashed #e0e0e0; }
+    .rel{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: normal;
+      font-size:0.85rem;
+      line-height:1.25;
+    }
+    .rel .bloco-maquina{
+      padding:2px 0 4px;
+      margin:4px 0;
+      border-bottom:1px dashed #e0e0e0;
+    }
 
     @media (max-width:600px){
       #modalRelatorio{ padding:0; align-items:stretch; }
-      #modalRelatorio .cx{ width:100vw; height:100svh; max-height:100svh; border-radius:0; padding:12px; box-shadow:none; }
+      #modalRelatorio .cx{
+        width:100vw;
+        height:100svh;
+        max-height:100svh;
+        border-radius:0;
+        padding:12px;
+        box-shadow:none;
+      }
       main{ padding:12px; }
+      .acoes-topo{ justify-content:flex-start; }
+      .btn{ width:100%; justify-content:center; }
     }
   </style>
 </head>
@@ -106,48 +253,45 @@
 
     <div class="barra"></div>
 
+    <!-- Importar por texto + botões no topo -->
     <div class="texto-box">
       <div class="texto-top">
         <strong><i class="fa-solid fa-paste"></i> Importar por texto</strong>
-        <button id="btnImportarTexto" class="btn roxo" type="button">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> Importar Texto
-        </button>
+
+        <div class="acoes-topo">
+          <button id="btnImportarTexto" class="btn roxo" type="button">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Importar Texto
+          </button>
+
+          <button id="btnAdicionar" class="btn roxo" type="button">
+            <i class="fa-solid fa-plus"></i> Adicionar máquina
+          </button>
+
+          <button id="btnRelatorio" class="btn cinza" type="button">
+            <i class="fa-solid fa-file-lines"></i> Visualizar relatório
+          </button>
+
+          <button id="btnLimpar" class="btn vermelho" type="button">
+            <i class="fa-solid fa-trash"></i> Limpar Tudo
+          </button>
+        </div>
       </div>
 
       <textarea id="textoFonte" placeholder="Cole o fechamento aqui"></textarea>
-    </div>
-
-    <div class="acoes" id="acoesBar">
-      <button id="btnAdicionar" class="btn roxo" type="button">
-        <i class="fa-solid fa-plus"></i> Adicionar máquina
-      </button>
-
-      <button id="btnImportar" class="btn cinza" type="button">
-        <i class="fa-solid fa-image"></i> Importar print
-      </button>
-
-      <button id="btnRelatorio" class="btn cinza" type="button">
-        <i class="fa-solid fa-file-lines"></i> Visualizar relatório
-      </button>
-
-      <button id="btnLimpar" class="btn cinza" style="background:#d9534f;" type="button">
-        <i class="fa-solid fa-trash"></i> Limpar Tudo
-      </button>
     </div>
 
     <div id="listaMaquinas" class="cards"></div>
     <div id="totalGeral" class="total positivo">TOTAL: R$ 0,00</div>
   </main>
 
-  <input type="file" id="inputPrintPre" accept="image/*" style="display:none;" />
-
-  <div id="modalRelatorio" class="modal">
+  <!-- Modal -->
+  <div id="modalRelatorio">
     <div class="cx">
-      <header style="display:flex;justify-content:space-between;align-items:center;">
-        <h3>Relatório do Pré-Fecho</h3>
+      <header style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <h3 style="margin:0;">Relatório do Pré-Fecho</h3>
         <button id="btnFecharModal" class="btn cinza" type="button">Fechar</button>
       </header>
-      <div id="relatorioConteudo" class="rel"></div>
+      <div id="relatorioConteudo" class="rel" style="margin-top:12px;"></div>
     </div>
   </div>
 
