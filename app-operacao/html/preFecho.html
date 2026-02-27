@@ -41,9 +41,8 @@
       padding: 16px;
     }
     /* título some porque já aparece no cabeçalho roxo */
-    h1{
-      display:none;
-    }
+    h1{ display:none; }
+
     .linha{
       display:flex;
       align-items:center;
@@ -150,6 +149,50 @@
     .positivo{ color:var(--verde); }
     .negativo{ color:var(--vermelho); }
 
+    /* ===== NOVO: caixa do texto ===== */
+    .texto-box{
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:12px;
+      padding:12px;
+      margin: 10px 0 12px;
+    }
+    .texto-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .texto-top strong{
+      color:#444;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    textarea{
+      width:100%;
+      min-height:120px;
+      resize:vertical;
+      border:1px solid #e6e6ef;
+      border-radius:10px;
+      padding:10px;
+      outline:none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:0.85rem;
+      line-height:1.25;
+      background:#fafafa;
+    }
+    textarea:focus{
+      border-color:#6a1b9a;
+      background:#fff;
+    }
+    .hint{
+      margin-top:6px;
+      font-size:0.82rem;
+      color:#666;
+    }
+
     /* Modal — fullscreen igual Retenção / Lançamento */
     #modalRelatorio{
       position:fixed;
@@ -161,9 +204,7 @@
       padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
       z-index:1000;
     }
-    #modalRelatorio.aberta{
-      display:flex !important;
-    }
+    #modalRelatorio.aberta{ display:flex !important; }
     #modalRelatorio .cx{
       background:#fff;
       border-radius:10px;
@@ -188,10 +229,7 @@
     }
 
     @media (max-width:600px){
-      #modalRelatorio{
-        padding:0;
-        align-items:stretch;
-      }
+      #modalRelatorio{ padding:0; align-items:stretch; }
       #modalRelatorio .cx{
         width:100vw;
         height:100svh;
@@ -200,9 +238,7 @@
         padding:12px;
         box-shadow:none;
       }
-      main{
-        padding:12px;
-      }
+      main{ padding:12px; }
     }
   </style>
 </head>
@@ -223,21 +259,35 @@
 
     <div class="barra"></div>
 
+    <!-- NOVO: Importar por texto -->
+    <div class="texto-box">
+      <div class="texto-top">
+        <strong><i class="fa-solid fa-paste"></i> Importar por texto</strong>
+        <button id="btnImportarTexto" class="btn roxo" type="button">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Importar Texto
+        </button>
+      </div>
+      <textarea id="textoFonte" placeholder="Cole aqui o texto (ex: WhatsApp / relatório)."></textarea>
+      <div class="hint">
+        Ele pega o ponto da 1ª linha (*0008 | KAMALEON*) e as máquinas do formato: 038 - JOGO + linhas E/S.
+      </div>
+    </div>
+
     <!-- Barra de ações (JS reposiciona para ficar sempre abaixo da última máquina) -->
     <div class="acoes" id="acoesBar">
-      <button id="btnAdicionar" class="btn roxo">
+      <button id="btnAdicionar" class="btn roxo" type="button">
         <i class="fa-solid fa-plus"></i> Adicionar máquina
       </button>
 
-      <button id="btnImportar" class="btn cinza">
+      <button id="btnImportar" class="btn cinza" type="button">
         <i class="fa-solid fa-image"></i> Importar print
       </button>
 
-      <button id="btnRelatorio" class="btn cinza">
+      <button id="btnRelatorio" class="btn cinza" type="button">
         <i class="fa-solid fa-file-lines"></i> Visualizar relatório
       </button>
 
-      <button id="btnLimpar" class="btn cinza" style="background:#d9534f;">
+      <button id="btnLimpar" class="btn cinza" style="background:#d9534f;" type="button">
         <i class="fa-solid fa-trash"></i> Limpar Tudo
       </button>
     </div>
@@ -254,7 +304,7 @@
     <div class="cx">
       <header style="display:flex;justify-content:space-between;align-items:center;">
         <h3>Relatório do Pré-Fecho</h3>
-        <button id="btnFecharModal" class="btn cinza">Fechar</button>
+        <button id="btnFecharModal" class="btn cinza" type="button">Fechar</button>
       </header>
       <div id="relatorioConteudo" class="rel"></div>
     </div>
