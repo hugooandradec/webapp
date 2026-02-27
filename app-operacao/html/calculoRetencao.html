@@ -11,9 +11,6 @@
   <link rel="icon" href="../../common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-  <!-- OCR (Tesseract.js) -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
-
   <!-- Toast -->
   <script defer src="../../common/js/toast.js"></script>
   <script type="module" src="../js/calculoRetencao.js"></script>
@@ -24,14 +21,12 @@
       --verde: #16a34a;
       --vermelho: #dc2626;
       --cinza-btn: #aaa;
+      --borda: #e7e7ef;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html,
-    body {
+    html, body {
       margin: 0;
       padding: 0;
       background: #f8f8f8;
@@ -45,9 +40,7 @@
       padding: 16px;
     }
 
-    h1 {
-      display: none;
-    }
+    h1 { display: none; }
 
     h2 {
       color: var(--roxo);
@@ -69,12 +62,6 @@
       min-width: 70px;
     }
 
-    .linha span.sub {
-      font-size: 0.8rem;
-      color: #666;
-      font-weight: 600;
-    }
-
     input[type="date"],
     input[type="text"] {
       padding: 6px 10px;
@@ -91,15 +78,7 @@
       margin: 12px 0;
     }
 
-    /* Botões */
-    .acoes {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding: 4px 0;
-    }
-
+    /* ===== Botões ===== */
     .btn {
       padding: 10px 16px;
       border: none;
@@ -113,21 +92,60 @@
       white-space: nowrap;
     }
 
-    .btn.roxo {
-      background: var(--roxo);
-      color: #fff;
+    .btn.roxo { background: var(--roxo); color: #fff; }
+    .btn.cinza { background: var(--cinza-btn); color: #fff; }
+    .btn.vermelho { background: #d9534f; color: #fff; }
+
+    .btn i { font-size: 1rem; }
+
+    /* ===== Importar por texto (box) ===== */
+    .texto-box{
+      background:#fff;
+      border:1px solid #eee;
+      border-radius:14px;
+      padding:12px;
+      margin: 10px 0 12px;
+    }
+    .texto-top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .texto-top strong{
+      color:#444;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:1000;
+    }
+    .acoes-topo{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      justify-content:flex-end;
+    }
+    textarea{
+      width:100%;
+      min-height:140px;
+      resize:vertical;
+      border:1px solid #e6e6ef;
+      border-radius:12px;
+      padding:10px;
+      outline:none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size:0.85rem;
+      line-height:1.25;
+      background:#fafafa;
+    }
+    textarea:focus{
+      border-color:var(--roxo);
+      background:#fff;
     }
 
-    .btn.cinza {
-      background: var(--cinza-btn);
-      color: #fff;
-    }
-
-    .btn i {
-      font-size: 1rem;
-    }
-
-    /* Cards */
+    /* ===== Cards ===== */
     .cards {
       display: grid;
       gap: 12px;
@@ -166,36 +184,7 @@
       padding: 4px;
     }
 
-    .icone-remover i {
-      font-size: 0.9rem;
-    }
-
-    .linha-nome {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 4px 0 6px;
-    }
-
-    .linha-nome label {
-      font-weight: 700;
-      min-width: 55px;
-    }
-
-    .linha-nome input {
-      flex: 1;
-      border: none;
-      border-bottom: 2px solid #dcdcdc;
-      padding: 6px 0;
-      text-transform: uppercase;
-      outline: none;
-      background: transparent;
-      font-size: 0.95rem;
-    }
-
-    .linha-nome input:focus {
-      border-bottom-color: var(--roxo);
-    }
+    .icone-remover i { font-size: 0.9rem; }
 
     .linha2 {
       display: flex;
@@ -203,9 +192,7 @@
       margin-top: 8px;
     }
 
-    .col {
-      flex: 1;
-    }
+    .col { flex: 1; }
 
     .col label {
       display: block;
@@ -222,32 +209,15 @@
       background: transparent;
       text-align: center;
       font-size: 0.95rem;
+      text-transform: uppercase;
     }
 
-    .col input:focus {
-      border-bottom-color: var(--roxo);
-    }
+    .col input:focus { border-bottom-color: var(--roxo); }
 
     .resumo {
       margin-top: 10px;
       font-weight: 700;
       font-size: 0.9rem;
-    }
-
-    .resumo span {
-      font-weight: 800;
-    }
-
-    .verde {
-      color: var(--verde);
-    }
-
-    .vermelho {
-      color: var(--vermelho);
-    }
-
-    .neutro {
-      color: #555;
     }
 
     .total-linha {
@@ -257,11 +227,17 @@
       text-align: right;
     }
 
-    .total-linha span {
-      font-weight: 900;
+    /* ===== botões embaixo (antes da Ret. Média) ===== */
+    .acoes-bottom{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin:16px 0 6px;
+      padding-top: 8px;
+      border-top: 1px solid var(--borda);
     }
 
-    /* Modal — fullscreen, igual ao Lançamento */
+    /* ===== Modal — fullscreen ===== */
     #modalRet {
       position: fixed;
       inset: 0;
@@ -273,9 +249,7 @@
       z-index: 1000;
     }
 
-    #modalRet.aberta {
-      display: flex !important;
-    }
+    #modalRet.aberta { display: flex !important; }
 
     #modalRet .cx {
       background: #fff;
@@ -289,36 +263,42 @@
       -webkit-overflow-scrolling: touch;
     }
 
+    .modal-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+    .modal-header h3{ margin:0; }
+
+    .btn-fechar-x{
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      font-weight:1000;
+      font-size:1.25rem;
+      line-height:1;
+      padding:6px 8px;
+      border-radius:10px;
+      color:#555;
+    }
+    .btn-fechar-x:hover{ background:#f1f1f6; }
+
     .rel {
       font-family: ui-monospace, Menlo, Consolas, monospace;
       font-size: 0.9rem;
       line-height: 1.25;
       white-space: pre-wrap;
+      margin-top: 12px;
     }
 
     /* Cores para o relatório */
-    .valor-entrada {
-      color: var(--verde);
-      font-weight: 700;
-    }
-
-    .valor-saida {
-      color: var(--vermelho);
-      font-weight: 700;
-    }
-
-    .valor-retencao,
-    .valor-ret-media {
-      color: #4aa3ff;
-      font-weight: 700;
-    }
+    .valor-entrada { color: var(--verde); font-weight: 700; }
+    .valor-saida { color: var(--vermelho); font-weight: 700; }
+    .valor-retencao, .valor-ret-media { color: #4aa3ff; font-weight: 700; }
 
     @media (max-width: 600px) {
-      #modalRet {
-        padding: 0;
-        align-items: stretch;
-      }
-
+      #modalRet { padding: 0; align-items: stretch; }
       #modalRet .cx {
         width: 100vw;
         height: 100svh;
@@ -327,16 +307,15 @@
         padding: 12px;
         box-shadow: none;
       }
-
-      main {
-        padding: 12px;
-      }
+      main { padding: 12px; }
+      .btn { width: 100%; justify-content: center; }
+      .acoes-topo { justify-content: flex-start; }
+      .acoes-bottom { flex-direction: column; }
     }
   </style>
 </head>
 
 <body>
-
   <main>
     <h1>Cálculo de Retenção</h1>
     <h2>Cálculo de Retenção</h2>
@@ -353,28 +332,49 @@
 
     <div class="barra"></div>
 
-    <div class="acoes">
-      <button id="btnAdicionar" class="btn roxo">
+    <!-- Importar por texto + botões no topo -->
+    <div class="texto-box">
+      <div class="texto-top">
+        <strong><i class="fa-solid fa-paste"></i> Importar por texto</strong>
+
+        <div class="acoes-topo">
+          <button id="btnImportarTexto" class="btn roxo" type="button">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Importar Texto
+          </button>
+
+          <button id="btnAdicionar" class="btn roxo" type="button">
+            <i class="fa-solid fa-plus"></i> Adicionar máquina
+          </button>
+
+          <button id="btnRelatorio" class="btn cinza" type="button">
+            <i class="fa-solid fa-file-lines"></i> Relatório
+          </button>
+
+          <button id="btnLimpar" class="btn vermelho" type="button">
+            <i class="fa-solid fa-trash"></i> Limpar Tudo
+          </button>
+        </div>
+      </div>
+
+      <textarea id="textoFonte" placeholder="Cole o fechamento aqui"></textarea>
+    </div>
+
+    <div id="listaMaquinas" class="cards"></div>
+
+    <!-- Botões embaixo também -->
+    <div class="acoes-bottom">
+      <button id="btnAdicionar2" class="btn roxo" type="button">
         <i class="fa-solid fa-plus"></i> Adicionar máquina
       </button>
 
-      <button id="btnImportar" class="btn cinza">
-        <i class="fa-solid fa-image"></i> Importar print
-      </button>
-
-      <button id="btnRelatorio" class="btn cinza">
+      <button id="btnRelatorio2" class="btn cinza" type="button">
         <i class="fa-solid fa-file-lines"></i> Relatório
       </button>
 
-      <button id="btnLimpar" class="btn cinza" style="background:#d9534f;">
+      <button id="btnLimpar2" class="btn vermelho" type="button">
         <i class="fa-solid fa-trash"></i> Limpar Tudo
       </button>
     </div>
-
-    <!-- input de upload para OCR -->
-    <input type="file" id="inputPrintRet" accept="image/*" style="display:none;" />
-
-    <div id="listaMaquinas" class="cards"></div>
 
     <div id="linhaTotal" class="total-linha">
       Ret. Média: <span>0.00%</span>
@@ -384,15 +384,14 @@
   <!-- Modal -->
   <div id="modalRet" class="modal">
     <div class="cx">
-      <header style="display:flex;justify-content:space-between;align-items:center;">
-        <h3 style="margin:0;">Relatório de Retenção</h3>
-        <button id="btnFecharModal" class="btn cinza">Fechar</button>
-      </header>
+      <div class="modal-header">
+        <h3>Relatório de Retenção</h3>
+        <button id="btnFecharModal" class="btn-fechar-x" type="button" aria-label="Fechar">X</button>
+      </div>
 
       <div id="relConteudo" class="rel"></div>
     </div>
   </div>
-
 </body>
 
 </html>
