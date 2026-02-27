@@ -1,16 +1,16 @@
 // js/calculoRetencao.js
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
-const STORAGE_KEY = "calculo_retencao_v2"; // subi a versão pra não bater com o antigo
+const STORAGE_KEY = "calculo_retencao_v3";
 let retContador = 0;
 
 // cores
-const COR_ENTRADA = "#1b8f2e"; // verde
-const COR_SAIDA = "#c0392b";   // vermelho
-const COR_RETENCAO = "#4aa3ff"; // azul claro
+const COR_ENTRADA = "#1b8f2e";
+const COR_SAIDA = "#c0392b";
+const COR_RETENCAO = "#4aa3ff";
 
 // ===============================
-//   HELPERS
+// HELPERS
 // ===============================
 function parseNumeroCentavos(v) {
   if (!v) return 0;
@@ -47,18 +47,6 @@ function formatarDataBR(iso) {
   return `${dia}/${mes}/${ano}`;
 }
 
-function limparToast() {
-  try {
-    if (window.toast?.dismissAll) window.toast.dismissAll();
-    else if (window.toast?.clearAll) window.toast.clearAll();
-  } catch (e) {}
-  try {
-    document
-      .querySelectorAll(".toast, .toast-container, [id*='toast']")
-      .forEach((el) => el.parentNode && el.parentNode.removeChild(el));
-  } catch (e) {}
-}
-
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, "&amp;")
@@ -69,19 +57,23 @@ function escapeHtml(s) {
 }
 
 // ===============================
-//   IMPORTAR TEXTO (RETENÇÃO)
-//   Formato:
-//   *0008 | KAMALEON*
-//   038 - HALLOWEN 2018
-//   E    30609700   31171300___...
-//   S    19863586   20437476___...
-//
-//   Regra: usar SEMPRE a 2ª coluna (31171300 / 20437476)
+// UI: mostrar/ocultar botões de baixo
+// ===============================
+function atualizarAcoesBottom() {
+  const lista = document.getElementById("listaMaquinas");
+  const acoes = document.getElementById("acoesBottom");
+  if (!acoes || !lista) return;
+
+  const temMaquina = lista.querySelectorAll(".card").length > 0;
+  acoes.classList.toggle("oculta", !temMaquina);
+}
+
+// ===============================
+// IMPORTAR TEXTO
 // ===============================
 function extrairNomePonto(texto) {
   const linhas = texto.replace(/\r/g, "\n").split("\n").map(l => l.trim()).filter(Boolean);
 
-  // *0008 | KAMALEON*
   for (const l of linhas) {
     const m = l.match(/^\*[^|]*\|\s*(.+?)\s*\*$/);
     if (m && m[1]) return m[1].trim();
@@ -89,10 +81,6 @@ function extrairNomePonto(texto) {
     const m2 = l.match(/^\*[^|]*\|\s*(.+?)\s*$/);
     if (m2 && m2[1]) return m2[1].replace(/\*+$/,"").trim();
   }
-
-  // fallback
-  const m3 = texto.match(/PONTO\s*:\s*(.+)$/im);
-  if (m3 && m3[1]) return m3[1].trim();
 
   return "";
 }
@@ -118,28 +106,16 @@ function extrairMaquinasTexto(texto) {
     let j = i + 1;
     for (; j < Math.min(i + 12, linhas.length); j++) {
       const l2 = (linhas[j] || "").trim();
+      if (/^\d{3}\s*-\s*/.test(l2)) break;
 
-      if (/^\d{3}\s*-\s*/.test(l2)) break; // próxima máquina
-
-      // E    30609700   31171300___...
       const e = l2.match(/^E\s+(\d+)\s+(\d+)/i);
-      if (e) {
-        entrada = (e[2] || "").trim(); // 2ª coluna
-        continue;
-      }
+      if (e) { entrada = (e[2] || "").trim(); continue; }
 
-      // S    19863586   20437476___...
       const s = l2.match(/^S\s+(\d+)\s+(\d+)/i);
-      if (s) {
-        saida = (s[2] || "").trim(); // 2ª coluna
-        continue;
-      }
+      if (s) { saida = (s[2] || "").trim(); continue; }
     }
 
-    if (entrada || saida) {
-      maquinas.push({ selo, jogo, entrada, saida });
-    }
-
+    if (entrada || saida) maquinas.push({ selo, jogo, entrada, saida });
     i = j;
   }
 
@@ -150,19 +126,14 @@ function importarTextoRet(txt, lista, inputPonto) {
   const texto = (txt || "").toString();
 
   const nomePonto = extrairNomePonto(texto);
-  if (nomePonto && inputPonto) {
-    inputPonto.value = nomePonto.toUpperCase();
-  }
+  if (nomePonto && inputPonto) inputPonto.value = nomePonto.toUpperCase();
 
   const maquinas = extrairMaquinasTexto(texto);
-
   if (!maquinas.length) {
-    limparToast();
-    alert("Não consegui identificar máquinas nesse texto 😩\nConfere se tem linhas tipo: '038 - JOGO' + 'E ... ...' + 'S ... ...'.");
+    alert("Não consegui identificar máquinas nesse texto 😩");
     return;
   }
 
-  // substitui tudo
   lista.innerHTML = "";
   retContador = 0;
 
@@ -170,10 +141,11 @@ function importarTextoRet(txt, lista, inputPonto) {
 
   salvarRetencao();
   atualizarLinhaTotal();
+  atualizarAcoesBottom();
 }
 
 // ===============================
-//   ADICIONAR MÁQUINA
+// ADICIONAR MÁQUINA
 // ===============================
 function adicionarMaquina(lista, dadosIniciais = null) {
   retContador++;
@@ -216,9 +188,7 @@ function adicionarMaquina(lista, dadosIniciais = null) {
     </div>
 
     <div class="resumo">
-      <span class="texto-resumo">
-        E: R$ 0,00 | S: R$ 0,00 | Ret: 0.00%
-      </span>
+      <span class="texto-resumo">E: R$ 0,00 | S: R$ 0,00 | Ret: 0.00%</span>
     </div>
   `;
 
@@ -244,9 +214,7 @@ function adicionarMaquina(lista, dadosIniciais = null) {
     const saidaNum = parseNumeroCentavos(inputSaida.value);
 
     let ret = 0;
-    if (entradaNum > 0) {
-      ret = ((entradaNum - saidaNum) / entradaNum) * 100;
-    }
+    if (entradaNum > 0) ret = ((entradaNum - saidaNum) / entradaNum) * 100;
 
     const eStr = formatarMoeda(entradaNum);
     const sStr = formatarMoeda(saidaNum);
@@ -277,14 +245,16 @@ function adicionarMaquina(lista, dadosIniciais = null) {
     card.remove();
     salvarRetencao();
     atualizarLinhaTotal();
+    atualizarAcoesBottom();
   });
 
   lista.appendChild(card);
   atualizarResumo();
+  atualizarAcoesBottom();
 }
 
 // ===============================
-//   SALVAR / CARREGAR
+// SALVAR / CARREGAR
 // ===============================
 function salvarRetencao() {
   const data = document.getElementById("data")?.value || "";
@@ -308,16 +278,23 @@ function salvarRetencao() {
 
 function carregarRetencao(lista) {
   const raw = localStorage.getItem(STORAGE_KEY);
+
+  // ✅ não cria máquina automática (igual pré-fecho)
   if (!raw) {
-    adicionarMaquina(lista);
+    atualizarLinhaTotal();
+    atualizarAcoesBottom();
     return;
   }
 
   try {
     const dados = JSON.parse(raw);
-    document.getElementById("data").value = dados.data || "";
-    document.getElementById("ponto").value = (dados.ponto || "").toUpperCase();
+
+    const inputData = document.getElementById("data");
+    const inputPonto = document.getElementById("ponto");
     const tf = document.getElementById("textoFonte");
+
+    if (inputData && dados.data) inputData.value = dados.data;
+    if (inputPonto && dados.ponto) inputPonto.value = String(dados.ponto).toUpperCase();
     if (tf && typeof dados.textoFonte === "string") tf.value = dados.textoFonte;
 
     retContador = 0;
@@ -325,20 +302,19 @@ function carregarRetencao(lista) {
 
     if (Array.isArray(dados.maquinas) && dados.maquinas.length) {
       dados.maquinas.forEach((m) => adicionarMaquina(lista, m));
-    } else {
-      adicionarMaquina(lista);
     }
+
   } catch (e) {
     console.error("Erro ao carregar retenção:", e);
     lista.innerHTML = "";
-    adicionarMaquina(lista);
   }
 
   atualizarLinhaTotal();
+  atualizarAcoesBottom();
 }
 
 // ===============================
-//   TOTAL GERAL (Ret. Média na tela)
+// TOTAL GERAL
 // ===============================
 function atualizarLinhaTotal() {
   const lista = document.getElementById("listaMaquinas");
@@ -360,17 +336,14 @@ function atualizarLinhaTotal() {
   });
 
   const span = linhaTotal.querySelector("span");
-  if (span) {
-    span.textContent = contRet ? formatarPercentual(somaRet / contRet) : "0.00%";
-  }
+  if (span) span.textContent = contRet ? formatarPercentual(somaRet / contRet) : "0.00%";
 
-  // título em preto e valor em azul
   linhaTotal.style.color = "#000";
   if (span) span.style.color = "#4aa3ff";
 }
 
 // ===============================
-//   RELATÓRIO (modal)
+// RELATÓRIO (modal)
 // ===============================
 function criarRelatorioRetencao(lista, inputData, inputPonto) {
   const dataISO = inputData?.value || "";
@@ -378,7 +351,6 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
   const ponto = inputPonto?.value || "-";
 
   const blocos = [];
-
   blocos.push(`DATA: ${escapeHtml(dataBR)}`);
   blocos.push(`PONTO: ${escapeHtml((ponto || "-").toUpperCase())}`);
   blocos.push("");
@@ -393,10 +365,7 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
     const saidaNum = parseNumeroCentavos(card.querySelector(".ret-saida")?.value);
     const ret = entradaNum > 0 ? ((entradaNum - saidaNum) / entradaNum) * 100 : 0;
 
-    if (entradaNum > 0) {
-      somaRet += ret;
-      contRet++;
-    }
+    if (entradaNum > 0) { somaRet += ret; contRet++; }
 
     blocos.push(`MÁQUINA ${idx + 1}`);
     blocos.push(`SELO: ${escapeHtml(selo)}`);
@@ -415,23 +384,23 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
 }
 
 // ===============================
-//   LIMPAR TUDO
+// LIMPAR TUDO
 // ===============================
 function limparTudo(lista, inputData, inputPonto) {
   if (!confirm("Deseja limpar todas as máquinas e dados?")) return;
   retContador = 0;
   lista.innerHTML = "";
-  if (inputData) inputData.value = "";
+  if (inputData) inputData.value = dataHojeISO(); // volta pra hoje automático
   if (inputPonto) inputPonto.value = "";
   const tf = document.getElementById("textoFonte");
   if (tf) tf.value = "";
-  adicionarMaquina(lista);
   salvarRetencao();
   atualizarLinhaTotal();
+  atualizarAcoesBottom();
 }
 
 // ===============================
-//   INIT
+// INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", () => {
   inicializarPagina("Cálculo de Retenção", "operacao");
@@ -442,19 +411,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnImportarTexto = document.getElementById("btnImportarTexto");
   const textoFonte = document.getElementById("textoFonte");
 
-  // botões de baixo
   const btnAdd2 = document.getElementById("btnAdicionar2");
   const btnRel2 = document.getElementById("btnRelatorio2");
   const btnLimpar2 = document.getElementById("btnLimpar2");
 
   const lista = document.getElementById("listaMaquinas");
-
   const modal = document.getElementById("modalRet");
   const btnFecharModal = document.getElementById("btnFecharModal");
   const relConteudo = document.getElementById("relConteudo");
 
   const inputData = document.getElementById("data");
   const inputPonto = document.getElementById("ponto");
+
+  // ✅ data automática igual pré-fecho
+  if (inputData && !inputData.value) inputData.value = dataHojeISO();
 
   btnAdd?.addEventListener("click", () => {
     adicionarMaquina(lista);
@@ -490,8 +460,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target.id === "modalRet") modal.classList.remove("aberta");
   });
 
-  if (inputData) inputData.addEventListener("change", salvarRetencao);
-
   if (inputPonto) {
     inputPonto.addEventListener("input", () => {
       inputPonto.value = inputPonto.value.toUpperCase();
@@ -500,9 +468,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   carregarRetencao(lista);
-
-  if (inputData && !inputData.value) {
-    inputData.value = dataHojeISO();
-    salvarRetencao();
-  }
+  salvarRetencao();
+  atualizarLinhaTotal();
+  atualizarAcoesBottom();
 });
