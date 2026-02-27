@@ -24,7 +24,6 @@
       --verde:#16a34a;
       --vermelho:#dc2626;
       --cinza:#aaa;
-      --cinza-esc:#777;
       --bg:#f8f8f8;
       --borda:#e7e7ef;
     }
@@ -49,7 +48,7 @@
       margin:10px 0;
     }
     label{
-      font-weight:800;
+      font-weight:900;
       min-width:90px;
     }
     input[type="text"]{
@@ -107,7 +106,7 @@
       display:flex;
       align-items:center;
       gap:10px;
-      font-weight:900;
+      font-weight:1000;
     }
     .acoes-topo{
       display:flex;
@@ -143,7 +142,7 @@
       padding:12px;
     }
     .card-titulo{
-      font-weight:900;
+      font-weight:1000;
       margin-bottom:8px;
       color:#444;
       display:flex;
@@ -177,10 +176,18 @@
       outline:none;
     }
 
+    /* ===== Botões de baixo ===== */
+    .acoes-bottom{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin:16px 0 6px;
+    }
+
     .total{
       font-weight:1000;
       text-align:right;
-      margin:20px 0 8px;
+      margin:12px 0 8px;
       font-size:1.1rem;
     }
     .positivo{ color:var(--verde); }
@@ -208,11 +215,35 @@
       box-shadow:0 16px 40px rgba(0,0,0,.25);
       -webkit-overflow-scrolling:touch;
     }
+    .modal-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .modal-header h3{
+      margin:0;
+      font-size:1.05rem;
+    }
+    .btn-fechar-x{
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      font-weight:1000;
+      font-size:1.25rem;
+      line-height:1;
+      padding:6px 8px;
+      border-radius:10px;
+      color:#555;
+    }
+    .btn-fechar-x:hover{ background:#f1f1f6; }
+
     .rel{
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       white-space: normal;
       font-size:0.85rem;
       line-height:1.25;
+      margin-top:12px;
     }
     .rel .bloco-maquina{
       padding:2px 0 4px;
@@ -233,6 +264,7 @@
       main{ padding:12px; }
       .acoes-topo{ justify-content:flex-start; }
       .btn{ width:100%; justify-content:center; }
+      .acoes-bottom{ flex-direction:column; }
     }
   </style>
 </head>
@@ -281,17 +313,33 @@
     </div>
 
     <div id="listaMaquinas" class="cards"></div>
+
+    <!-- Botões embaixo também (antes do total) -->
+    <div class="acoes-bottom">
+      <button id="btnAdicionar2" class="btn roxo" type="button">
+        <i class="fa-solid fa-plus"></i> Adicionar máquina
+      </button>
+
+      <button id="btnRelatorio2" class="btn cinza" type="button">
+        <i class="fa-solid fa-file-lines"></i> Visualizar relatório
+      </button>
+
+      <button id="btnLimpar2" class="btn vermelho" type="button">
+        <i class="fa-solid fa-trash"></i> Limpar Tudo
+      </button>
+    </div>
+
     <div id="totalGeral" class="total positivo">TOTAL: R$ 0,00</div>
   </main>
 
   <!-- Modal -->
   <div id="modalRelatorio">
     <div class="cx">
-      <header style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-        <h3 style="margin:0;">Relatório do Pré-Fecho</h3>
-        <button id="btnFecharModal" class="btn cinza" type="button">Fechar</button>
-      </header>
-      <div id="relatorioConteudo" class="rel" style="margin-top:12px;"></div>
+      <div class="modal-header">
+        <h3>Relatório do Pré-Fecho</h3>
+        <button id="btnFecharModal" class="btn-fechar-x" type="button" aria-label="Fechar">X</button>
+      </div>
+      <div id="relatorioConteudo" class="rel"></div>
     </div>
   </div>
 
