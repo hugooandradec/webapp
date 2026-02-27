@@ -11,7 +11,6 @@
   <link rel="icon" href="../../common/img/favicon.ico" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
-  <!-- Toast -->
   <script defer src="../../common/js/toast.js"></script>
   <script type="module" src="../js/calculoRetencao.js"></script>
 
@@ -186,12 +185,6 @@
 
     .icone-remover i { font-size: 0.9rem; }
 
-    .linha2 {
-      display: flex;
-      gap: 16px;
-      margin-top: 8px;
-    }
-
     .col { flex: 1; }
 
     .col label {
@@ -227,7 +220,7 @@
       text-align: right;
     }
 
-    /* ===== botões embaixo (antes da Ret. Média) ===== */
+    /* ===== botões embaixo (somente se tiver máquina) ===== */
     .acoes-bottom{
       display:flex;
       flex-wrap:wrap;
@@ -236,6 +229,7 @@
       padding-top: 8px;
       border-top: 1px solid var(--borda);
     }
+    .acoes-bottom.oculta{ display:none; }
 
     /* ===== Modal — fullscreen ===== */
     #modalRet {
@@ -292,7 +286,6 @@
       margin-top: 12px;
     }
 
-    /* Cores para o relatório */
     .valor-entrada { color: var(--verde); font-weight: 700; }
     .valor-saida { color: var(--vermelho); font-weight: 700; }
     .valor-retencao, .valor-ret-media { color: #4aa3ff; font-weight: 700; }
@@ -332,7 +325,6 @@
 
     <div class="barra"></div>
 
-    <!-- Importar por texto + botões no topo -->
     <div class="texto-box">
       <div class="texto-top">
         <strong><i class="fa-solid fa-paste"></i> Importar por texto</strong>
@@ -361,8 +353,8 @@
 
     <div id="listaMaquinas" class="cards"></div>
 
-    <!-- Botões embaixo também -->
-    <div class="acoes-bottom">
+    <!-- Botões embaixo (ocultos até ter máquina) -->
+    <div id="acoesBottom" class="acoes-bottom oculta">
       <button id="btnAdicionar2" class="btn roxo" type="button">
         <i class="fa-solid fa-plus"></i> Adicionar máquina
       </button>
@@ -381,7 +373,6 @@
     </div>
   </main>
 
-  <!-- Modal -->
   <div id="modalRet" class="modal">
     <div class="cx">
       <div class="modal-header">
