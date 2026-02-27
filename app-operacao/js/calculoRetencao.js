@@ -1,7 +1,7 @@
 // js/calculoRetencao.js
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
-const STORAGE_KEY = "calculo_retencao_v1";
+const STORAGE_KEY = "calculo_retencao_v2"; // subi a versão pra não bater com o antigo
 let retContador = 0;
 
 // cores
@@ -59,137 +59,117 @@ function limparToast() {
   } catch (e) {}
 }
 
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // ===============================
-//   IMPORTAR PRINT (OCR - RETENÇÃO)
+//   IMPORTAR TEXTO (RETENÇÃO)
+//   Formato:
+//   *0008 | KAMALEON*
+//   038 - HALLOWEN 2018
+//   E    30609700   31171300___...
+//   S    19863586   20437476___...
+//
+//   Regra: usar SEMPRE a 2ª coluna (31171300 / 20437476)
 // ===============================
-async function importarPrintRet(file, lista) {
-  if (!window.Tesseract) {
-    alert("Biblioteca de OCR (Tesseract.js) não carregada.");
-    return;
+function extrairNomePonto(texto) {
+  const linhas = texto.replace(/\r/g, "\n").split("\n").map(l => l.trim()).filter(Boolean);
+
+  // *0008 | KAMALEON*
+  for (const l of linhas) {
+    const m = l.match(/^\*[^|]*\|\s*(.+?)\s*\*$/);
+    if (m && m[1]) return m[1].trim();
+
+    const m2 = l.match(/^\*[^|]*\|\s*(.+?)\s*$/);
+    if (m2 && m2[1]) return m2[1].replace(/\*+$/,"").trim();
   }
 
-  try {
-    if (window.toast) toast.info("Lendo imagem, aguarde...");
-  } catch (e) {}
+  // fallback
+  const m3 = texto.match(/PONTO\s*:\s*(.+)$/im);
+  if (m3 && m3[1]) return m3[1].trim();
 
-  let texto = "";
-  try {
-    const { data } = await Tesseract.recognize(file, "por+eng", {
-      logger: (m) => console.log("[OCR]", m)
-    });
-    texto = (data && data.text) ? data.text : "";
-  } catch (e) {
-    console.error("Erro no OCR:", e);
+  return "";
+}
+
+function extrairMaquinasTexto(texto) {
+  const linhas = texto.replace(/\r/g, "\n").split("\n");
+  const maquinas = [];
+  let i = 0;
+
+  while (i < linhas.length) {
+    const linha = (linhas[i] || "").trim();
+
+    // 038 - HALLOWEN 2018
+    const h = linha.match(/^(\d{3})\s*-\s*(.+)$/);
+    if (!h) { i++; continue; }
+
+    const selo = (h[1] || "").trim().toUpperCase();
+    const jogo = (h[2] || "").trim().toUpperCase();
+
+    let entrada = "";
+    let saida = "";
+
+    let j = i + 1;
+    for (; j < Math.min(i + 12, linhas.length); j++) {
+      const l2 = (linhas[j] || "").trim();
+
+      if (/^\d{3}\s*-\s*/.test(l2)) break; // próxima máquina
+
+      // E    30609700   31171300___...
+      const e = l2.match(/^E\s+(\d+)\s+(\d+)/i);
+      if (e) {
+        entrada = (e[2] || "").trim(); // 2ª coluna
+        continue;
+      }
+
+      // S    19863586   20437476___...
+      const s = l2.match(/^S\s+(\d+)\s+(\d+)/i);
+      if (s) {
+        saida = (s[2] || "").trim(); // 2ª coluna
+        continue;
+      }
+    }
+
+    if (entrada || saida) {
+      maquinas.push({ selo, jogo, entrada, saida });
+    }
+
+    i = j;
+  }
+
+  return maquinas;
+}
+
+function importarTextoRet(txt, lista, inputPonto) {
+  const texto = (txt || "").toString();
+
+  const nomePonto = extrairNomePonto(texto);
+  if (nomePonto && inputPonto) {
+    inputPonto.value = nomePonto.toUpperCase();
+  }
+
+  const maquinas = extrairMaquinasTexto(texto);
+
+  if (!maquinas.length) {
     limparToast();
-    alert("Não foi possível ler a imagem.");
+    alert("Não consegui identificar máquinas nesse texto 😩\nConfere se tem linhas tipo: '038 - JOGO' + 'E ... ...' + 'S ... ...'.");
     return;
   }
 
-  console.log("Texto OCR bruto (retencao):\n", texto);
-
-  const linhas = texto
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  console.log("Linhas OCR normalizadas:", linhas);
-
-  // Cliente -> Ponto
-  const linhaCliente = linhas.find((l) =>
-    l.toUpperCase().startsWith("CLIENTE")
-  );
-  if (linhaCliente) {
-    const idx = linhaCliente.indexOf(":");
-    let nome = idx >= 0 ? linhaCliente.slice(idx + 1) : linhaCliente;
-    nome = nome.trim();
-    if (nome) {
-      const inputPonto = document.getElementById("ponto");
-      if (inputPonto) {
-        inputPonto.value = nome.toUpperCase();
-      }
-    }
-  }
-
-  const maquinasEncontradas = [];
-
-  // Procura cabeçalho de máquina: "1-1E033 (...)", "2-1B158 (...)"
-  for (let i = 0; i < linhas.length; i++) {
-    const linha = linhas[i];
-    const linhaUpper = linha.toUpperCase();
-
-    const cabecalhoMatch = linhaUpper.match(
-      /\b\d+\s*[-–]\s*([A-Z0-9]{2}\d{3})\b/
-    );
-    if (!cabecalhoMatch) continue;
-
-    let selo = cabecalhoMatch[1].toUpperCase();
-
-    // Corrige OCR: "1E033" -> "IE033", "1B158" -> "IB158"
-    if (selo[0] === "1") {
-      selo = "I" + selo.slice(1);
-    }
-
-    // jogo entre parênteses
-    let jogo = "";
-    const firstPar = linha.indexOf("(");
-    const lastPar = linha.lastIndexOf(")");
-    if (firstPar >= 0 && lastPar > firstPar) {
-      jogo = linha.slice(firstPar + 1, lastPar).trim().toUpperCase();
-    }
-
-    if (maquinasEncontradas.some((m) => m.selo === selo)) continue;
-
-    let entradaAtual = "";
-    let saidaAtual = "";
-
-    // procura (E) e (S) nas proximas linhas
-    for (let j = i + 1; j < Math.min(i + 8, linhas.length); j++) {
-      const l2 = linhas[j];
-      const l2Norm = l2.toUpperCase().replace(/\s+/g, "");
-
-      const isLinhaE = l2Norm.includes("(E)") || l2Norm.startsWith("E)");
-      const isLinhaS = l2Norm.includes("(S)") || l2Norm.startsWith("S)");
-
-      if (!entradaAtual && isLinhaE) {
-        const m = l2.match(/[-–]\s*([\d.,]+)/);
-        if (m) entradaAtual = m[1].replace(/\D/g, "");
-      }
-
-      if (!saidaAtual && isLinhaS) {
-        const m2 = l2.match(/[-–]\s*([\d.,]+)/);
-        if (m2) saidaAtual = m2[1].replace(/\D/g, "");
-      }
-
-      if (entradaAtual && saidaAtual) break;
-    }
-
-    if (entradaAtual || saidaAtual) {
-      maquinasEncontradas.push({
-        selo,
-        jogo,
-        entrada: entradaAtual,
-        saida: saidaAtual
-      });
-    }
-  }
-
-  console.log("Máquinas encontradas no OCR:", maquinasEncontradas);
-
-  if (!maquinasEncontradas.length) {
-    limparToast();
-    alert(
-      "Não consegui identificar máquinas no print.\n" +
-        "Confere se o selo está no formato AA999 e se existem linhas com (E) e (S) usando hífen."
-    );
-    return;
-  }
-
+  // substitui tudo
   lista.innerHTML = "";
   retContador = 0;
-  maquinasEncontradas.forEach((m) => adicionarMaquina(lista, m));
+
+  maquinas.forEach((m) => adicionarMaquina(lista, m));
 
   salvarRetencao();
-  limparToast();
+  atualizarLinhaTotal();
 }
 
 // ===============================
@@ -250,10 +230,10 @@ function adicionarMaquina(lista, dadosIniciais = null) {
   const textoResumo = card.querySelector(".texto-resumo");
 
   if (dadosIniciais) {
-    if (dadosIniciais.selo) inputSelo.value = dadosIniciais.selo;
-    if (dadosIniciais.jogo) inputJogo.value = dadosIniciais.jogo;
-    if (dadosIniciais.entrada) inputEntrada.value = dadosIniciais.entrada;
-    if (dadosIniciais.saida) inputSaida.value = dadosIniciais.saida;
+    if (dadosIniciais.selo) inputSelo.value = String(dadosIniciais.selo).toUpperCase();
+    if (dadosIniciais.jogo) inputJogo.value = String(dadosIniciais.jogo).toUpperCase();
+    if (dadosIniciais.entrada) inputEntrada.value = String(dadosIniciais.entrada).replace(/\D/g, "");
+    if (dadosIniciais.saida) inputSaida.value = String(dadosIniciais.saida).replace(/\D/g, "");
   }
 
   const atualizarResumo = () => {
@@ -309,6 +289,7 @@ function adicionarMaquina(lista, dadosIniciais = null) {
 function salvarRetencao() {
   const data = document.getElementById("data")?.value || "";
   const ponto = document.getElementById("ponto")?.value || "";
+  const textoFonte = document.getElementById("textoFonte")?.value || "";
   const lista = document.getElementById("listaMaquinas");
   if (!lista) return;
 
@@ -321,7 +302,7 @@ function salvarRetencao() {
     maquinas.push({ selo, jogo, entrada, saida });
   });
 
-  const payload = { data, ponto, maquinas, contador: retContador };
+  const payload = { data, ponto, textoFonte, maquinas, contador: retContador };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 }
 
@@ -335,7 +316,9 @@ function carregarRetencao(lista) {
   try {
     const dados = JSON.parse(raw);
     document.getElementById("data").value = dados.data || "";
-    document.getElementById("ponto").value = dados.ponto || "";
+    document.getElementById("ponto").value = (dados.ponto || "").toUpperCase();
+    const tf = document.getElementById("textoFonte");
+    if (tf && typeof dados.textoFonte === "string") tf.value = dados.textoFonte;
 
     retContador = 0;
     lista.innerHTML = "";
@@ -366,12 +349,8 @@ function atualizarLinhaTotal() {
   let contRet = 0;
 
   lista.querySelectorAll(".card").forEach((card) => {
-    const entrada = parseNumeroCentavos(
-      card.querySelector(".ret-entrada")?.value
-    );
-    const saida = parseNumeroCentavos(
-      card.querySelector(".ret-saida")?.value
-    );
+    const entrada = parseNumeroCentavos(card.querySelector(".ret-entrada")?.value);
+    const saida = parseNumeroCentavos(card.querySelector(".ret-saida")?.value);
 
     if (entrada > 0) {
       const ret = ((entrada - saida) / entrada) * 100;
@@ -382,16 +361,12 @@ function atualizarLinhaTotal() {
 
   const span = linhaTotal.querySelector("span");
   if (span) {
-    span.textContent = contRet
-      ? formatarPercentual(somaRet / contRet)
-      : "0.00%";
+    span.textContent = contRet ? formatarPercentual(somaRet / contRet) : "0.00%";
   }
 
-  // Título "Ret. Média:" em preto, valor em azul claro
-  linhaTotal.style.color = "#000"; // preto
-  if (span) {
-    span.style.color = "#4aa3ff"; // azul claro
-  }
+  // título em preto e valor em azul
+  linhaTotal.style.color = "#000";
+  if (span) span.style.color = "#4aa3ff";
 }
 
 // ===============================
@@ -404,8 +379,8 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
 
   const blocos = [];
 
-  blocos.push(`DATA: ${dataBR}`);
-  blocos.push(`PONTO: ${ponto || "-"}`);
+  blocos.push(`DATA: ${escapeHtml(dataBR)}`);
+  blocos.push(`PONTO: ${escapeHtml((ponto || "-").toUpperCase())}`);
   blocos.push("");
 
   let somaRet = 0;
@@ -414,16 +389,9 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
   lista.querySelectorAll(".card").forEach((card, idx) => {
     const selo = (card.querySelector(".ret-selo")?.value || "-").toUpperCase();
     const jogo = (card.querySelector(".ret-jogo")?.value || "-").toUpperCase();
-    const entradaNum = parseNumeroCentavos(
-      card.querySelector(".ret-entrada")?.value
-    );
-    const saidaNum = parseNumeroCentavos(
-      card.querySelector(".ret-saida")?.value
-    );
-    const ret =
-      entradaNum > 0
-        ? ((entradaNum - saidaNum) / entradaNum) * 100
-        : 0;
+    const entradaNum = parseNumeroCentavos(card.querySelector(".ret-entrada")?.value);
+    const saidaNum = parseNumeroCentavos(card.querySelector(".ret-saida")?.value);
+    const ret = entradaNum > 0 ? ((entradaNum - saidaNum) / entradaNum) * 100 : 0;
 
     if (entradaNum > 0) {
       somaRet += ret;
@@ -431,27 +399,17 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
     }
 
     blocos.push(`MÁQUINA ${idx + 1}`);
-    blocos.push(`SELO: ${selo}`);
-    blocos.push(`JOGO: ${jogo}`);
-    blocos.push(
-      `E: <span class="valor-entrada">${formatarMoeda(entradaNum)}</span>`
-    );
-    blocos.push(
-      `S: <span class="valor-saida">${formatarMoeda(saidaNum)}</span>`
-    );
-    blocos.push(
-      `RET: <span class="valor-retencao">${formatarPercentual(ret)}</span>`
-    );
+    blocos.push(`SELO: ${escapeHtml(selo)}`);
+    blocos.push(`JOGO: ${escapeHtml(jogo)}`);
+    blocos.push(`E: <span class="valor-entrada">${escapeHtml(formatarMoeda(entradaNum))}</span>`);
+    blocos.push(`S: <span class="valor-saida">${escapeHtml(formatarMoeda(saidaNum))}</span>`);
+    blocos.push(`RET: <span class="valor-retencao">${escapeHtml(formatarPercentual(ret))}</span>`);
     blocos.push("----------------------------------------");
     blocos.push("");
   });
 
   const retMedia = contRet ? somaRet / contRet : 0;
-  blocos.push(
-    `Ret. Média: <span class="valor-ret-media">${formatarPercentual(
-      retMedia
-    )}</span>`
-  );
+  blocos.push(`Ret. Média: <span class="valor-ret-media">${escapeHtml(formatarPercentual(retMedia))}</span>`);
 
   return blocos.join("<br>");
 }
@@ -465,6 +423,8 @@ function limparTudo(lista, inputData, inputPonto) {
   lista.innerHTML = "";
   if (inputData) inputData.value = "";
   if (inputPonto) inputPonto.value = "";
+  const tf = document.getElementById("textoFonte");
+  if (tf) tf.value = "";
   adicionarMaquina(lista);
   salvarRetencao();
   atualizarLinhaTotal();
@@ -479,8 +439,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnAdd = document.getElementById("btnAdicionar");
   const btnRel = document.getElementById("btnRelatorio");
   const btnLimpar = document.getElementById("btnLimpar");
-  const btnImportar = document.getElementById("btnImportar");
-  const inputPrint = document.getElementById("inputPrintRet");
+  const btnImportarTexto = document.getElementById("btnImportarTexto");
+  const textoFonte = document.getElementById("textoFonte");
+
+  // botões de baixo
+  const btnAdd2 = document.getElementById("btnAdicionar2");
+  const btnRel2 = document.getElementById("btnRelatorio2");
+  const btnLimpar2 = document.getElementById("btnLimpar2");
+
   const lista = document.getElementById("listaMaquinas");
 
   const modal = document.getElementById("modalRet");
@@ -490,53 +456,41 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputData = document.getElementById("data");
   const inputPonto = document.getElementById("ponto");
 
-  if (btnAdd) {
-    btnAdd.addEventListener("click", () => {
-      adicionarMaquina(lista);
-      salvarRetencao();
-    });
-  }
+  btnAdd?.addEventListener("click", () => {
+    adicionarMaquina(lista);
+    salvarRetencao();
+  });
 
-  if (btnRel && modal && relConteudo) {
-    btnRel.addEventListener("click", () => {
-      if (!lista.children.length) {
-        if (window.toast) toast.warn("Adicione pelo menos uma máquina.");
-        return;
-      }
-      const rel = criarRelatorioRetencao(lista, inputData, inputPonto);
-      relConteudo.innerHTML = rel;
-      modal.classList.add("aberta");
-    });
-  }
+  btnImportarTexto?.addEventListener("click", () => {
+    const txt = (textoFonte?.value || "").trim();
+    if (!txt) return alert("Cole o fechamento primeiro 🙂");
+    importarTextoRet(txt, lista, inputPonto);
+  });
 
-  if (btnLimpar) {
-    btnLimpar.addEventListener("click", () =>
-      limparTudo(lista, inputData, inputPonto)
-    );
-  }
+  btnRel?.addEventListener("click", () => {
+    if (!lista.children.length) {
+      if (window.toast) toast.warn("Adicione pelo menos uma máquina.");
+      return;
+    }
+    const rel = criarRelatorioRetencao(lista, inputData, inputPonto);
+    relConteudo.innerHTML = rel;
+    modal.classList.add("aberta");
+  });
 
-  if (btnFecharModal && modal) {
-    btnFecharModal.addEventListener("click", () =>
-      modal.classList.remove("aberta")
-    );
-    modal.addEventListener("click", (e) => {
-      if (e.target.id === "modalRet") modal.classList.remove("aberta");
-    });
-  }
+  btnLimpar?.addEventListener("click", () => limparTudo(lista, inputData, inputPonto));
 
-  if (btnImportar && inputPrint) {
-    btnImportar.addEventListener("click", () => inputPrint.click());
-    inputPrint.addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      await importarPrintRet(file, lista);
-      inputPrint.value = "";
-    });
-  }
+  // botões de baixo chamam os de cima
+  btnAdd2?.addEventListener("click", () => btnAdd?.click());
+  btnRel2?.addEventListener("click", () => btnRel?.click());
+  btnLimpar2?.addEventListener("click", () => btnLimpar?.click());
 
-  if (inputData) {
-    inputData.addEventListener("change", salvarRetencao);
-  }
+  // modal
+  btnFecharModal?.addEventListener("click", () => modal.classList.remove("aberta"));
+  modal?.addEventListener("click", (e) => {
+    if (e.target.id === "modalRet") modal.classList.remove("aberta");
+  });
+
+  if (inputData) inputData.addEventListener("change", salvarRetencao);
 
   if (inputPonto) {
     inputPonto.addEventListener("input", () => {
