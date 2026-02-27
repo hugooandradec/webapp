@@ -1,5 +1,5 @@
 // preFecho.js
-// Fluxo atual: importar por TEXTO (OCR removido)
+// Fluxo: importar por TEXTO (OCR removido)
 
 const STORAGE_KEY = "preFecho_dados_v1";
 let contadorMaquinas = 0;
@@ -7,14 +7,21 @@ let contadorMaquinas = 0;
 document.addEventListener("DOMContentLoaded", () => {
   const inputData = document.getElementById("data");
   const inputCliente = document.getElementById("cliente");
+
+  // topo
   const btnAdicionar = document.getElementById("btnAdicionar");
   const btnRelatorio = document.getElementById("btnRelatorio");
   const btnLimpar = document.getElementById("btnLimpar");
-  const listaMaquinas = document.getElementById("listaMaquinas");
-  const totalGeralEl = document.getElementById("totalGeral");
-
   const btnImportarTexto = document.getElementById("btnImportarTexto");
   const textoFonte = document.getElementById("textoFonte");
+
+  // baixo
+  const btnAdicionar2 = document.getElementById("btnAdicionar2");
+  const btnRelatorio2 = document.getElementById("btnRelatorio2");
+  const btnLimpar2 = document.getElementById("btnLimpar2");
+
+  const listaMaquinas = document.getElementById("listaMaquinas");
+  const totalGeralEl = document.getElementById("totalGeral");
 
   const modal = document.getElementById("modalRelatorio");
   const btnFecharModal = document.getElementById("btnFecharModal");
@@ -30,35 +37,34 @@ document.addEventListener("DOMContentLoaded", () => {
     inputCliente.addEventListener("change", salvarNoStorage);
   }
 
-  if (btnAdicionar) {
-    btnAdicionar.addEventListener("click", () => {
-      adicionarMaquina(listaMaquinas, totalGeralEl);
-      salvarNoStorage();
-    });
-  }
+  // ===== ações (topo) =====
+  btnAdicionar?.addEventListener("click", () => {
+    adicionarMaquina(listaMaquinas, totalGeralEl);
+    salvarNoStorage();
+  });
 
-  if (btnImportarTexto) {
-    btnImportarTexto.addEventListener("click", () => {
-      const txt = (textoFonte?.value || "").trim();
-      if (!txt) return alert("Cole o fechamento primeiro 🙂");
-      importarTextoPre(txt, listaMaquinas, totalGeralEl, inputCliente);
-      salvarNoStorage();
-    });
-  }
+  btnImportarTexto?.addEventListener("click", () => {
+    const txt = (textoFonte?.value || "").trim();
+    if (!txt) return alert("Cole o fechamento primeiro 🙂");
+    importarTextoPre(txt, listaMaquinas, totalGeralEl, inputCliente);
+    salvarNoStorage();
+  });
 
-  if (btnRelatorio) {
-    btnRelatorio.addEventListener("click", () => {
-      abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo, modal);
-    });
-  }
+  btnRelatorio?.addEventListener("click", () => {
+    abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo, modal);
+  });
 
-  if (btnLimpar) {
-    btnLimpar.addEventListener("click", () => {
-      limparTudo(listaMaquinas, totalGeralEl);
-      if (textoFonte) textoFonte.value = "";
-    });
-  }
+  btnLimpar?.addEventListener("click", () => {
+    limparTudo(listaMaquinas, totalGeralEl);
+    if (textoFonte) textoFonte.value = "";
+  });
 
+  // ===== ações (baixo) -> chamam as do topo =====
+  btnAdicionar2?.addEventListener("click", () => btnAdicionar?.click());
+  btnRelatorio2?.addEventListener("click", () => btnRelatorio?.click());
+  btnLimpar2?.addEventListener("click", () => btnLimpar?.click());
+
+  // ===== modal =====
   btnFecharModal?.addEventListener("click", () => modal.classList.remove("aberta"));
   modal?.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("aberta"); });
 
@@ -78,7 +84,7 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
     <div class="card-titulo">
       <span>Máquina ${contadorMaquinas}</span>
       <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
-        <small style="color:#666;font-weight:700;">preencha os relógios e veja o resultado</small>
+        <small style="color:#666;font-weight:800;">preencha os relógios e veja o resultado</small>
         <button type="button" class="btn-remover" title="Remover máquina"
                 style="border:none;background:transparent;color:#999;cursor:pointer;">
           <i class="fa-solid fa-trash"></i>
@@ -103,7 +109,7 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
           <input type="tel" inputmode="numeric" pattern="[0-9]*" class="entrada-anterior" placeholder="Anterior">
           <input type="tel" inputmode="numeric" pattern="[0-9]*" class="entrada-atual" placeholder="Atual">
         </div>
-        <div class="dif" style="margin-top:6px;font-weight:800;">
+        <div class="dif" style="margin-top:6px;font-weight:900;">
           Diferença: <span class="dif-entrada">R$ 0,00</span>
         </div>
       </div>
@@ -116,13 +122,13 @@ function adicionarMaquina(listaMaquinas, totalGeralEl, dadosMaquina = null) {
           <input type="tel" inputmode="numeric" pattern="[0-9]*" class="saida-anterior" placeholder="Anterior">
           <input type="tel" inputmode="numeric" pattern="[0-9]*" class="saida-atual" placeholder="Atual">
         </div>
-        <div class="dif" style="margin-top:6px;font-weight:800;">
+        <div class="dif" style="margin-top:6px;font-weight:900;">
           Diferença: <span class="dif-saida">R$ 0,00</span>
         </div>
       </div>
     </div>
 
-    <div style="margin-top:10px;font-weight:900;">
+    <div style="margin-top:10px;font-weight:1000;">
       Resultado: <span class="resultado-maquina">R$ 0,00</span>
     </div>
   `;
@@ -339,7 +345,7 @@ function abrirRelatorio(inputData, inputCliente, totalGeralEl, relatorioConteudo
   html += `<div style="margin-bottom:6px;"><strong>CLIENTE:</strong> ${escapeHtml(cliente || "-")}</div>`;
   html += `<hr style="margin:6px 0 8px;">`;
 
-  const cards = document.querySelectorAll(".card");
+  const cards = document.querySelectorAll("#listaMaquinas .card");
   if (!cards.length) {
     html += `<div>Nenhuma máquina lançada.</div>`;
   } else {
