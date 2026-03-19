@@ -78,21 +78,23 @@ function atualizarAcoesELinhaTotal() {
 }
 
 // ===============================
-// IMPORTAR POR TEXTO (mesmo padrão do pré-fecho)
+// IMPORTAR POR TEXTO
 // Pega:
 // - Ponto: primeira linha "*0008 | KAMALEON*"
-// - Máquinas: "038 - JOGO" + linhas E e S com 2 números
+// - Máquinas: "038 - JOGO", "1228 - JOGO", "1301(P) - JOGO"
 // - Para retenção usamos a 2ª coluna (ATUAL) como valor da máquina
 // ===============================
 function extrairPontoDoTexto(texto) {
   const linhas = (texto || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const first = linhas[0] || "";
-  // "*0008 | KAMALEON*" -> KAMALEON
+
+  // "*0008 | KAMALEON*"
   const m = first.match(/\|\s*([^|*]+)\s*\*/);
   if (m && m[1]) return m[1].trim().toUpperCase();
-  // fallback: tenta entre "| |"
+
   const m2 = first.match(/\|\s*([^|]+)\s*\|/);
   if (m2 && m2[1]) return m2[1].trim().toUpperCase();
+
   return "";
 }
 
@@ -103,14 +105,18 @@ function extrairMaquinasDoTexto(texto) {
     .filter(Boolean);
 
   const maquinas = [];
+
   for (let i = 0; i < linhas.length; i++) {
     const l = linhas[i];
 
-    // "038 - HALLOWEN 2018"
-    const cab = l.match(/^(\d{3})\s*-\s*(.+)$/);
+    // aceita:
+    // 056 - ERA DO GELO
+    // 1228 - DRAGON
+    // 1301(P) - SEVEN
+    const cab = l.match(/^(\d{3,}(?:\([A-Z]+\))?)\s*-\s*(.+)$/i);
     if (!cab) continue;
 
-    const selo = cab[1];
+    const selo = (cab[1] || "").trim().toUpperCase();
     const jogo = (cab[2] || "").trim().toUpperCase();
 
     let entradaAtual = "";
@@ -120,25 +126,25 @@ function extrairMaquinasDoTexto(texto) {
     for (let j = i + 1; j < Math.min(i + 6, linhas.length); j++) {
       const lx = linhas[j];
 
-      // "E    30609700   31171300___5.616,00"
-      // pega os 2 primeiros grupos grandes de números
+      // Ex:
+      // E    18419300   18454100_____348,00
+      // S    13232248   13262072_____298,24
       if (!entradaAtual && /^E\b/i.test(lx)) {
         const nums = lx.replace(/_/g, " ").match(/(\d{4,})/g) || [];
-        if (nums.length >= 2) entradaAtual = nums[1]; // 2ª coluna
+        if (nums.length >= 2) entradaAtual = nums[1];
       }
 
       if (!saidaAtual && /^S\b/i.test(lx)) {
         const nums = lx.replace(/_/g, " ").match(/(\d{4,})/g) || [];
-        if (nums.length >= 2) saidaAtual = nums[1]; // 2ª coluna
+        if (nums.length >= 2) saidaAtual = nums[1];
       }
 
       if (entradaAtual && saidaAtual) break;
     }
 
-    // evita duplicados
+    // evita duplicado exato
     if (maquinas.some(m => m.selo === selo)) continue;
 
-    // só adiciona se achou algo
     if (entradaAtual || saidaAtual) {
       maquinas.push({
         selo,
@@ -163,15 +169,19 @@ function importarTextoRetencao() {
     return;
   }
 
-  // ponto
   const ponto = extrairPontoDoTexto(texto);
   const inputPonto = document.getElementById("ponto");
   if (inputPonto && ponto) inputPonto.value = ponto.toUpperCase();
 
-  // máquinas
   const maquinas = extrairMaquinasDoTexto(texto);
   if (!maquinas.length) {
-    alert("Não consegui identificar máquinas no texto.\nConfere se está no formato:\n038 - JOGO\nE ... ...\nS ... ...");
+    alert(
+      "Não consegui identificar máquinas no texto.\n\n" +
+      "Formatos aceitos:\n" +
+      "056 - JOGO\n" +
+      "1228 - JOGO\n" +
+      "1301(P) - JOGO"
+    );
     return;
   }
 
@@ -321,7 +331,6 @@ function salvarRetencao() {
 function carregarRetencao(lista) {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
-    // ✅ não cria máquina automática
     retContador = 0;
     lista.innerHTML = "";
     atualizarLinhaTotal();
@@ -405,7 +414,10 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
 
     const ret = entradaNum > 0 ? ((entradaNum - saidaNum) / entradaNum) * 100 : 0;
 
-    if (entradaNum > 0) { somaRet += ret; contRet++; }
+    if (entradaNum > 0) {
+      somaRet += ret;
+      contRet++;
+    }
 
     blocos.push(`MÁQUINA ${idx + 1}`);
     blocos.push(`SELO: ${selo}`);
@@ -420,12 +432,10 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
   const retMedia = contRet ? somaRet / contRet : 0;
   blocos.push(`Ret. Média: ${formatarPercentual(retMedia)}`);
 
-  // pinta no HTML depois
   return blocos.join("\n");
 }
 
 function relatorioParaHTML(texto) {
-  // pinta linhas E/S/RET/Ret. Média
   const linhas = (texto || "").split("\n");
   return linhas.map(l => {
     if (l.startsWith("E: ")) return `E: <span class="valor-entrada">${l.slice(3)}</span>`;
@@ -444,7 +454,6 @@ function limparTudo(lista, inputData, inputPonto) {
   retContador = 0;
   lista.innerHTML = "";
   if (inputPonto) inputPonto.value = "";
-  // data continua (igual pré-fecho: sempre hoje)
   salvarRetencao();
   atualizarLinhaTotal();
   atualizarAcoesELinhaTotal();
@@ -473,11 +482,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputData = document.getElementById("data");
   const inputPonto = document.getElementById("ponto");
 
-  // data automática (mas ainda editável se quiser)
   if (inputData && !inputData.value) inputData.value = dataHojeISO();
 
-  // eventos topo
-  const onAdd = () => { adicionarMaquina(lista); salvarRetencao(); atualizarLinhaTotal(); atualizarAcoesELinhaTotal(); };
+  const onAdd = () => {
+    adicionarMaquina(lista);
+    salvarRetencao();
+    atualizarLinhaTotal();
+    atualizarAcoesELinhaTotal();
+  };
+
   const onRel = () => {
     if (!lista.children.length) {
       if (window.toast) toast.warn("Adicione pelo menos uma máquina.");
@@ -487,6 +500,7 @@ document.addEventListener("DOMContentLoaded", () => {
     relConteudo.innerHTML = relatorioParaHTML(relTxt);
     modal.classList.add("aberta");
   };
+
   const onLimpar = () => limparTudo(lista, inputData, inputPonto);
 
   if (btnAdd) btnAdd.addEventListener("click", onAdd);
@@ -500,7 +514,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (btnFecharModal && modal) {
     btnFecharModal.addEventListener("click", () => modal.classList.remove("aberta"));
-    modal.addEventListener("click", (e) => { if (e.target.id === "modalRet") modal.classList.remove("aberta"); });
+    modal.addEventListener("click", (e) => {
+      if (e.target.id === "modalRet") modal.classList.remove("aberta");
+    });
   }
 
   if (btnImportarTexto) btnImportarTexto.addEventListener("click", importarTextoRetencao);
@@ -515,8 +531,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   carregarRetencao(lista);
-
-  // garante que Ret. Média e botões respeitem o estado inicial
   atualizarLinhaTotal();
   atualizarAcoesELinhaTotal();
 });
