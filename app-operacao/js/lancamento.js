@@ -12,6 +12,12 @@ function parseValor(v){
 function normalizarPonto(n){
   return (n||"").trim().toLowerCase();
 }
+function normalizarCategoria(n){
+  return (n||"").trim().toLowerCase();
+}
+function formatarNomeCategoria(n){
+  return (n||"").trim();
+}
 function formatarDataHora(ts){
   const n = Number(ts);
   if (!n || Number.isNaN(n)) return "--";
@@ -21,16 +27,121 @@ function formatarDataHora(ts){
   const hora = dt.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
   return `${data} ${hora}`;
 }
+function getHojeIso(){
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+  const dia = String(hoje.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+function textoSeguro(txt){
+  return String(txt ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
 
 const corPos = "#1b8f2e";
 const corNeg = "#c0392b";
 const roxo   = "#6a1b9a";
 
-/* ===== ESTADO ===== */
+/* ===== STORAGE ===== */
+const APP_STORAGE_KEY = "lancamento_categorias_v1";
 const STORAGE_KEY = "lancamentos";
 const RAW_STORAGE_KEY = "lancamentos_raw";
-const listaLancamentos = []; // agregado (por ponto)
-let historicoRaw = [];       // bruto
+const DEFAULT_CATEGORY = "geral";
+
+/* ===== ESTADO ===== */
+const listaLancamentos = []; // agregado da categoria ativa
+let historicoRaw = [];       // bruto da categoria ativa
+let categoriaAtiva = DEFAULT_CATEGORY;
+let dadosApp = criarEstruturaBase();
+
+function criarEstruturaBase(){
+  return {
+    categoriaAtiva: DEFAULT_CATEGORY,
+    categorias: [DEFAULT_CATEGORY],
+    dadosPorCategoria: {
+      [DEFAULT_CATEGORY]: {
+        data: "",
+        valorInicial: "",
+        historicoRaw: []
+      }
+    }
+  };
+}
+
+function criarCategoriaVazia(){
+  return {
+    data: "",
+    valorInicial: "",
+    historicoRaw: []
+  };
+}
+
+function garantirCategoria(nome){
+  const key = normalizarCategoria(nome) || DEFAULT_CATEGORY;
+
+  if (!Array.isArray(dadosApp.categorias)) dadosApp.categorias = [];
+  if (!dadosApp.dadosPorCategoria || typeof dadosApp.dadosPorCategoria !== "object") {
+    dadosApp.dadosPorCategoria = {};
+  }
+
+  if (!dadosApp.categorias.includes(key)) {
+    dadosApp.categorias.push(key);
+  }
+
+  if (!dadosApp.dadosPorCategoria[key]) {
+    dadosApp.dadosPorCategoria[key] = criarCategoriaVazia();
+  }
+
+  return key;
+}
+
+function getDadosCategoriaAtual(){
+  return dadosApp.dadosPorCategoria[categoriaAtiva] || criarCategoriaVazia();
+}
+
+function sincronizarEstadoCategoriaAtual(){
+  const dados = getDadosCategoriaAtual();
+  historicoRaw = Array.isArray(dados.historicoRaw) ? [...dados.historicoRaw] : [];
+  rebuildAgregadoFromRaw();
+}
+
+function atualizarEstadoDaCategoriaAtual(){
+  const dados = getDadosCategoriaAtual();
+  dados.historicoRaw = [...historicoRaw];
+  dados.data = document.getElementById("data")?.value || "";
+  dados.valorInicial = document.getElementById("valorInicial")?.value || "";
+}
+
+function preencherCamposCategoriaAtual(){
+  const dados = getDadosCategoriaAtual();
+  const d  = document.getElementById("data");
+  const vi = document.getElementById("valorInicial");
+
+  if (d) d.value = dados.data || getHojeIso();
+  if (vi) vi.value = dados.valorInicial || "";
+}
+
+function renderizarSeletorCategorias(){
+  const select = document.getElementById("categoriaAtiva");
+  if (!select) return;
+
+  const categorias = [...new Set((dadosApp.categorias || []).map(c => normalizarCategoria(c)).filter(Boolean))];
+  if (!categorias.length) categorias.push(DEFAULT_CATEGORY);
+
+  dadosApp.categorias = categorias;
+
+  select.innerHTML = categorias.map(c => {
+    const nome = formatarNomeCategoria(c);
+    return `<option value="${textoSeguro(c)}">${textoSeguro(nome)}</option>`;
+  }).join("");
+
+  select.value = categoriaAtiva;
+}
 
 /* ===== INIT ===== */
 document.addEventListener("DOMContentLoaded", () => {
@@ -38,7 +149,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   ["data","valorInicial"].forEach(id=>{
     const el = document.getElementById(id);
-    if (el) el.addEventListener("input", () => { salvarNoStorage(); atualizarTotais(); });
+    if (el) {
+      el.addEventListener("input", () => {
+        salvarNoStorage();
+        atualizarTotais();
+      });
+    }
+  });
+
+  const seletor = document.getElementById("categoriaAtiva");
+  seletor?.addEventListener("change", (e) => {
+    trocarCategoria(e.target.value);
   });
 
   // fechar modal clicando fora (opcional)
@@ -49,25 +170,53 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ===== STORAGE ===== */
-function salvarNoStorage(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(listaLancamentos));
-  localStorage.setItem(RAW_STORAGE_KEY, JSON.stringify(historicoRaw));
-  localStorage.setItem("dataLancamento", document.getElementById("data")?.value || "");
-  localStorage.setItem("valorInicialLancamento", document.getElementById("valorInicial")?.value || "");
-}
-function carregarDoStorage(){
-  const d  = document.getElementById("data");
-  const vi = document.getElementById("valorInicial");
-
-  if (d)  d.value  = localStorage.getItem("dataLancamento") || "";
-  if (vi) vi.value = localStorage.getItem("valorInicialLancamento") || "";
+function migrarEstruturaAntiga(){
+  const app = criarEstruturaBase();
 
   const raw = localStorage.getItem(RAW_STORAGE_KEY);
-  historicoRaw = raw ? JSON.parse(raw) : [];
+  const data = localStorage.getItem("dataLancamento") || "";
+  const valorInicial = localStorage.getItem("valorInicialLancamento") || "";
 
-  rebuildAgregadoFromRaw();
-  salvarNoStorage();
+  app.dadosPorCategoria[DEFAULT_CATEGORY] = {
+    data,
+    valorInicial,
+    historicoRaw: raw ? JSON.parse(raw) : []
+  };
+
+  return app;
+}
+
+function salvarNoStorage(){
+  atualizarEstadoDaCategoriaAtual();
+  dadosApp.categoriaAtiva = categoriaAtiva;
+  localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(dadosApp));
+}
+
+function carregarDoStorage(){
+  const salvoNovo = localStorage.getItem(APP_STORAGE_KEY);
+
+  if (salvoNovo) {
+    try {
+      dadosApp = JSON.parse(salvoNovo);
+    } catch {
+      dadosApp = criarEstruturaBase();
+    }
+  } else {
+    dadosApp = migrarEstruturaAntiga();
+  }
+
+  if (!dadosApp || typeof dadosApp !== "object") {
+    dadosApp = criarEstruturaBase();
+  }
+
+  categoriaAtiva = garantirCategoria(dadosApp.categoriaAtiva || DEFAULT_CATEGORY);
+  dadosApp.categoriaAtiva = categoriaAtiva;
+
+  renderizarSeletorCategorias();
+  preencherCamposCategoriaAtual();
+  sincronizarEstadoCategoriaAtual();
   atualizarLista();
+  salvarNoStorage();
 }
 
 /* ===== AGREGAÇÃO ===== */
@@ -77,6 +226,7 @@ function rebuildAgregadoFromRaw(){
 
   for (const e of historicoRaw){
     const k = normalizarPonto(e.ponto);
+    if (!k) continue;
 
     if (!mapa.has(k)){
       mapa.set(k, { ponto:k, dinheiro:0, saida:0 });
@@ -92,6 +242,56 @@ function rebuildAgregadoFromRaw(){
   for (const k of ordem) listaLancamentos.push(mapa.get(k));
 }
 
+/* ===== CATEGORIAS ===== */
+window.criarNovaCategoria = function(){
+  const nomeInformado = prompt("Nome da nova categoria:");
+  if (nomeInformado === null) return;
+
+  const nome = normalizarCategoria(nomeInformado);
+  if (!nome) {
+    window.toast?.error?.("informe um nome para a categoria.");
+    return;
+  }
+
+  if ((dadosApp.categorias || []).includes(nome)) {
+    categoriaAtiva = nome;
+    renderizarSeletorCategorias();
+    trocarCategoria(nome);
+    window.toast?.error?.("essa categoria já existe.");
+    return;
+  }
+
+  garantirCategoria(nome);
+  categoriaAtiva = nome;
+  dadosApp.categoriaAtiva = categoriaAtiva;
+
+  renderizarSeletorCategorias();
+  preencherCamposCategoriaAtual();
+  sincronizarEstadoCategoriaAtual();
+  document.getElementById("container-nova-entrada").innerHTML = "";
+  atualizarLista();
+  salvarNoStorage();
+
+  window.toast?.success?.("Categoria criada.");
+};
+
+function trocarCategoria(nome){
+  salvarNoStorage();
+
+  categoriaAtiva = garantirCategoria(nome);
+  dadosApp.categoriaAtiva = categoriaAtiva;
+
+  renderizarSeletorCategorias();
+  preencherCamposCategoriaAtual();
+  sincronizarEstadoCategoriaAtual();
+
+  const box = document.getElementById("container-nova-entrada");
+  if (box) box.innerHTML = "";
+
+  atualizarLista();
+  salvarNoStorage();
+}
+
 /* ===== UI: NOVA ENTRADA / EDITAR ===== */
 window.adicionarEntrada = function(lanc = {}, idx = null){
   const box = document.getElementById("container-nova-entrada");
@@ -101,10 +301,10 @@ window.adicionarEntrada = function(lanc = {}, idx = null){
 
   box.innerHTML = `
     <input type="hidden" id="editIndex" value="${idx ?? ""}">
-    <input type="hidden" id="pontoOriginal" value="${pontoNorm}">
+    <input type="hidden" id="pontoOriginal" value="${textoSeguro(pontoNorm)}">
 
     <label for="ponto">Ponto</label>
-    <input id="ponto" type="text" placeholder="Nome do ponto" value="${pontoNorm}" />
+    <input id="ponto" type="text" placeholder="Nome do ponto" value="${textoSeguro(pontoNorm)}" />
 
     <label for="dinheiro">Entrada</label>
     <input id="dinheiro" type="number" placeholder="R$" value="${lanc.dinheiro ?? ""}" />
@@ -138,7 +338,6 @@ window.salvarEntrada = function(){
     saida
   };
 
-  // ===== EDITAR =====
   if (editIdx !== ""){
     const idx = Number(editIdx);
     const antigo = listaLancamentos[idx];
@@ -147,7 +346,6 @@ window.salvarEntrada = function(){
     const keyAntiga = normalizarPonto(pontoOrig || antigo.ponto);
     const keyNova   = normalizarPonto(pontoNovo);
 
-    // se mudou nome: renomeia tudo no histórico
     if (keyAntiga && keyNova && keyAntiga !== keyNova){
       historicoRaw = historicoRaw.map(r => {
         const k = normalizarPonto(r.ponto);
@@ -156,25 +354,23 @@ window.salvarEntrada = function(){
       });
     }
 
-    // recalcula e pega acumulado atual do novo nome
     rebuildAgregadoFromRaw();
     const atualNovo = listaLancamentos.find(x => normalizarPonto(x.ponto) === keyNova) || { dinheiro:0, saida:0 };
 
-    // delta até o valor final que o usuário digitou
     historicoRaw.push({
       ...base,
       dinheiro: entrada - (Number(atualNovo.dinheiro) || 0),
       saida: saida - (Number(atualNovo.saida) || 0),
       cartao: 0,
-      outros: 0
+      outros: 0,
+      categoria: categoriaAtiva
     });
 
     rebuildAgregadoFromRaw();
     window.toast?.success?.("Entrada atualizada.");
   }
-  // ===== NOVO =====
   else {
-    historicoRaw.push({ ...base, cartao:0, outros:0 });
+    historicoRaw.push({ ...base, cartao:0, outros:0, categoria: categoriaAtiva });
     rebuildAgregadoFromRaw();
     window.toast?.success?.("Entrada salva.");
   }
@@ -191,14 +387,18 @@ function atualizarLista(){
 
   lista.innerHTML = "";
 
+  if (!listaLancamentos.length) {
+    lista.innerHTML = `<p style="margin:0; color:#666;">Sem entradas nesta categoria.</p>`;
+  }
+
   listaLancamentos.forEach((it, idx) => {
     const div = document.createElement("div");
     div.className = "linha-lancamento";
 
     const bloco = document.createElement("div");
-    bloco.innerHTML = `<strong>${it.ponto}</strong><br/>`;
+    bloco.style.minWidth = "0";
+    bloco.innerHTML = `<strong>${textoSeguro(it.ponto)}</strong><br/>`;
 
-    // ✅ sem "|" bugado
     const parts = [];
     if (it.dinheiro) parts.push(`Entrada: <span style="color:${corPos}">${formatarMoeda(it.dinheiro)}</span>`);
     if (it.saida)    parts.push(`Saída: <span style="color:${corNeg}">-${formatarMoeda(it.saida)}</span>`);
@@ -240,7 +440,9 @@ function atualizarTotais(){
   if (!box) return;
 
   box.innerHTML = `
-    <p><strong>Data:</strong> ${dataResumo || "-"}</p>
+    <p><strong>Categoria:</strong> ${textoSeguro(formatarNomeCategoria(categoriaAtiva))}</p>
+
+    <p><strong>Data:</strong> ${textoSeguro(dataResumo || "-")}</p>
 
     <p><strong>Valor Inicial:</strong>
       <span style="color:${valorInicial < 0 ? corNeg : corPos}">${formatarMoeda(valorInicial)}</span>
@@ -272,7 +474,7 @@ window.editarLancamento = (i) => {
 window.excluirLancamento = (i) => {
   const it = listaLancamentos[i];
   if (!it) return;
-  if (!confirm("Excluir este lançamento (e o histórico deste ponto)?")) return;
+  if (!confirm(`Excluir este lançamento da categoria "${formatarNomeCategoria(categoriaAtiva)}" (e o histórico deste ponto)?`)) return;
 
   const key = normalizarPonto(it.ponto);
   historicoRaw = historicoRaw.filter(e => normalizarPonto(e.ponto) !== key);
@@ -315,16 +517,14 @@ window.visualizarRelatorio = function(){
   }
 
   const valorInicial = parseValor(document.getElementById("valorInicial")?.value || 0);
-
   const totalEntrada = listaLancamentos.reduce((s, e) => s + (Number(e.dinheiro) || 0), 0);
   const totalSaida   = listaLancamentos.reduce((s, e) => s + (Number(e.saida) || 0), 0);
-
   const valorTotal = valorInicial + totalEntrada - totalSaida;
 
   const linhas = listaLancamentos.map(e => {
     const sub = (Number(e.dinheiro) || 0) - (Number(e.saida) || 0);
     return `<tr>
-      <td style="text-transform:lowercase; padding:8px 6px; border-bottom:1px solid #eee;">${e.ponto}</td>
+      <td style="text-transform:lowercase; padding:8px 6px; border-bottom:1px solid #eee;">${textoSeguro(e.ponto)}</td>
       <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">${e.dinheiro ? `<span style="color:${corPos}">${formatarMoeda(e.dinheiro)}</span>` : "-"}</td>
       <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">${e.saida ? `<span style="color:${corNeg}">-${formatarMoeda(e.saida)}</span>` : "-"}</td>
       <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee; font-weight:700; ${sub < 0 ? `color:${corNeg}` : `color:${corPos}` }">${formatarMoeda(sub)}</td>
@@ -345,7 +545,8 @@ window.visualizarRelatorio = function(){
       <h3 style="color:${roxo}; text-align:center; margin:0 0 10px;">Resumo</h3>
 
       <div style="margin:0 0 10px;">
-        <p><strong>Data:</strong> ${dataFmt}</p>
+        <p><strong>Categoria:</strong> ${textoSeguro(formatarNomeCategoria(categoriaAtiva))}</p>
+        <p><strong>Data:</strong> ${textoSeguro(dataFmt)}</p>
 
         <p><strong>Valor Inicial:</strong>
           <span style="color:${valorInicial < 0 ? corNeg : corPos}">${formatarMoeda(valorInicial)}</span>
@@ -391,7 +592,7 @@ window.visualizarRelatorio = function(){
   abrirModal(html);
 };
 
-/* ===== HISTÓRICO (exibição inteligente) ===== */
+/* ===== HISTÓRICO ===== */
 window.visualizarHistorico = function(index){
   const it = listaLancamentos[index];
   if (!it) return;
@@ -403,7 +604,6 @@ window.visualizarHistorico = function(index){
     let entrada = Number(e.dinheiro) || 0;
     let saida   = Number(e.saida) || 0;
 
-    // se vier "entrada negativa" (ajuste), exibe como saída
     if (entrada < 0) {
       saida += Math.abs(entrada);
       entrada = 0;
@@ -412,7 +612,7 @@ window.visualizarHistorico = function(index){
     const sub = entrada - saida;
 
     return `<tr>
-      <td style="text-align:left; padding:8px 6px; border-bottom:1px solid #eee;">${formatarDataHora(e.ts)}</td>
+      <td style="text-align:left; padding:8px 6px; border-bottom:1px solid #eee;">${textoSeguro(formatarDataHora(e.ts))}</td>
       <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">
         ${entrada ? `<span style="color:${corPos}">${formatarMoeda(entrada)}</span>` : "-"}
       </td>
@@ -434,7 +634,8 @@ window.visualizarHistorico = function(index){
     </button>
 
     <div style="font-family: Arial; font-size:14px; padding:16px;">
-      <h3 style="color:${roxo}; text-align:center; margin:0 0 10px;">Histórico — ${it.ponto}</h3>
+      <h3 style="color:${roxo}; text-align:center; margin:0 0 10px;">Histórico — ${textoSeguro(it.ponto)}</h3>
+      <p><strong>Categoria:</strong> ${textoSeguro(formatarNomeCategoria(categoriaAtiva))}</p>
 
       <table style="width:100%; border-collapse:collapse; font-size:13px; background:#fff;">
         <thead>
@@ -457,24 +658,25 @@ window.visualizarHistorico = function(index){
 
 /* ===== LIMPAR ===== */
 window.limparLancamentos = function(){
-  if (!confirm("Deseja realmente limpar todos os lançamentos e valores?")) return;
+  if (!confirm(`Deseja realmente limpar todos os lançamentos e valores da categoria "${formatarNomeCategoria(categoriaAtiva)}"?`)) return;
 
   listaLancamentos.length = 0;
   historicoRaw = [];
 
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(RAW_STORAGE_KEY);
-  localStorage.removeItem("dataLancamento");
-  localStorage.removeItem("valorInicialLancamento");
+  const dados = getDadosCategoriaAtual();
+  dados.historicoRaw = [];
+  dados.data = getHojeIso();
+  dados.valorInicial = "";
 
   const d  = document.getElementById("data");
   const vi = document.getElementById("valorInicial");
-  if (d) d.value = "";
+  if (d) d.value = dados.data;
   if (vi) vi.value = "";
 
   const box = document.getElementById("container-nova-entrada");
   if (box) box.innerHTML = "";
 
+  salvarNoStorage();
   atualizarLista();
-  window.toast?.success?.("Tudo limpo.");
+  window.toast?.success?.("Categoria limpa.");
 };
