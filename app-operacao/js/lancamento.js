@@ -49,27 +49,19 @@ const roxo   = "#6a1b9a";
 
 /* ===== STORAGE ===== */
 const APP_STORAGE_KEY = "lancamento_categorias_v1";
-const STORAGE_KEY = "lancamentos";
-const RAW_STORAGE_KEY = "lancamentos_raw";
-const DEFAULT_CATEGORY = "geral";
+const DEFAULT_CATEGORY = "";
 
 /* ===== ESTADO ===== */
-const listaLancamentos = []; // agregado da categoria ativa
-let historicoRaw = [];       // bruto da categoria ativa
+const listaLancamentos = [];
+let historicoRaw = [];
 let categoriaAtiva = DEFAULT_CATEGORY;
 let dadosApp = criarEstruturaBase();
 
 function criarEstruturaBase(){
   return {
-    categoriaAtiva: DEFAULT_CATEGORY,
-    categorias: [DEFAULT_CATEGORY],
-    dadosPorCategoria: {
-      [DEFAULT_CATEGORY]: {
-        data: "",
-        valorInicial: "",
-        historicoRaw: []
-      }
-    }
+    categoriaAtiva: "",
+    categorias: [],
+    dadosPorCategoria: {}
   };
 }
 
@@ -82,7 +74,8 @@ function criarCategoriaVazia(){
 }
 
 function garantirCategoria(nome){
-  const key = normalizarCategoria(nome) || DEFAULT_CATEGORY;
+  const key = normalizarCategoria(nome);
+  if (!key) return "";
 
   if (!Array.isArray(dadosApp.categorias)) dadosApp.categorias = [];
   if (!dadosApp.dadosPorCategoria || typeof dadosApp.dadosPorCategoria !== "object") {
@@ -101,16 +94,25 @@ function garantirCategoria(nome){
 }
 
 function getDadosCategoriaAtual(){
+  if (!categoriaAtiva) return criarCategoriaVazia();
   return dadosApp.dadosPorCategoria[categoriaAtiva] || criarCategoriaVazia();
 }
 
 function sincronizarEstadoCategoriaAtual(){
+  if (!categoriaAtiva) {
+    historicoRaw = [];
+    listaLancamentos.length = 0;
+    return;
+  }
+
   const dados = getDadosCategoriaAtual();
   historicoRaw = Array.isArray(dados.historicoRaw) ? [...dados.historicoRaw] : [];
   rebuildAgregadoFromRaw();
 }
 
 function atualizarEstadoDaCategoriaAtual(){
+  if (!categoriaAtiva) return;
+
   const dados = getDadosCategoriaAtual();
   dados.historicoRaw = [...historicoRaw];
   dados.data = document.getElementById("data")?.value || "";
@@ -128,17 +130,32 @@ function preencherCamposCategoriaAtual(){
 
 function renderizarSeletorCategorias(){
   const select = document.getElementById("categoriaAtiva");
-  if (!select) return;
+  const wrap = document.getElementById("wrapCategoriaSelect");
+  if (!select || !wrap) return;
 
-  const categorias = [...new Set((dadosApp.categorias || []).map(c => normalizarCategoria(c)).filter(Boolean))];
-  if (!categorias.length) categorias.push(DEFAULT_CATEGORY);
+  const categorias = [...new Set((dadosApp.categorias || [])
+    .map(c => normalizarCategoria(c))
+    .filter(Boolean))];
 
   dadosApp.categorias = categorias;
+
+  if (!categorias.length) {
+    wrap.style.display = "none";
+    select.innerHTML = "";
+    categoriaAtiva = "";
+    return;
+  }
+
+  wrap.style.display = "block";
 
   select.innerHTML = categorias.map(c => {
     const nome = formatarNomeCategoria(c);
     return `<option value="${textoSeguro(c)}">${textoSeguro(nome)}</option>`;
   }).join("");
+
+  if (!categoriaAtiva || !categorias.includes(categoriaAtiva)) {
+    categoriaAtiva = categorias[0];
+  }
 
   select.value = categoriaAtiva;
 }
@@ -162,7 +179,6 @@ document.addEventListener("DOMContentLoaded", () => {
     trocarCategoria(e.target.value);
   });
 
-  // fechar modal clicando fora (opcional)
   const modal = document.getElementById("modal-relatorio");
   modal?.addEventListener("click", (e) => {
     if (e.target === modal) fecharRelatorio();
@@ -171,19 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ===== STORAGE ===== */
 function migrarEstruturaAntiga(){
-  const app = criarEstruturaBase();
-
-  const raw = localStorage.getItem(RAW_STORAGE_KEY);
-  const data = localStorage.getItem("dataLancamento") || "";
-  const valorInicial = localStorage.getItem("valorInicialLancamento") || "";
-
-  app.dadosPorCategoria[DEFAULT_CATEGORY] = {
-    data,
-    valorInicial,
-    historicoRaw: raw ? JSON.parse(raw) : []
-  };
-
-  return app;
+  return criarEstruturaBase();
 }
 
 function salvarNoStorage(){
@@ -209,8 +213,12 @@ function carregarDoStorage(){
     dadosApp = criarEstruturaBase();
   }
 
-  categoriaAtiva = garantirCategoria(dadosApp.categoriaAtiva || DEFAULT_CATEGORY);
-  dadosApp.categoriaAtiva = categoriaAtiva;
+  if (!Array.isArray(dadosApp.categorias)) dadosApp.categorias = [];
+  if (!dadosApp.dadosPorCategoria || typeof dadosApp.dadosPorCategoria !== "object") {
+    dadosApp.dadosPorCategoria = {};
+  }
+
+  categoriaAtiva = normalizarCategoria(dadosApp.categoriaAtiva || "");
 
   renderizarSeletorCategorias();
   preencherCamposCategoriaAtual();
@@ -268,7 +276,10 @@ window.criarNovaCategoria = function(){
   renderizarSeletorCategorias();
   preencherCamposCategoriaAtual();
   sincronizarEstadoCategoriaAtual();
-  document.getElementById("container-nova-entrada").innerHTML = "";
+
+  const box = document.getElementById("container-nova-entrada");
+  if (box) box.innerHTML = "";
+
   atualizarLista();
   salvarNoStorage();
 
@@ -278,7 +289,11 @@ window.criarNovaCategoria = function(){
 function trocarCategoria(nome){
   salvarNoStorage();
 
-  categoriaAtiva = garantirCategoria(nome);
+  categoriaAtiva = normalizarCategoria(nome);
+  if (!categoriaAtiva || !(dadosApp.categorias || []).includes(categoriaAtiva)) {
+    categoriaAtiva = "";
+  }
+
   dadosApp.categoriaAtiva = categoriaAtiva;
 
   renderizarSeletorCategorias();
@@ -294,6 +309,11 @@ function trocarCategoria(nome){
 
 /* ===== UI: NOVA ENTRADA / EDITAR ===== */
 window.adicionarEntrada = function(lanc = {}, idx = null){
+  if (!categoriaAtiva){
+    window.toast?.error?.("crie uma categoria antes de lançar.");
+    return;
+  }
+
   const box = document.getElementById("container-nova-entrada");
   if (!box) return;
 
@@ -319,6 +339,11 @@ window.adicionarEntrada = function(lanc = {}, idx = null){
 };
 
 window.salvarEntrada = function(){
+  if (!categoriaAtiva){
+    window.toast?.error?.("crie uma categoria antes de lançar.");
+    return;
+  }
+
   const pontoNovo = normalizarPonto(document.getElementById("ponto")?.value || "");
   const entrada   = parseValor(document.getElementById("dinheiro")?.value || 0);
   const saida     = parseValor(document.getElementById("saida")?.value || 0);
@@ -387,6 +412,12 @@ function atualizarLista(){
 
   lista.innerHTML = "";
 
+  if (!categoriaAtiva) {
+    lista.innerHTML = `<p style="margin:0; color:#666;">Nenhuma categoria cadastrada.</p>`;
+    atualizarTotais();
+    return;
+  }
+
   if (!listaLancamentos.length) {
     lista.innerHTML = `<p style="margin:0; color:#666;">Sem entradas nesta categoria.</p>`;
   }
@@ -401,7 +432,7 @@ function atualizarLista(){
 
     const parts = [];
     if (it.dinheiro) parts.push(`Entrada: <span style="color:${corPos}">${formatarMoeda(it.dinheiro)}</span>`);
-    if (it.saida)    parts.push(`Saída: <span style="color:${corNeg}">-${formatarMoeda(it.saida)}</span>`);
+    if (it.saida) parts.push(`Saída: <span style="color:${corNeg}">-${formatarMoeda(it.saida)}</span>`);
     bloco.innerHTML += parts.join(" | ");
 
     const acoes = document.createElement("div");
@@ -422,6 +453,14 @@ function atualizarLista(){
 
 /* ===== RESUMO (TELA) ===== */
 function atualizarTotais(){
+  const box = document.getElementById("resumoLancamento");
+  if (!box) return;
+
+  if (!categoriaAtiva) {
+    box.innerHTML = `<p style="margin:0; color:#666;">Crie uma categoria para começar os lançamentos.</p>`;
+    return;
+  }
+
   const totalEntrada = listaLancamentos.reduce((s, e) => s + (Number(e.dinheiro) || 0), 0);
   const totalSaida   = listaLancamentos.reduce((s, e) => s + (Number(e.saida) || 0), 0);
 
@@ -436,26 +475,18 @@ function atualizarTotais(){
     dataResumo = `${dd}/${mm}/${yyyy} (${dia})`;
   }
 
-  const box = document.getElementById("resumoLancamento");
-  if (!box) return;
-
   box.innerHTML = `
     <p><strong>Categoria:</strong> ${textoSeguro(formatarNomeCategoria(categoriaAtiva))}</p>
-
     <p><strong>Data:</strong> ${textoSeguro(dataResumo || "-")}</p>
-
     <p><strong>Valor Inicial:</strong>
       <span style="color:${valorInicial < 0 ? corNeg : corPos}">${formatarMoeda(valorInicial)}</span>
     </p>
-
     <p><strong>Entrada:</strong>
       <span style="color:${corPos}">${formatarMoeda(totalEntrada)}</span>
     </p>
-
     <p><strong>Saída:</strong>
       <span style="color:${corNeg}">-${formatarMoeda(totalSaida)}</span>
     </p>
-
     <p><strong>Valor Total:</strong>
       <span style="color:${valorTotal < 0 ? corNeg : corPos}">${formatarMoeda(valorTotal)}</span>
     </p>
@@ -507,6 +538,11 @@ window.fecharRelatorio = function(){
 
 /* ===== RELATÓRIO (MODAL RESUMO) ===== */
 window.visualizarRelatorio = function(){
+  if (!categoriaAtiva){
+    window.toast?.error?.("crie uma categoria antes de visualizar o relatório.");
+    return;
+  }
+
   const dataIso = document.getElementById("data")?.value || "";
   let dataFmt = "-";
   if (dataIso){
@@ -658,6 +694,11 @@ window.visualizarHistorico = function(index){
 
 /* ===== LIMPAR ===== */
 window.limparLancamentos = function(){
+  if (!categoriaAtiva){
+    window.toast?.error?.("não há categoria para limpar.");
+    return;
+  }
+
   if (!confirm(`Deseja realmente limpar todos os lançamentos e valores da categoria "${formatarNomeCategoria(categoriaAtiva)}"?`)) return;
 
   listaLancamentos.length = 0;
