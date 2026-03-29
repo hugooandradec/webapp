@@ -1,7 +1,7 @@
 // js/calculoRetencao.js
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
-const STORAGE_KEY = "calculo_retencao_v1";
+const STORAGE_KEY = "calculo_retencao_v2";
 let retContador = 0;
 
 // cores
@@ -10,7 +10,7 @@ const COR_SAIDA = "#c0392b";   // vermelho
 const COR_RETENCAO = "#4aa3ff"; // azul claro
 
 // ===============================
-//   HELPERS
+// HELPERS
 // ===============================
 function parseNumeroCentavos(v) {
   if (!v) return 0;
@@ -47,6 +47,10 @@ function formatarDataBR(iso) {
   return `${dia}/${mes}/${ano}`;
 }
 
+function normalizarEspacos(s) {
+  return (s || "").replace(/\u00A0/g, " ").replace(/[ \t]+/g, " ").trim();
+}
+
 function limparToast() {
   try {
     if (window.toast?.dismissAll) window.toast.dismissAll();
@@ -60,140 +64,141 @@ function limparToast() {
 }
 
 // ===============================
-//   IMPORTAR PRINT (OCR - RETENÇÃO)
+// MOSTRAR/ESCONDER Ret. Média + Botões de baixo
 // ===============================
-async function importarPrintRet(file, lista) {
-  if (!window.Tesseract) {
-    alert("Biblioteca de OCR (Tesseract.js) não carregada.");
-    return;
-  }
+function atualizarAcoesELinhaTotal() {
+  const lista = document.getElementById("listaMaquinas");
+  const acoesBottom = document.getElementById("acoesBottom");
+  const linhaTotal = document.getElementById("linhaTotal");
 
-  try {
-    if (window.toast) toast.info("Lendo imagem, aguarde...");
-  } catch (e) {}
+  const temMaquina = !!(lista && lista.children && lista.children.length > 0);
 
-  let texto = "";
-  try {
-    const { data } = await Tesseract.recognize(file, "por+eng", {
-      logger: (m) => console.log("[OCR]", m)
-    });
-    texto = (data && data.text) ? data.text : "";
-  } catch (e) {
-    console.error("Erro no OCR:", e);
-    limparToast();
-    alert("Não foi possível ler a imagem.");
-    return;
-  }
+  if (acoesBottom) acoesBottom.classList.toggle("oculta", !temMaquina);
+  if (linhaTotal) linhaTotal.classList.toggle("oculta", !temMaquina);
+}
 
-  console.log("Texto OCR bruto (retencao):\n", texto);
+// ===============================
+// IMPORTAR POR TEXTO
+// Pega:
+// - Ponto: primeira linha "*0008 | KAMALEON*"
+// - Máquinas: "038 - JOGO", "1228 - JOGO", "1301(P) - JOGO"
+// - Para retenção usamos a 2ª coluna (ATUAL) como valor da máquina
+// ===============================
+function extrairPontoDoTexto(texto) {
+  const linhas = (texto || "").split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const first = linhas[0] || "";
 
-  const linhas = texto
+  // "*0008 | KAMALEON*"
+  const m = first.match(/\|\s*([^|*]+)\s*\*/);
+  if (m && m[1]) return m[1].trim().toUpperCase();
+
+  const m2 = first.match(/\|\s*([^|]+)\s*\|/);
+  if (m2 && m2[1]) return m2[1].trim().toUpperCase();
+
+  return "";
+}
+
+function extrairMaquinasDoTexto(texto) {
+  const linhas = (texto || "")
     .split(/\r?\n/)
-    .map((l) => l.trim())
+    .map(l => normalizarEspacos(l))
     .filter(Boolean);
 
-  console.log("Linhas OCR normalizadas:", linhas);
+  const maquinas = [];
 
-  // Cliente -> Ponto
-  const linhaCliente = linhas.find((l) =>
-    l.toUpperCase().startsWith("CLIENTE")
-  );
-  if (linhaCliente) {
-    const idx = linhaCliente.indexOf(":");
-    let nome = idx >= 0 ? linhaCliente.slice(idx + 1) : linhaCliente;
-    nome = nome.trim();
-    if (nome) {
-      const inputPonto = document.getElementById("ponto");
-      if (inputPonto) {
-        inputPonto.value = nome.toUpperCase();
-      }
-    }
-  }
-
-  const maquinasEncontradas = [];
-
-  // Procura cabeçalho de máquina: "1-1E033 (...)", "2-1B158 (...)"
   for (let i = 0; i < linhas.length; i++) {
-    const linha = linhas[i];
-    const linhaUpper = linha.toUpperCase();
+    const l = linhas[i];
 
-    const cabecalhoMatch = linhaUpper.match(
-      /\b\d+\s*[-–]\s*([A-Z0-9]{2}\d{3})\b/
-    );
-    if (!cabecalhoMatch) continue;
+    // aceita:
+    // 056 - ERA DO GELO
+    // 1228 - DRAGON
+    // 1301(P) - SEVEN
+    const cab = l.match(/^(\d{3,}(?:\([A-Z]+\))?)\s*-\s*(.+)$/i);
+    if (!cab) continue;
 
-    let selo = cabecalhoMatch[1].toUpperCase();
-
-    // Corrige OCR: "1E033" -> "IE033", "1B158" -> "IB158"
-    if (selo[0] === "1") {
-      selo = "I" + selo.slice(1);
-    }
-
-    // jogo entre parênteses
-    let jogo = "";
-    const firstPar = linha.indexOf("(");
-    const lastPar = linha.lastIndexOf(")");
-    if (firstPar >= 0 && lastPar > firstPar) {
-      jogo = linha.slice(firstPar + 1, lastPar).trim().toUpperCase();
-    }
-
-    if (maquinasEncontradas.some((m) => m.selo === selo)) continue;
+    const selo = (cab[1] || "").trim().toUpperCase();
+    const jogo = (cab[2] || "").trim().toUpperCase();
 
     let entradaAtual = "";
     let saidaAtual = "";
 
-    // procura (E) e (S) nas proximas linhas
-    for (let j = i + 1; j < Math.min(i + 8, linhas.length); j++) {
-      const l2 = linhas[j];
-      const l2Norm = l2.toUpperCase().replace(/\s+/g, "");
+    // procura as próximas linhas E e S
+    for (let j = i + 1; j < Math.min(i + 6, linhas.length); j++) {
+      const lx = linhas[j];
 
-      const isLinhaE = l2Norm.includes("(E)") || l2Norm.startsWith("E)");
-      const isLinhaS = l2Norm.includes("(S)") || l2Norm.startsWith("S)");
-
-      if (!entradaAtual && isLinhaE) {
-        const m = l2.match(/[-–]\s*([\d.,]+)/);
-        if (m) entradaAtual = m[1].replace(/\D/g, "");
+      // Ex:
+      // E    18419300   18454100_____348,00
+      // S    13232248   13262072_____298,24
+      if (!entradaAtual && /^E\b/i.test(lx)) {
+        const nums = lx.replace(/_/g, " ").match(/(\d{4,})/g) || [];
+        if (nums.length >= 2) entradaAtual = nums[1];
       }
 
-      if (!saidaAtual && isLinhaS) {
-        const m2 = l2.match(/[-–]\s*([\d.,]+)/);
-        if (m2) saidaAtual = m2[1].replace(/\D/g, "");
+      if (!saidaAtual && /^S\b/i.test(lx)) {
+        const nums = lx.replace(/_/g, " ").match(/(\d{4,})/g) || [];
+        if (nums.length >= 2) saidaAtual = nums[1];
       }
 
       if (entradaAtual && saidaAtual) break;
     }
 
+    // evita duplicado exato
+    if (maquinas.some(m => m.selo === selo)) continue;
+
     if (entradaAtual || saidaAtual) {
-      maquinasEncontradas.push({
+      maquinas.push({
         selo,
         jogo,
-        entrada: entradaAtual,
-        saida: saidaAtual
+        entrada: (entradaAtual || "").replace(/\D/g, ""),
+        saida: (saidaAtual || "").replace(/\D/g, "")
       });
     }
   }
 
-  console.log("Máquinas encontradas no OCR:", maquinasEncontradas);
+  return maquinas;
+}
 
-  if (!maquinasEncontradas.length) {
-    limparToast();
+function importarTextoRetencao() {
+  const ta = document.getElementById("textoFonte");
+  const lista = document.getElementById("listaMaquinas");
+  if (!ta || !lista) return;
+
+  const texto = ta.value || "";
+  if (!texto.trim()) {
+    if (window.toast) toast.warn("Cole o texto do fechamento primeiro.");
+    return;
+  }
+
+  const ponto = extrairPontoDoTexto(texto);
+  const inputPonto = document.getElementById("ponto");
+  if (inputPonto && ponto) inputPonto.value = ponto.toUpperCase();
+
+  const maquinas = extrairMaquinasDoTexto(texto);
+  if (!maquinas.length) {
     alert(
-      "Não consegui identificar máquinas no print.\n" +
-        "Confere se o selo está no formato AA999 e se existem linhas com (E) e (S) usando hífen."
+      "Não consegui identificar máquinas no texto.\n\n" +
+      "Formatos aceitos:\n" +
+      "056 - JOGO\n" +
+      "1228 - JOGO\n" +
+      "1301(P) - JOGO"
     );
     return;
   }
 
   lista.innerHTML = "";
   retContador = 0;
-  maquinasEncontradas.forEach((m) => adicionarMaquina(lista, m));
+
+  maquinas.forEach(m => adicionarMaquina(lista, m));
 
   salvarRetencao();
-  limparToast();
+  atualizarLinhaTotal();
+  atualizarAcoesELinhaTotal();
+
+  if (window.toast) toast.success(`Importado: ${maquinas.length} máquina(s).`);
 }
 
 // ===============================
-//   ADICIONAR MÁQUINA
+// ADICIONAR MÁQUINA
 // ===============================
 function adicionarMaquina(lista, dadosIniciais = null) {
   retContador++;
@@ -205,40 +210,38 @@ function adicionarMaquina(lista, dadosIniciais = null) {
   card.innerHTML = `
     <div class="card-titulo">
       <span>Máquina ${idx}</span>
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
         <small>digite E / S para ver a retenção</small>
-        <button class="icone-remover" title="Remover máquina">
+        <button class="icone-remover" title="Remover máquina" type="button">
           <i class="fa-solid fa-trash"></i>
         </button>
       </div>
     </div>
 
-    <div class="linha-flex" style="display:flex;gap:16px;margin-bottom:10px;">
-      <div class="col" style="flex:1;">
+    <div class="linha-flex">
+      <div class="col">
         <label>Selo:</label>
         <input type="text" class="ret-selo" placeholder="CÓDIGO DA MÁQUINA">
       </div>
-      <div class="col" style="flex:1;">
+      <div class="col">
         <label>Jogo:</label>
         <input type="text" class="ret-jogo" placeholder="TIPO DE JOGO">
       </div>
     </div>
 
-    <div class="linha-flex" style="display:flex;gap:16px;margin-bottom:10px;">
-      <div class="col" style="flex:1;">
+    <div class="linha-flex">
+      <div class="col">
         <label>E:</label>
         <input type="tel" inputmode="numeric" class="ret-entrada" placeholder="valor de entrada">
       </div>
-      <div class="col" style="flex:1;">
+      <div class="col">
         <label>S:</label>
         <input type="tel" inputmode="numeric" class="ret-saida" placeholder="valor de saída">
       </div>
     </div>
 
     <div class="resumo">
-      <span class="texto-resumo">
-        E: R$ 0,00 | S: R$ 0,00 | Ret: 0.00%
-      </span>
+      <span class="texto-resumo">E: R$ 0,00 | S: R$ 0,00 | Ret: 0.00%</span>
     </div>
   `;
 
@@ -264,9 +267,7 @@ function adicionarMaquina(lista, dadosIniciais = null) {
     const saidaNum = parseNumeroCentavos(inputSaida.value);
 
     let ret = 0;
-    if (entradaNum > 0) {
-      ret = ((entradaNum - saidaNum) / entradaNum) * 100;
-    }
+    if (entradaNum > 0) ret = ((entradaNum - saidaNum) / entradaNum) * 100;
 
     const eStr = formatarMoeda(entradaNum);
     const sStr = formatarMoeda(saidaNum);
@@ -279,6 +280,7 @@ function adicionarMaquina(lista, dadosIniciais = null) {
 
     salvarRetencao();
     atualizarLinhaTotal();
+    atualizarAcoesELinhaTotal();
   };
 
   [inputEntrada, inputSaida].forEach((inp) => {
@@ -297,6 +299,7 @@ function adicionarMaquina(lista, dadosIniciais = null) {
     card.remove();
     salvarRetencao();
     atualizarLinhaTotal();
+    atualizarAcoesELinhaTotal();
   });
 
   lista.appendChild(card);
@@ -304,7 +307,7 @@ function adicionarMaquina(lista, dadosIniciais = null) {
 }
 
 // ===============================
-//   SALVAR / CARREGAR
+// SALVAR / CARREGAR
 // ===============================
 function salvarRetencao() {
   const data = document.getElementById("data")?.value || "";
@@ -328,7 +331,10 @@ function salvarRetencao() {
 function carregarRetencao(lista) {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
-    adicionarMaquina(lista);
+    retContador = 0;
+    lista.innerHTML = "";
+    atualizarLinhaTotal();
+    atualizarAcoesELinhaTotal();
     return;
   }
 
@@ -342,20 +348,19 @@ function carregarRetencao(lista) {
 
     if (Array.isArray(dados.maquinas) && dados.maquinas.length) {
       dados.maquinas.forEach((m) => adicionarMaquina(lista, m));
-    } else {
-      adicionarMaquina(lista);
     }
   } catch (e) {
     console.error("Erro ao carregar retenção:", e);
+    retContador = 0;
     lista.innerHTML = "";
-    adicionarMaquina(lista);
   }
 
   atualizarLinhaTotal();
+  atualizarAcoesELinhaTotal();
 }
 
 // ===============================
-//   TOTAL GERAL (Ret. Média na tela)
+// TOTAL GERAL (Ret. Média)
 // ===============================
 function atualizarLinhaTotal() {
   const lista = document.getElementById("listaMaquinas");
@@ -366,12 +371,8 @@ function atualizarLinhaTotal() {
   let contRet = 0;
 
   lista.querySelectorAll(".card").forEach((card) => {
-    const entrada = parseNumeroCentavos(
-      card.querySelector(".ret-entrada")?.value
-    );
-    const saida = parseNumeroCentavos(
-      card.querySelector(".ret-saida")?.value
-    );
+    const entrada = parseNumeroCentavos(card.querySelector(".ret-entrada")?.value);
+    const saida = parseNumeroCentavos(card.querySelector(".ret-saida")?.value);
 
     if (entrada > 0) {
       const ret = ((entrada - saida) / entrada) * 100;
@@ -382,20 +383,15 @@ function atualizarLinhaTotal() {
 
   const span = linhaTotal.querySelector("span");
   if (span) {
-    span.textContent = contRet
-      ? formatarPercentual(somaRet / contRet)
-      : "0.00%";
+    span.textContent = contRet ? formatarPercentual(somaRet / contRet) : "0.00%";
+    span.style.color = COR_RETENCAO;
   }
 
-  // Título "Ret. Média:" em preto, valor em azul claro
-  linhaTotal.style.color = "#000"; // preto
-  if (span) {
-    span.style.color = "#4aa3ff"; // azul claro
-  }
+  linhaTotal.style.color = "#000";
 }
 
 // ===============================
-//   RELATÓRIO (modal)
+// RELATÓRIO (modal)
 // ===============================
 function criarRelatorioRetencao(lista, inputData, inputPonto) {
   const dataISO = inputData?.value || "";
@@ -403,7 +399,6 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
   const ponto = inputPonto?.value || "-";
 
   const blocos = [];
-
   blocos.push(`DATA: ${dataBR}`);
   blocos.push(`PONTO: ${ponto || "-"}`);
   blocos.push("");
@@ -414,16 +409,10 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
   lista.querySelectorAll(".card").forEach((card, idx) => {
     const selo = (card.querySelector(".ret-selo")?.value || "-").toUpperCase();
     const jogo = (card.querySelector(".ret-jogo")?.value || "-").toUpperCase();
-    const entradaNum = parseNumeroCentavos(
-      card.querySelector(".ret-entrada")?.value
-    );
-    const saidaNum = parseNumeroCentavos(
-      card.querySelector(".ret-saida")?.value
-    );
-    const ret =
-      entradaNum > 0
-        ? ((entradaNum - saidaNum) / entradaNum) * 100
-        : 0;
+    const entradaNum = parseNumeroCentavos(card.querySelector(".ret-entrada")?.value);
+    const saidaNum = parseNumeroCentavos(card.querySelector(".ret-saida")?.value);
+
+    const ret = entradaNum > 0 ? ((entradaNum - saidaNum) / entradaNum) * 100 : 0;
 
     if (entradaNum > 0) {
       somaRet += ret;
@@ -433,54 +422,57 @@ function criarRelatorioRetencao(lista, inputData, inputPonto) {
     blocos.push(`MÁQUINA ${idx + 1}`);
     blocos.push(`SELO: ${selo}`);
     blocos.push(`JOGO: ${jogo}`);
-    blocos.push(
-      `E: <span class="valor-entrada">${formatarMoeda(entradaNum)}</span>`
-    );
-    blocos.push(
-      `S: <span class="valor-saida">${formatarMoeda(saidaNum)}</span>`
-    );
-    blocos.push(
-      `RET: <span class="valor-retencao">${formatarPercentual(ret)}</span>`
-    );
+    blocos.push(`E: ${formatarMoeda(entradaNum)}`);
+    blocos.push(`S: ${formatarMoeda(saidaNum)}`);
+    blocos.push(`RET: ${formatarPercentual(ret)}`);
     blocos.push("----------------------------------------");
     blocos.push("");
   });
 
   const retMedia = contRet ? somaRet / contRet : 0;
-  blocos.push(
-    `Ret. Média: <span class="valor-ret-media">${formatarPercentual(
-      retMedia
-    )}</span>`
-  );
+  blocos.push(`Ret. Média: ${formatarPercentual(retMedia)}`);
 
-  return blocos.join("<br>");
+  return blocos.join("\n");
+}
+
+function relatorioParaHTML(texto) {
+  const linhas = (texto || "").split("\n");
+  return linhas.map(l => {
+    if (l.startsWith("E: ")) return `E: <span class="valor-entrada">${l.slice(3)}</span>`;
+    if (l.startsWith("S: ")) return `S: <span class="valor-saida">${l.slice(3)}</span>`;
+    if (l.startsWith("RET: ")) return `RET: <span class="valor-retencao">${l.slice(5)}</span>`;
+    if (l.startsWith("Ret. Média: ")) return `Ret. Média: <span class="valor-ret-media">${l.slice(11)}</span>`;
+    return l;
+  }).join("<br>");
 }
 
 // ===============================
-//   LIMPAR TUDO
+// LIMPAR
 // ===============================
 function limparTudo(lista, inputData, inputPonto) {
   if (!confirm("Deseja limpar todas as máquinas e dados?")) return;
   retContador = 0;
   lista.innerHTML = "";
-  if (inputData) inputData.value = "";
   if (inputPonto) inputPonto.value = "";
-  adicionarMaquina(lista);
   salvarRetencao();
   atualizarLinhaTotal();
+  atualizarAcoesELinhaTotal();
 }
 
 // ===============================
-//   INIT
+// INIT
 // ===============================
 document.addEventListener("DOMContentLoaded", () => {
   inicializarPagina("Cálculo de Retenção", "operacao");
 
   const btnAdd = document.getElementById("btnAdicionar");
+  const btnAdd2 = document.getElementById("btnAdicionar2");
   const btnRel = document.getElementById("btnRelatorio");
+  const btnRel2 = document.getElementById("btnRelatorio2");
   const btnLimpar = document.getElementById("btnLimpar");
-  const btnImportar = document.getElementById("btnImportar");
-  const inputPrint = document.getElementById("inputPrintRet");
+  const btnLimpar2 = document.getElementById("btnLimpar2");
+  const btnImportarTexto = document.getElementById("btnImportarTexto");
+
   const lista = document.getElementById("listaMaquinas");
 
   const modal = document.getElementById("modalRet");
@@ -490,53 +482,46 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputData = document.getElementById("data");
   const inputPonto = document.getElementById("ponto");
 
-  if (btnAdd) {
-    btnAdd.addEventListener("click", () => {
-      adicionarMaquina(lista);
-      salvarRetencao();
-    });
-  }
+  if (inputData && !inputData.value) inputData.value = dataHojeISO();
 
-  if (btnRel && modal && relConteudo) {
-    btnRel.addEventListener("click", () => {
-      if (!lista.children.length) {
-        if (window.toast) toast.warn("Adicione pelo menos uma máquina.");
-        return;
-      }
-      const rel = criarRelatorioRetencao(lista, inputData, inputPonto);
-      relConteudo.innerHTML = rel;
-      modal.classList.add("aberta");
-    });
-  }
+  const onAdd = () => {
+    adicionarMaquina(lista);
+    salvarRetencao();
+    atualizarLinhaTotal();
+    atualizarAcoesELinhaTotal();
+  };
 
-  if (btnLimpar) {
-    btnLimpar.addEventListener("click", () =>
-      limparTudo(lista, inputData, inputPonto)
-    );
-  }
+  const onRel = () => {
+    if (!lista.children.length) {
+      if (window.toast) toast.warn("Adicione pelo menos uma máquina.");
+      return;
+    }
+    const relTxt = criarRelatorioRetencao(lista, inputData, inputPonto);
+    relConteudo.innerHTML = relatorioParaHTML(relTxt);
+    modal.classList.add("aberta");
+  };
+
+  const onLimpar = () => limparTudo(lista, inputData, inputPonto);
+
+  if (btnAdd) btnAdd.addEventListener("click", onAdd);
+  if (btnAdd2) btnAdd2.addEventListener("click", onAdd);
+
+  if (btnRel) btnRel.addEventListener("click", onRel);
+  if (btnRel2) btnRel2.addEventListener("click", onRel);
+
+  if (btnLimpar) btnLimpar.addEventListener("click", onLimpar);
+  if (btnLimpar2) btnLimpar2.addEventListener("click", onLimpar);
 
   if (btnFecharModal && modal) {
-    btnFecharModal.addEventListener("click", () =>
-      modal.classList.remove("aberta")
-    );
+    btnFecharModal.addEventListener("click", () => modal.classList.remove("aberta"));
     modal.addEventListener("click", (e) => {
       if (e.target.id === "modalRet") modal.classList.remove("aberta");
     });
   }
 
-  if (btnImportar && inputPrint) {
-    btnImportar.addEventListener("click", () => inputPrint.click());
-    inputPrint.addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      await importarPrintRet(file, lista);
-      inputPrint.value = "";
-    });
-  }
+  if (btnImportarTexto) btnImportarTexto.addEventListener("click", importarTextoRetencao);
 
-  if (inputData) {
-    inputData.addEventListener("change", salvarRetencao);
-  }
+  if (inputData) inputData.addEventListener("change", salvarRetencao);
 
   if (inputPonto) {
     inputPonto.addEventListener("input", () => {
@@ -546,9 +531,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   carregarRetencao(lista);
-
-  if (inputData && !inputData.value) {
-    inputData.value = dataHojeISO();
-    salvarRetencao();
-  }
+  atualizarLinhaTotal();
+  atualizarAcoesELinhaTotal();
 });

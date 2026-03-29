@@ -1,11 +1,15 @@
 // js/calculoSalas.js
 // Cálculo de Salas (Bingos)
-// Resultado = (Bruto / 2) + 10% - Despesas - 6% do Cartão - Taxa de parcelamento de cartão
+// Novo:
+// Resultado = ((Bruto - Despesas Extras) / 2) + 10%
+//             - Despesas
+//             - 6% do Cartão
+//             - Taxa de parcelamento de cartão
 // Pipo = 2/3 do resultado, Pass = 1/3 do resultado
 
 import { inicializarPagina } from "../../common/js/navegacao.js";
 
-const STORAGE_KEY = "calculo_salas_v2";
+const STORAGE_KEY = "calculo_salas_v3";
 let salas = [];
 
 /* ===== Helpers de moeda / datas ===== */
@@ -40,12 +44,10 @@ function formatarMoeda(valor) {
 function formatarInputMonetario(input) {
   const raw = (input.value || "").toString();
 
-  // mantém negativo se existir
   const negativo = raw.includes("-");
-
   const digits = raw.replace(/\D/g, "");
+
   if (!digits) {
-    // se o cara digitou só "-" deixa ele brincar
     input.value = raw.trim() === "-" ? "-" : "";
     return;
   }
@@ -56,7 +58,6 @@ function formatarInputMonetario(input) {
     maximumFractionDigits: 2
   });
 
-  // se deu 0,00 não força "-"
   input.value = (negativo && num !== 0) ? `-${absFmt}` : absFmt;
 }
 
@@ -69,33 +70,34 @@ function formatarDataBR(iso) {
 
 /* ===== Regras de cálculo ===== */
 
-// REGRA CORRETA:
-// (Bruto / 2) + 10% em cima da metade
+// NOVA REGRA:
+// ((Bruto - Despesas Extras) / 2) + 10% em cima da metade
 //   - Despesas
 //   - 6% do Cartão
 //   - Taxa de parcelamento de cartão
 function calcularResultadoSala(sala) {
   const bruto = parseCentavos(sala.bruto);
+  const despesasExtras = parseCentavos(sala.despesasExtras);
   const despesas = parseCentavos(sala.despesas);
   const cartao = parseCentavos(sala.cartao);
   const taxa = parseCentavos(sala.taxa);
 
-  if (!bruto && !despesas && !cartao && !taxa) return 0;
+  if (!bruto && !despesasExtras && !despesas && !cartao && !taxa) return 0;
 
   const taxaCartao = cartao * 0.06;
+  const brutoLiquido = bruto - despesasExtras;
 
-  // 🔴 PREJUÍZO: bruto negativo entra inteiro
-  if (bruto < 0) {
-    return bruto - despesas - taxaCartao - taxa;
+  // 🔴 PREJUÍZO: entra inteiro, sem dividir por 2
+  if (brutoLiquido < 0) {
+    return brutoLiquido - despesas - taxaCartao - taxa;
   }
 
   // 🟢 LUCRO: regra normal
-  const metade = bruto / 2;
+  const metade = brutoLiquido / 2;
   const com10 = metade * 1.10;
 
   return com10 - despesas - taxaCartao - taxa;
 }
-
 
 function calcularPipoPass(resultado) {
   const terco = resultado / 3;
@@ -133,6 +135,7 @@ function carregarDoStorage() {
 function atualizarTotalGeral() {
   const elTotal = document.getElementById("totalGeral");
   let total = 0;
+
   salas.forEach((s) => {
     total += calcularResultadoSala(s);
   });
@@ -176,6 +179,10 @@ function criarCardSala(sala, index) {
         <input type="text" inputmode="decimal" class="sala-bruto" placeholder="0,00">
       </div>
       <div class="col-sala">
+        <label>Despesas Extras (-R$)</label>
+        <input type="text" inputmode="decimal" class="sala-despesas-extras" placeholder="0,00">
+      </div>
+      <div class="col-sala">
         <label>Despesas (-R$)</label>
         <input type="text" inputmode="decimal" class="sala-despesas" placeholder="0,00">
       </div>
@@ -200,6 +207,7 @@ function criarCardSala(sala, index) {
 
   const nomeInput = card.querySelector(".sala-nome");
   const brutoInput = card.querySelector(".sala-bruto");
+  const despesasExtrasInput = card.querySelector(".sala-despesas-extras");
   const despesasInput = card.querySelector(".sala-despesas");
   const cartaoInput = card.querySelector(".sala-cartao");
   const taxaInput = card.querySelector(".sala-taxa");
@@ -211,20 +219,38 @@ function criarCardSala(sala, index) {
   const passSpan = card.querySelector(".pass-valor");
 
   if (sala.nome) nomeInput.value = sala.nome;
-  if (sala.bruto) { brutoInput.value = sala.bruto; formatarInputMonetario(brutoInput); }
-  if (sala.despesas) { despesasInput.value = sala.despesas; formatarInputMonetario(despesasInput); }
-  if (sala.cartao) { cartaoInput.value = sala.cartao; formatarInputMonetario(cartaoInput); }
-  if (sala.taxa) { taxaInput.value = sala.taxa; formatarInputMonetario(taxaInput); }
+  if (sala.bruto) {
+    brutoInput.value = sala.bruto;
+    formatarInputMonetario(brutoInput);
+  }
+  if (sala.despesasExtras) {
+    despesasExtrasInput.value = sala.despesasExtras;
+    formatarInputMonetario(despesasExtrasInput);
+  }
+  if (sala.despesas) {
+    despesasInput.value = sala.despesas;
+    formatarInputMonetario(despesasInput);
+  }
+  if (sala.cartao) {
+    cartaoInput.value = sala.cartao;
+    formatarInputMonetario(cartaoInput);
+  }
+  if (sala.taxa) {
+    taxaInput.value = sala.taxa;
+    formatarInputMonetario(taxaInput);
+  }
 
   const atualizarResultado = () => {
     salas[index].nome = (nomeInput.value || "").toUpperCase();
 
     formatarInputMonetario(brutoInput);
+    formatarInputMonetario(despesasExtrasInput);
     formatarInputMonetario(despesasInput);
     formatarInputMonetario(cartaoInput);
     formatarInputMonetario(taxaInput);
 
     salas[index].bruto = brutoInput.value || "";
+    salas[index].despesasExtras = despesasExtrasInput.value || "";
     salas[index].despesas = despesasInput.value || "";
     salas[index].cartao = cartaoInput.value || "";
     salas[index].taxa = taxaInput.value || "";
@@ -264,7 +290,7 @@ function criarCardSala(sala, index) {
     atualizarResultado();
   });
 
-  [brutoInput, despesasInput, cartaoInput, taxaInput].forEach((inp) => {
+  [brutoInput, despesasExtrasInput, despesasInput, cartaoInput, taxaInput].forEach((inp) => {
     inp.addEventListener("input", atualizarResultado);
     inp.addEventListener("change", atualizarResultado);
   });
@@ -308,6 +334,7 @@ function abrirModal() {
 
   salas.forEach((sala, idx) => {
     const bruto = parseCentavos(sala.bruto);
+    const despesasExtras = parseCentavos(sala.despesasExtras);
     const despesas = parseCentavos(sala.despesas);
     const cartao = parseCentavos(sala.cartao);
     const taxa = parseCentavos(sala.taxa);
@@ -319,6 +346,7 @@ function abrirModal() {
 
     html += `<strong>Sala ${idx + 1} - ${(sala.nome || "SEM NOME").toUpperCase()}</strong><br>`;
     html += `Bruto: <span class="${bruto < 0 ? "vermelho" : "verde"}">${formatarMoeda(bruto)}</span><br>`;
+    html += `Despesas Extras: <span class="${despesasExtras < 0 ? "verde" : "vermelho"}">${formatarMoeda(despesasExtras)}</span><br>`;
     html += `Despesas: <span class="${despesas < 0 ? "verde" : "vermelho"}">${formatarMoeda(despesas)}</span><br>`;
     html += `Cartão: <span style="color:#2563eb;">${formatarMoeda(cartao)}</span><br>`;
     html += `Taxa parcelamento cartão: <span class="${taxa < 0 ? "verde" : "vermelho"}">${formatarMoeda(taxa)}</span><br>`;
@@ -354,16 +382,32 @@ document.addEventListener("DOMContentLoaded", () => {
   inicializarPagina("Cálculo de Salas", "operacao");
 
   carregarDoStorage();
+
   if (!salas.length) {
-    salas.push({ nome: "", bruto: "", despesas: "", cartao: "", taxa: "" });
+    salas.push({
+      nome: "",
+      bruto: "",
+      despesasExtras: "",
+      despesas: "",
+      cartao: "",
+      taxa: ""
+    });
   }
+
   renderizarSalas();
 
   document.getElementById("dataDe").addEventListener("change", salvarNoStorage);
   document.getElementById("dataAte").addEventListener("change", salvarNoStorage);
 
   document.getElementById("btnAdicionar").addEventListener("click", () => {
-    salas.push({ nome: "", bruto: "", despesas: "", cartao: "", taxa: "" });
+    salas.push({
+      nome: "",
+      bruto: "",
+      despesasExtras: "",
+      despesas: "",
+      cartao: "",
+      taxa: ""
+    });
     renderizarSalas();
     salvarNoStorage();
   });
