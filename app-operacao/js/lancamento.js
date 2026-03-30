@@ -3,30 +3,49 @@
 /* ===== HELPERS ===== */
 function formatarMoeda(valor){
   return (Number(valor)||0).toLocaleString("pt-BR",{
-    style:"currency", currency:"BRL", minimumFractionDigits:2
+    style:"currency",
+    currency:"BRL",
+    minimumFractionDigits:2
   });
 }
+
 function parseValor(v){
   return parseFloat((v||"0").toString().replace(",", ".")) || 0;
 }
+
 function normalizarPonto(n){
   return (n||"").trim().toLowerCase();
 }
-function normalizarCategoria(n){
+
+function normalizarCaixa(n){
   return (n||"").trim().toLowerCase();
 }
-function formatarNomeCategoria(n){
+
+function formatarNomeCaixa(n){
   return (n||"").trim();
 }
+
 function formatarDataHora(ts){
   const n = Number(ts);
   if (!n || Number.isNaN(n)) return "--";
+
   const dt = new Date(n);
   if (Number.isNaN(dt.getTime())) return "--";
-  const data = dt.toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric" });
-  const hora = dt.toLocaleTimeString("pt-BR", { hour:"2-digit", minute:"2-digit" });
+
+  const data = dt.toLocaleDateString("pt-BR", {
+    day:"2-digit",
+    month:"2-digit",
+    year:"numeric"
+  });
+
+  const hora = dt.toLocaleTimeString("pt-BR", {
+    hour:"2-digit",
+    minute:"2-digit"
+  });
+
   return `${data} ${hora}`;
 }
+
 function getHojeIso(){
   const hoje = new Date();
   const ano = hoje.getFullYear();
@@ -34,6 +53,7 @@ function getHojeIso(){
   const dia = String(hoje.getDate()).padStart(2, "0");
   return `${ano}-${mes}-${dia}`;
 }
+
 function textoSeguro(txt){
   return String(txt ?? "")
     .replaceAll("&", "&amp;")
@@ -43,29 +63,36 @@ function textoSeguro(txt){
     .replaceAll("'", "&#39;");
 }
 
+function formatarDataTela(dataIso){
+  if (!dataIso) return "-";
+  const [yyyy, mm, dd] = dataIso.split("-");
+  if (!yyyy || !mm || !dd) return "-";
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+/* ===== CORES ===== */
 const corPos = "#1b8f2e";
 const corNeg = "#c0392b";
 const roxo   = "#6a1b9a";
 
 /* ===== STORAGE ===== */
-const APP_STORAGE_KEY = "lancamento_categorias_v1";
-const DEFAULT_CATEGORY = "";
+const APP_STORAGE_KEY = "lancamento_caixas_v1";
 
 /* ===== ESTADO ===== */
 const listaLancamentos = [];
 let historicoRaw = [];
-let categoriaAtiva = DEFAULT_CATEGORY;
+let caixaAtiva = "";
 let dadosApp = criarEstruturaBase();
 
 function criarEstruturaBase(){
   return {
-    categoriaAtiva: "",
-    categorias: [],
-    dadosPorCategoria: {}
+    caixaAtiva: "",
+    caixas: [],
+    dadosPorCaixa: {}
   };
 }
 
-function criarCategoriaVazia(){
+function criarCaixaVazia(){
   return {
     data: "",
     valorInicial: "",
@@ -73,54 +100,54 @@ function criarCategoriaVazia(){
   };
 }
 
-function garantirCategoria(nome){
-  const key = normalizarCategoria(nome);
+function garantirCaixa(nome){
+  const key = normalizarCaixa(nome);
   if (!key) return "";
 
-  if (!Array.isArray(dadosApp.categorias)) dadosApp.categorias = [];
-  if (!dadosApp.dadosPorCategoria || typeof dadosApp.dadosPorCategoria !== "object") {
-    dadosApp.dadosPorCategoria = {};
+  if (!Array.isArray(dadosApp.caixas)) dadosApp.caixas = [];
+  if (!dadosApp.dadosPorCaixa || typeof dadosApp.dadosPorCaixa !== "object") {
+    dadosApp.dadosPorCaixa = {};
   }
 
-  if (!dadosApp.categorias.includes(key)) {
-    dadosApp.categorias.push(key);
+  if (!dadosApp.caixas.includes(key)) {
+    dadosApp.caixas.push(key);
   }
 
-  if (!dadosApp.dadosPorCategoria[key]) {
-    dadosApp.dadosPorCategoria[key] = criarCategoriaVazia();
+  if (!dadosApp.dadosPorCaixa[key]) {
+    dadosApp.dadosPorCaixa[key] = criarCaixaVazia();
   }
 
   return key;
 }
 
-function getDadosCategoriaAtual(){
-  if (!categoriaAtiva) return criarCategoriaVazia();
-  return dadosApp.dadosPorCategoria[categoriaAtiva] || criarCategoriaVazia();
+function getDadosCaixaAtual(){
+  if (!caixaAtiva) return criarCaixaVazia();
+  return dadosApp.dadosPorCaixa[caixaAtiva] || criarCaixaVazia();
 }
 
-function sincronizarEstadoCategoriaAtual(){
-  if (!categoriaAtiva) {
+function sincronizarEstadoCaixaAtual(){
+  if (!caixaAtiva) {
     historicoRaw = [];
     listaLancamentos.length = 0;
     return;
   }
 
-  const dados = getDadosCategoriaAtual();
+  const dados = getDadosCaixaAtual();
   historicoRaw = Array.isArray(dados.historicoRaw) ? [...dados.historicoRaw] : [];
   rebuildAgregadoFromRaw();
 }
 
-function atualizarEstadoDaCategoriaAtual(){
-  if (!categoriaAtiva) return;
+function atualizarEstadoDoCaixaAtual(){
+  if (!caixaAtiva) return;
 
-  const dados = getDadosCategoriaAtual();
+  const dados = getDadosCaixaAtual();
   dados.historicoRaw = [...historicoRaw];
   dados.data = document.getElementById("data")?.value || "";
   dados.valorInicial = document.getElementById("valorInicial")?.value || "";
 }
 
-function preencherCamposCategoriaAtual(){
-  const dados = getDadosCategoriaAtual();
+function preencherCamposCaixaAtual(){
+  const dados = getDadosCaixaAtual();
   const d  = document.getElementById("data");
   const vi = document.getElementById("valorInicial");
 
@@ -128,43 +155,58 @@ function preencherCamposCategoriaAtual(){
   if (vi) vi.value = dados.valorInicial || "";
 }
 
-function renderizarSeletorCategorias(){
-  const select = document.getElementById("categoriaAtiva");
-  const wrap = document.getElementById("wrapCategoriaSelect");
+function renderizarSeletorCaixas(){
+  const select = document.getElementById("caixaAtiva");
+  const wrap = document.getElementById("wrapCaixaSelect");
   if (!select || !wrap) return;
 
-  const categorias = [...new Set((dadosApp.categorias || [])
-    .map(c => normalizarCategoria(c))
+  const caixas = [...new Set((dadosApp.caixas || [])
+    .map(c => normalizarCaixa(c))
     .filter(Boolean))];
 
-  dadosApp.categorias = categorias;
+  dadosApp.caixas = caixas;
 
-  if (!categorias.length) {
+  if (!caixas.length) {
     wrap.style.display = "none";
     select.innerHTML = "";
-    categoriaAtiva = "";
+    caixaAtiva = "";
     return;
   }
 
   wrap.style.display = "block";
 
-  select.innerHTML = categorias.map(c => {
-    const nome = formatarNomeCategoria(c);
+  select.innerHTML = caixas.map(c => {
+    const nome = formatarNomeCaixa(c);
     return `<option value="${textoSeguro(c)}">${textoSeguro(nome)}</option>`;
   }).join("");
 
-  if (!categoriaAtiva || !categorias.includes(categoriaAtiva)) {
-    categoriaAtiva = categorias[0];
+  if (!caixaAtiva || !caixas.includes(caixaAtiva)) {
+    caixaAtiva = caixas[0];
   }
 
-  select.value = categoriaAtiva;
+  select.value = caixaAtiva;
+}
+
+function atualizarEstadoBotoes(){
+  const temCaixaAtiva = !!caixaAtiva;
+  const temCaixas = (dadosApp.caixas || []).length > 0;
+
+  const btnNovaEntrada = document.getElementById("btnNovaEntrada");
+  const btnRelatorio = document.getElementById("btnRelatorio");
+  const btnRelatorioTotal = document.getElementById("btnRelatorioTotal");
+  const btnLimparTudo = document.getElementById("btnLimparTudo");
+
+  if (btnNovaEntrada) btnNovaEntrada.disabled = !temCaixaAtiva;
+  if (btnRelatorio) btnRelatorio.disabled = !temCaixaAtiva;
+  if (btnLimparTudo) btnLimparTudo.disabled = !temCaixaAtiva;
+  if (btnRelatorioTotal) btnRelatorioTotal.disabled = !temCaixas;
 }
 
 /* ===== INIT ===== */
 document.addEventListener("DOMContentLoaded", () => {
   carregarDoStorage();
 
-  ["data","valorInicial"].forEach(id=>{
+  ["data","valorInicial"].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener("input", () => {
@@ -174,9 +216,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  const seletor = document.getElementById("categoriaAtiva");
+  const seletor = document.getElementById("caixaAtiva");
   seletor?.addEventListener("change", (e) => {
-    trocarCategoria(e.target.value);
+    trocarCaixa(e.target.value);
   });
 
   const modal = document.getElementById("modal-relatorio");
@@ -186,18 +228,43 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /* ===== STORAGE ===== */
-function migrarEstruturaAntiga(){
-  return criarEstruturaBase();
+function migrarEstruturaAntigaParaCaixas(salvoAntigo){
+  if (!salvoAntigo || typeof salvoAntigo !== "object") {
+    return criarEstruturaBase();
+  }
+
+  const caixas = Array.isArray(salvoAntigo.categorias)
+    ? salvoAntigo.categorias.map(normalizarCaixa).filter(Boolean)
+    : [];
+
+  const dadosPorCaixa = {};
+  const origem = salvoAntigo.dadosPorCategoria || {};
+
+  caixas.forEach(cx => {
+    const item = origem[cx] || {};
+    dadosPorCaixa[cx] = {
+      data: item.data || "",
+      valorInicial: item.valorInicial || "",
+      historicoRaw: Array.isArray(item.historicoRaw) ? item.historicoRaw : []
+    };
+  });
+
+  return {
+    caixaAtiva: normalizarCaixa(salvoAntigo.categoriaAtiva || caixas[0] || ""),
+    caixas,
+    dadosPorCaixa
+  };
 }
 
 function salvarNoStorage(){
-  atualizarEstadoDaCategoriaAtual();
-  dadosApp.categoriaAtiva = categoriaAtiva;
+  atualizarEstadoDoCaixaAtual();
+  dadosApp.caixaAtiva = caixaAtiva;
   localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(dadosApp));
 }
 
 function carregarDoStorage(){
   const salvoNovo = localStorage.getItem(APP_STORAGE_KEY);
+  const salvoAntigo = localStorage.getItem("lancamento_categorias_v1");
 
   if (salvoNovo) {
     try {
@@ -205,25 +272,32 @@ function carregarDoStorage(){
     } catch {
       dadosApp = criarEstruturaBase();
     }
+  } else if (salvoAntigo) {
+    try {
+      dadosApp = migrarEstruturaAntigaParaCaixas(JSON.parse(salvoAntigo));
+    } catch {
+      dadosApp = criarEstruturaBase();
+    }
   } else {
-    dadosApp = migrarEstruturaAntiga();
+    dadosApp = criarEstruturaBase();
   }
 
   if (!dadosApp || typeof dadosApp !== "object") {
     dadosApp = criarEstruturaBase();
   }
 
-  if (!Array.isArray(dadosApp.categorias)) dadosApp.categorias = [];
-  if (!dadosApp.dadosPorCategoria || typeof dadosApp.dadosPorCategoria !== "object") {
-    dadosApp.dadosPorCategoria = {};
+  if (!Array.isArray(dadosApp.caixas)) dadosApp.caixas = [];
+  if (!dadosApp.dadosPorCaixa || typeof dadosApp.dadosPorCaixa !== "object") {
+    dadosApp.dadosPorCaixa = {};
   }
 
-  categoriaAtiva = normalizarCategoria(dadosApp.categoriaAtiva || "");
+  caixaAtiva = normalizarCaixa(dadosApp.caixaAtiva || "");
 
-  renderizarSeletorCategorias();
-  preencherCamposCategoriaAtual();
-  sincronizarEstadoCategoriaAtual();
+  renderizarSeletorCaixas();
+  preencherCamposCaixaAtual();
+  sincronizarEstadoCaixaAtual();
   atualizarLista();
+  atualizarEstadoBotoes();
   salvarNoStorage();
 }
 
@@ -247,70 +321,98 @@ function rebuildAgregadoFromRaw(){
   }
 
   listaLancamentos.length = 0;
-  for (const k of ordem) listaLancamentos.push(mapa.get(k));
+  for (const k of ordem) {
+    listaLancamentos.push(mapa.get(k));
+  }
 }
 
-/* ===== CATEGORIAS ===== */
-window.criarNovaCategoria = function(){
-  const nomeInformado = prompt("Nome da nova categoria:");
+function calcularResumoDoCaixa(nomeCaixa){
+  const dados = dadosApp.dadosPorCaixa[nomeCaixa] || criarCaixaVazia();
+  const historico = Array.isArray(dados.historicoRaw) ? dados.historicoRaw : [];
+
+  let entrada = 0;
+  let saida = 0;
+
+  for (const item of historico) {
+    entrada += Number(item.dinheiro) || 0;
+    saida += Number(item.saida) || 0;
+  }
+
+  const valorInicial = parseValor(dados.valorInicial || 0);
+  const valorTotal = valorInicial + entrada - saida;
+
+  return {
+    data: dados.data || "",
+    valorInicial,
+    entrada,
+    saida,
+    valorTotal
+  };
+}
+
+/* ===== CAIXAS ===== */
+window.criarNovoCaixa = function(){
+  const nomeInformado = prompt("Nome do novo caixa:");
   if (nomeInformado === null) return;
 
-  const nome = normalizarCategoria(nomeInformado);
+  const nome = normalizarCaixa(nomeInformado);
   if (!nome) {
-    window.toast?.error?.("informe um nome para a categoria.");
+    window.toast?.error?.("informe um nome para o caixa.");
     return;
   }
 
-  if ((dadosApp.categorias || []).includes(nome)) {
-    categoriaAtiva = nome;
-    renderizarSeletorCategorias();
-    trocarCategoria(nome);
-    window.toast?.error?.("essa categoria já existe.");
+  if ((dadosApp.caixas || []).includes(nome)) {
+    caixaAtiva = nome;
+    renderizarSeletorCaixas();
+    trocarCaixa(nome);
+    window.toast?.error?.("esse caixa já existe.");
     return;
   }
 
-  garantirCategoria(nome);
-  categoriaAtiva = nome;
-  dadosApp.categoriaAtiva = categoriaAtiva;
+  garantirCaixa(nome);
+  caixaAtiva = nome;
+  dadosApp.caixaAtiva = caixaAtiva;
 
-  renderizarSeletorCategorias();
-  preencherCamposCategoriaAtual();
-  sincronizarEstadoCategoriaAtual();
+  renderizarSeletorCaixas();
+  preencherCamposCaixaAtual();
+  sincronizarEstadoCaixaAtual();
 
   const box = document.getElementById("container-nova-entrada");
   if (box) box.innerHTML = "";
 
   atualizarLista();
+  atualizarEstadoBotoes();
   salvarNoStorage();
 
-  window.toast?.success?.("Categoria criada.");
+  window.toast?.success?.("Caixa criado.");
 };
 
-function trocarCategoria(nome){
+function trocarCaixa(nome){
   salvarNoStorage();
 
-  categoriaAtiva = normalizarCategoria(nome);
-  if (!categoriaAtiva || !(dadosApp.categorias || []).includes(categoriaAtiva)) {
-    categoriaAtiva = "";
+  caixaAtiva = normalizarCaixa(nome);
+  if (!caixaAtiva || !(dadosApp.caixas || []).includes(caixaAtiva)) {
+    caixaAtiva = "";
   }
 
-  dadosApp.categoriaAtiva = categoriaAtiva;
+  dadosApp.caixaAtiva = caixaAtiva;
 
-  renderizarSeletorCategorias();
-  preencherCamposCategoriaAtual();
-  sincronizarEstadoCategoriaAtual();
+  renderizarSeletorCaixas();
+  preencherCamposCaixaAtual();
+  sincronizarEstadoCaixaAtual();
 
   const box = document.getElementById("container-nova-entrada");
   if (box) box.innerHTML = "";
 
   atualizarLista();
+  atualizarEstadoBotoes();
   salvarNoStorage();
 }
 
 /* ===== UI: NOVA ENTRADA / EDITAR ===== */
 window.adicionarEntrada = function(lanc = {}, idx = null){
-  if (!categoriaAtiva){
-    window.toast?.error?.("crie uma categoria antes de lançar.");
+  if (!caixaAtiva){
+    window.toast?.error?.("crie um caixa antes de lançar.");
     return;
   }
 
@@ -339,8 +441,8 @@ window.adicionarEntrada = function(lanc = {}, idx = null){
 };
 
 window.salvarEntrada = function(){
-  if (!categoriaAtiva){
-    window.toast?.error?.("crie uma categoria antes de lançar.");
+  if (!caixaAtiva){
+    window.toast?.error?.("crie um caixa antes de lançar.");
     return;
   }
 
@@ -388,14 +490,19 @@ window.salvarEntrada = function(){
       saida: saida - (Number(atualNovo.saida) || 0),
       cartao: 0,
       outros: 0,
-      categoria: categoriaAtiva
+      caixa: caixaAtiva
     });
 
     rebuildAgregadoFromRaw();
     window.toast?.success?.("Entrada atualizada.");
   }
   else {
-    historicoRaw.push({ ...base, cartao:0, outros:0, categoria: categoriaAtiva });
+    historicoRaw.push({
+      ...base,
+      cartao: 0,
+      outros: 0,
+      caixa: caixaAtiva
+    });
     rebuildAgregadoFromRaw();
     window.toast?.success?.("Entrada salva.");
   }
@@ -412,14 +519,15 @@ function atualizarLista(){
 
   lista.innerHTML = "";
 
-  if (!categoriaAtiva) {
-    lista.innerHTML = `<p style="margin:0; color:#666;">Nenhuma categoria cadastrada.</p>`;
+  if (!caixaAtiva) {
+    lista.innerHTML = `<p style="margin:0; color:#666;">Nenhum caixa cadastrado.</p>`;
     atualizarTotais();
+    atualizarEstadoBotoes();
     return;
   }
 
   if (!listaLancamentos.length) {
-    lista.innerHTML = `<p style="margin:0; color:#666;">Sem entradas nesta categoria.</p>`;
+    lista.innerHTML = `<p style="margin:0; color:#666;">Sem entradas neste caixa.</p>`;
   }
 
   listaLancamentos.forEach((it, idx) => {
@@ -449,6 +557,7 @@ function atualizarLista(){
   });
 
   atualizarTotais();
+  atualizarEstadoBotoes();
 }
 
 /* ===== RESUMO (TELA) ===== */
@@ -456,8 +565,8 @@ function atualizarTotais(){
   const box = document.getElementById("resumoLancamento");
   if (!box) return;
 
-  if (!categoriaAtiva) {
-    box.innerHTML = `<p style="margin:0; color:#666;">Crie uma categoria para começar os lançamentos.</p>`;
+  if (!caixaAtiva) {
+    box.innerHTML = `<p style="margin:0; color:#666;">Crie um caixa para começar os lançamentos.</p>`;
     return;
   }
 
@@ -476,7 +585,7 @@ function atualizarTotais(){
   }
 
   box.innerHTML = `
-    <p><strong>Categoria:</strong> ${textoSeguro(formatarNomeCategoria(categoriaAtiva))}</p>
+    <p><strong>Caixa:</strong> ${textoSeguro(formatarNomeCaixa(caixaAtiva))}</p>
     <p><strong>Data:</strong> ${textoSeguro(dataResumo || "-")}</p>
     <p><strong>Valor Inicial:</strong>
       <span style="color:${valorInicial < 0 ? corNeg : corPos}">${formatarMoeda(valorInicial)}</span>
@@ -505,7 +614,8 @@ window.editarLancamento = (i) => {
 window.excluirLancamento = (i) => {
   const it = listaLancamentos[i];
   if (!it) return;
-  if (!confirm(`Excluir este lançamento da categoria "${formatarNomeCategoria(categoriaAtiva)}" (e o histórico deste ponto)?`)) return;
+
+  if (!confirm(`Excluir este lançamento do caixa "${formatarNomeCaixa(caixaAtiva)}" (e o histórico deste ponto)?`)) return;
 
   const key = normalizarPonto(it.ponto);
   historicoRaw = historicoRaw.filter(e => normalizarPonto(e.ponto) !== key);
@@ -528,6 +638,7 @@ function abrirModal(html){
   document.documentElement.style.overflow = "hidden";
   document.body.style.overflow = "hidden";
 }
+
 window.fecharRelatorio = function(){
   const modal = document.getElementById("modal-relatorio");
   if (!modal) return;
@@ -536,10 +647,10 @@ window.fecharRelatorio = function(){
   document.body.style.overflow = "";
 };
 
-/* ===== RELATÓRIO (MODAL RESUMO) ===== */
+/* ===== RELATÓRIO DO CAIXA ATUAL ===== */
 window.visualizarRelatorio = function(){
-  if (!categoriaAtiva){
-    window.toast?.error?.("crie uma categoria antes de visualizar o relatório.");
+  if (!caixaAtiva){
+    window.toast?.error?.("crie um caixa antes de visualizar o relatório.");
     return;
   }
 
@@ -555,7 +666,8 @@ window.visualizarRelatorio = function(){
   const valorInicial = parseValor(document.getElementById("valorInicial")?.value || 0);
   const totalEntrada = listaLancamentos.reduce((s, e) => s + (Number(e.dinheiro) || 0), 0);
   const totalSaida   = listaLancamentos.reduce((s, e) => s + (Number(e.saida) || 0), 0);
-  const valorTotal = valorInicial + totalEntrada - totalSaida;
+  const valorTotal   = valorInicial + totalEntrada - totalSaida;
+  const totalSub     = totalEntrada - totalSaida;
 
   const linhas = listaLancamentos.map(e => {
     const sub = (Number(e.dinheiro) || 0) - (Number(e.saida) || 0);
@@ -567,8 +679,6 @@ window.visualizarRelatorio = function(){
     </tr>`;
   }).join("");
 
-  const totalSub = totalEntrada - totalSaida;
-
   const html = `
     <button onclick="fecharRelatorio()"
       style="position:fixed; top:10px; right:14px; z-index:9999;
@@ -578,10 +688,10 @@ window.visualizarRelatorio = function(){
     </button>
 
     <div style="font-family: Arial; font-size:14px; padding:16px;">
-      <h3 style="color:${roxo}; text-align:center; margin:0 0 10px;">Resumo</h3>
+      <h3 style="color:${roxo}; text-align:center; margin:0 0 10px;">Resumo do Caixa</h3>
 
       <div style="margin:0 0 10px;">
-        <p><strong>Categoria:</strong> ${textoSeguro(formatarNomeCategoria(categoriaAtiva))}</p>
+        <p><strong>Caixa:</strong> ${textoSeguro(formatarNomeCaixa(caixaAtiva))}</p>
         <p><strong>Data:</strong> ${textoSeguro(dataFmt)}</p>
 
         <p><strong>Valor Inicial:</strong>
@@ -619,6 +729,79 @@ window.visualizarRelatorio = function(){
             <td style="text-align:right; padding:8px 6px; color:${corPos}">${formatarMoeda(totalEntrada)}</td>
             <td style="text-align:right; padding:8px 6px; color:${corNeg}">-${formatarMoeda(totalSaida)}</td>
             <td style="text-align:right; padding:8px 6px; ${(totalSub) < 0 ? `color:${corNeg}` : `color:${corPos}` }">${formatarMoeda(totalSub)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+
+  abrirModal(html);
+};
+
+/* ===== RELATÓRIO TOTAL ===== */
+window.visualizarRelatorioTotal = function(){
+  const caixas = (dadosApp.caixas || []).filter(Boolean);
+
+  if (!caixas.length){
+    window.toast?.error?.("crie ao menos um caixa antes de visualizar o relatório total.");
+    return;
+  }
+
+  let somaInicial = 0;
+  let somaEntrada = 0;
+  let somaSaida = 0;
+  let somaTotal = 0;
+
+  const linhas = caixas.map(nomeCaixa => {
+    const resumo = calcularResumoDoCaixa(nomeCaixa);
+
+    somaInicial += resumo.valorInicial;
+    somaEntrada += resumo.entrada;
+    somaSaida += resumo.saida;
+    somaTotal += resumo.valorTotal;
+
+    return `<tr>
+      <td style="padding:8px 6px; border-bottom:1px solid #eee; text-transform:lowercase;">${textoSeguro(formatarNomeCaixa(nomeCaixa))}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee;">${resumo.data ? textoSeguro(formatarDataTela(resumo.data)) : "-"}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee; color:${resumo.valorInicial < 0 ? corNeg : corPos};">${formatarMoeda(resumo.valorInicial)}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee; color:${corPos};">${formatarMoeda(resumo.entrada)}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee; color:${corNeg};">-${formatarMoeda(resumo.saida)}</td>
+      <td style="text-align:right; padding:8px 6px; border-bottom:1px solid #eee; font-weight:700; color:${resumo.valorTotal < 0 ? corNeg : corPos};">${formatarMoeda(resumo.valorTotal)}</td>
+    </tr>`;
+  }).join("");
+
+  const html = `
+    <button onclick="fecharRelatorio()"
+      style="position:fixed; top:10px; right:14px; z-index:9999;
+             background:transparent; border:none; padding:0;
+             font-size:28px; line-height:1; color:${roxo}; cursor:pointer;">
+      ×
+    </button>
+
+    <div style="font-family: Arial; font-size:14px; padding:16px;">
+      <h3 style="color:${roxo}; text-align:center; margin:0 0 12px;">Relatório Total dos Caixas</h3>
+
+      <table style="width:100%; border-collapse:collapse; font-size:13px; background:#fff;">
+        <thead>
+          <tr style="background:#f2f2f7">
+            <th style="text-align:left; padding:8px 6px;">Caixa</th>
+            <th style="text-align:right; padding:8px 6px;">Data</th>
+            <th style="text-align:right; padding:8px 6px;">Inicial</th>
+            <th style="text-align:right; padding:8px 6px;">Entrada</th>
+            <th style="text-align:right; padding:8px 6px;">Saída</th>
+            <th style="text-align:right; padding:8px 6px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhas}
+        </tbody>
+        <tfoot>
+          <tr style="background:#f2f2f7; font-weight:700">
+            <td colspan="2" style="text-align:left; padding:8px 6px;">Total Geral</td>
+            <td style="text-align:right; padding:8px 6px; color:${somaInicial < 0 ? corNeg : corPos};">${formatarMoeda(somaInicial)}</td>
+            <td style="text-align:right; padding:8px 6px; color:${corPos};">${formatarMoeda(somaEntrada)}</td>
+            <td style="text-align:right; padding:8px 6px; color:${corNeg};">-${formatarMoeda(somaSaida)}</td>
+            <td style="text-align:right; padding:8px 6px; color:${somaTotal < 0 ? corNeg : corPos};">${formatarMoeda(somaTotal)}</td>
           </tr>
         </tfoot>
       </table>
@@ -671,7 +854,7 @@ window.visualizarHistorico = function(index){
 
     <div style="font-family: Arial; font-size:14px; padding:16px;">
       <h3 style="color:${roxo}; text-align:center; margin:0 0 10px;">Histórico — ${textoSeguro(it.ponto)}</h3>
-      <p><strong>Categoria:</strong> ${textoSeguro(formatarNomeCategoria(categoriaAtiva))}</p>
+      <p><strong>Caixa:</strong> ${textoSeguro(formatarNomeCaixa(caixaAtiva))}</p>
 
       <table style="width:100%; border-collapse:collapse; font-size:13px; background:#fff;">
         <thead>
@@ -694,17 +877,17 @@ window.visualizarHistorico = function(index){
 
 /* ===== LIMPAR ===== */
 window.limparLancamentos = function(){
-  if (!categoriaAtiva){
-    window.toast?.error?.("não há categoria para limpar.");
+  if (!caixaAtiva){
+    window.toast?.error?.("não há caixa para limpar.");
     return;
   }
 
-  if (!confirm(`Deseja realmente limpar todos os lançamentos e valores da categoria "${formatarNomeCategoria(categoriaAtiva)}"?`)) return;
+  if (!confirm(`Deseja realmente limpar todos os lançamentos e valores do caixa "${formatarNomeCaixa(caixaAtiva)}"?`)) return;
 
   listaLancamentos.length = 0;
   historicoRaw = [];
 
-  const dados = getDadosCategoriaAtual();
+  const dados = getDadosCaixaAtual();
   dados.historicoRaw = [];
   dados.data = getHojeIso();
   dados.valorInicial = "";
@@ -719,5 +902,5 @@ window.limparLancamentos = function(){
 
   salvarNoStorage();
   atualizarLista();
-  window.toast?.success?.("Categoria limpa.");
+  window.toast?.success?.("Caixa limpo.");
 };
