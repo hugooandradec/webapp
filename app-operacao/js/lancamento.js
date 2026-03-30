@@ -903,4 +903,5 @@ window.limparLancamentos = function(){
   salvarNoStorage();
   atualizarLista();
   window.toast?.success?.("Caixa limpo.");
+
 };
