@@ -33,7 +33,9 @@
       background: #f5f5f5;
     }
 
-    main { padding: 16px; }
+    main {
+      padding: 16px;
+    }
 
     h2 {
       text-align: center;
@@ -78,7 +80,12 @@
       background: #4a137a;
     }
 
-    .barra-categoria,
+    .btn:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .barra-caixa,
     .resumo,
     .resumo-box {
       margin-top: 20px;
@@ -88,27 +95,27 @@
       box-shadow: 0 0 4px rgba(0,0,0,0.1);
     }
 
-    .categoria-linha {
+    .caixa-linha {
       display: flex;
       align-items: end;
       gap: 10px;
     }
 
-    .categoria-campo {
+    .caixa-campo {
       flex: 1;
       min-width: 0;
     }
 
-    .categoria-campo label {
+    .caixa-campo label {
       margin-top: 0;
       margin-bottom: 4px;
     }
 
-    .categoria-campo select {
+    .caixa-campo select {
       margin-bottom: 0;
     }
 
-    .btn-add-categoria {
+    .btn-add-caixa {
       width: 46px;
       min-width: 46px;
       height: 46px;
@@ -127,70 +134,70 @@
       flex-shrink: 0;
     }
 
-    .btn-add-categoria:hover {
+    .btn-add-caixa:hover {
       background: #4a137a;
     }
 
-    .linha-lancamento{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:10px 0;
-      border-bottom:1px solid #eee;
-      gap:12px;
+    .linha-lancamento {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+      gap: 12px;
     }
 
-    .acoes{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      white-space:nowrap;
-      flex-shrink:0;
+    .acoes {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    .acoes button{
-      background:transparent;
-      border:none;
-      cursor:pointer;
-      font-size:16px;
-      padding:6px;
+    .acoes button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      padding: 6px;
     }
 
-    #modal-relatorio{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.7);
-      display:none;
-      justify-content:center;
-      align-items:center;
-      z-index:1000;
+    #modal-relatorio {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
     }
 
-    #modal-relatorio.aberta{
-      display:flex;
+    #modal-relatorio.aberta {
+      display: flex;
     }
 
-    #conteudo-relatorio{
-      background:#fff;
-      width:100%;
-      height:100%;
-      overflow:auto;
+    #conteudo-relatorio {
+      background: #fff;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
     }
 
     @media (max-width:640px){
-      .categoria-linha {
+      .caixa-linha {
         gap: 8px;
       }
 
-      .btn-add-categoria {
+      .btn-add-caixa {
         width: 42px;
         min-width: 42px;
         height: 42px;
         font-size: 22px;
       }
 
-      .linha-lancamento{
-        align-items:flex-start;
+      .linha-lancamento {
+        align-items: flex-start;
       }
     }
   </style>
@@ -200,19 +207,19 @@
 <main>
   <h2>Lançamento</h2>
 
-  <div class="barra-categoria">
-    <div class="categoria-linha">
-      <div class="categoria-campo" id="wrapCategoriaSelect">
-        <label for="categoriaAtiva">Categoria</label>
-        <select id="categoriaAtiva"></select>
+  <div class="barra-caixa">
+    <div class="caixa-linha">
+      <div class="caixa-campo" id="wrapCaixaSelect">
+        <label for="caixaAtiva">Caixa</label>
+        <select id="caixaAtiva"></select>
       </div>
 
       <button
         type="button"
-        class="btn-add-categoria"
-        onclick="criarNovaCategoria()"
-        title="Nova categoria"
-        aria-label="Nova categoria"
+        class="btn-add-caixa"
+        onclick="criarNovoCaixa()"
+        title="Novo caixa"
+        aria-label="Novo caixa"
       >
         +
       </button>
@@ -226,7 +233,7 @@
   <input id="valorInicial" type="number" placeholder="R$" />
 
   <div id="container-nova-entrada"></div>
-  <button class="btn" onclick="adicionarEntrada()">Nova Entrada</button>
+  <button class="btn" id="btnNovaEntrada" onclick="adicionarEntrada()">Nova Entrada</button>
 
   <div class="resumo">
     <h3>Entradas</h3>
@@ -235,8 +242,9 @@
 
   <div class="resumo-box" id="resumoLancamento"></div>
 
-  <button class="btn" onclick="visualizarRelatorio()">Visualizar Relatório</button>
-  <button class="btn" style="background:#999" onclick="limparLancamentos()">Limpar Tudo</button>
+  <button class="btn" id="btnRelatorio" onclick="visualizarRelatorio()">Visualizar Relatório</button>
+  <button class="btn" id="btnRelatorioTotal" onclick="visualizarRelatorioTotal()">Relatório Total dos Caixas</button>
+  <button class="btn" id="btnLimparTudo" style="background:#999" onclick="limparLancamentos()">Limpar Tudo</button>
 </main>
 
 <div id="modal-relatorio">
