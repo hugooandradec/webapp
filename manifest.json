@@ -1,7 +1,7 @@
 {
   "name": "WebApp",
   "short_name": "WebApp",
-  "start_url": "./app-selector.html",
+  "start_url": "./login.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
