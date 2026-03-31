@@ -1,34 +1,36 @@
-// sw.js (raiz do webapp) — PWA com atualização automática
+// sw.js (raiz do webapp)
 
-const CACHE_NAME = "webapp-cache";
+const CACHE_NAME = "webapp-cache-v2";
 const ROOT = self.registration.scope;
 
-// Arquivos essenciais (pra garantir que app abre offline)
 const CORE_ASSETS = [
-  // raiz
   "index.html",
-  "app-selector.html",
   "login.html",
   "manifest.json",
 
-  // ícones
   "common/img/icon-192.png",
   "common/img/icon-512.png",
+  "common/img/favicon.ico",
 
-  // ===== OPERAÇÃO (HTML ATUAL) =====
+  "common/js/auth.js",
+  "common/js/navegacao.js",
+  "common/js/toast.js",
+
+  "app-operacao/manifest.json",
+
   "app-operacao/html/menu.html",
-
   "app-operacao/html/lancamento.html",
   "app-operacao/html/preFecho.html",
   "app-operacao/html/calculoRetencao.html",
   "app-operacao/html/calculoSalas.html",
 
-  "app-operacao/html/cartaoPontos.html",
-  "app-operacao/html/comissaoPontos.html",
-  "app-operacao/html/relatorioPontos.html"
+  "app-operacao/js/lancamento.js",
+  "app-operacao/js/preFecho.js",
+  "app-operacao/js/calculoRetencao.js",
+  "app-operacao/js/calculoSalas.js",
+  "app-operacao/js/sync.js"
 ].map(p => new URL(p, ROOT).toString());
 
-/* ===== install: pré-cache do básico ===== */
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -39,7 +41,6 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-/* ===== activate: limpa caches antigos ===== */
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -53,7 +54,6 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-/* ===== fetch: network-first com fallback ===== */
 self.addEventListener("fetch", (event) => {
   const req = event.request;
 
@@ -63,10 +63,7 @@ self.addEventListener("fetch", (event) => {
     fetch(req)
       .then((resp) => {
         const copy = resp.clone();
-        caches
-          .open(CACHE_NAME)
-          .then((cache) => cache.put(req, copy))
-          .catch(() => {});
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
         return resp;
       })
       .catch(() => {

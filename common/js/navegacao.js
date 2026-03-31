@@ -11,7 +11,7 @@ import {
 function getRootPath() {
   const parts = location.pathname.split("/").filter(Boolean);
   if (location.hostname.endsWith("github.io") && parts.length > 0) {
-    return "/" + parts[0] + "/"; // ex.: /webapp/
+    return "/" + parts[0] + "/";
   }
   return "/";
 }
@@ -19,10 +19,10 @@ const ROOT = getRootPath();
 
 // ===== mapeamento de páginas -> rotas de permissão =====
 const ROTAS_POR_PAGINA = {
-  "preFecho.html":        "operacao-preFecho",
+  "preFecho.html": "operacao-preFecho",
   "calculoRetencao.html": "operacao-retencao",
-  "calculoSalas.html":    "operacao-salas",
-  "lancamento.html":      "operacao-lancamento"
+  "calculoSalas.html": "operacao-salas",
+  "lancamento.html": "operacao-lancamento"
 };
 
 // ===== backend (com fallback) =====
@@ -72,13 +72,14 @@ function logout() {
 function isMenuURL(appKey) {
   const p = location.pathname.toLowerCase();
   if (appKey === "operacao") return p.endsWith("/app-operacao/html/menu.html");
-  if (appKey === "erp")       return p.endsWith("/app-erp/html/menu.html");
+  if (appKey === "erp") return p.endsWith("/app-erp/html/menu.html");
   return false;
 }
+
 function menuPath(appKey) {
   if (appKey === "operacao") return `${ROOT}app-operacao/html/menu.html`;
-  if (appKey === "erp")      return `${ROOT}app-erp/html/menu.html`;
-  return `${ROOT}app-selector.html`;
+  if (appKey === "erp") return `${ROOT}app-erp/html/menu.html`;
+  return `${ROOT}login.html`;
 }
 
 // ===== header builder =====
@@ -91,7 +92,7 @@ function montarHeader(titulo, appKey, backHref, isMenuPageFlag) {
     hrefVoltar = backHref;
   } else {
     const estouNoMenu = isMenuPageFlag === true ? true : isMenuURL(appKey);
-    hrefVoltar = estouNoMenu ? `${ROOT}app-selector.html` : menuPath(appKey);
+    hrefVoltar = estouNoMenu ? `${ROOT}login.html` : menuPath(appKey);
   }
 
   const header = document.createElement("header");
@@ -135,8 +136,7 @@ function montarHeader(titulo, appKey, backHref, isMenuPageFlag) {
 function registrarServiceWorker() {
   if (!("serviceWorker" in navigator)) return;
 
-  const swPath = `${ROOT}sw.js`; // ex.: /webapp/sw.js
-  console.log("[SW] registrando:", swPath);
+  const swPath = `${ROOT}sw.js`;
 
   navigator.serviceWorker
     .register(swPath)
@@ -151,8 +151,8 @@ function registrarServiceWorker() {
 // ===== API pública =====
 /**
  * Inicializa header da página e faz guard de acesso.
- * @param {string} titulo - texto do título no header
- * @param {"erp"|"operacao"|string} appKey - qual app a página pertence
+ * @param {string} titulo
+ * @param {"erp"|"operacao"|string} appKey
  * @param {{backHref?: string, isMenuPage?: boolean}} options
  */
 export async function inicializarPagina(titulo, appKey, options = {}) {
@@ -163,7 +163,7 @@ export async function inicializarPagina(titulo, appKey, options = {}) {
   }
 
   if (!canAccess(appKey)) {
-    window.location.replace(`${ROOT}app-selector.html`);
+    window.location.replace(`${ROOT}app-operacao/html/menu.html`);
     return;
   }
 
@@ -171,7 +171,7 @@ export async function inicializarPagina(titulo, appKey, options = {}) {
   const routeKey = ROTAS_POR_PAGINA[pagina];
 
   if (routeKey && !canAccessRoute(routeKey)) {
-    const destino = menuPath(appKey) || `${ROOT}app-selector.html`;
+    const destino = menuPath(appKey) || `${ROOT}app-operacao/html/menu.html`;
     window.location.replace(destino);
     return;
   }
