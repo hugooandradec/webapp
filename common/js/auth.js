@@ -1,17 +1,14 @@
 // common/js/auth.js
 const USERS = [
-  // vt -> acesso TOTAL a tudo (apps e rotas)
   {
     username: "vt",
     password: "178590",
     nome: "vt",
-    apps: ["operacao", "erp", "base"], // continua como antes
+    apps: ["operacao"],
     role: "admin",
-    rotas: ["*"]                       // * = todas as rotas liberadas
+    rotas: ["*"]
   },
 
-  // pipo -> só operação, e dentro da operação:
-  // pré-fecho, retenção e cálculo de salas
   {
     username: "pipo",
     password: "7853",
@@ -26,7 +23,7 @@ const USERS = [
   }
 ];
 
-const LS_USER = "usuarioLogado"; // guardamos {username,nome,apps,role,rotas}
+const LS_USER = "usuarioLogado";
 
 export function getCurrentUser() {
   try {
@@ -39,6 +36,7 @@ export function getCurrentUser() {
 export function login(username, password) {
   const u = USERS.find(x => x.username === username && x.password === password);
   if (!u) throw new Error("Usuário ou senha inválidos");
+
   const { password: _omit, ...pub } = u;
   localStorage.setItem(LS_USER, JSON.stringify(pub));
   return pub;
@@ -48,12 +46,10 @@ export function logout() {
   localStorage.removeItem(LS_USER);
 }
 
-// ===== acesso por APP (módulo: operacao / erp / base)
 export function canAccess(appKey) {
   const u = getCurrentUser();
   if (!u) return false;
 
-  // admin (vt) enxerga tudo, mesmo que algum app esteja "desativado"
   if (u.role === "admin") return true;
   if (!appKey) return true;
 
@@ -62,23 +58,26 @@ export function canAccess(appKey) {
 
 export function requireApp(appKey) {
   const u = getCurrentUser();
+
   if (!u) {
     window.location.replace("./login.html");
     return false;
   }
+
   if (!canAccess(appKey)) {
-    // redireciona pra algo que ele tenha acesso
-    if (u.apps?.includes("erp")) {
+    if (u.apps?.includes("operacao")) {
+      window.location.replace("./app-operacao/html/menu.html");
+    } else if (u.apps?.includes("erp")) {
       window.location.replace("./app-erp/html/menu.html");
     } else {
-      window.location.replace("./app-selector.html");
+      window.location.replace("./login.html");
     }
     return false;
   }
+
   return true;
 }
 
-// ===== permissões extras (por rota / página)
 export function isAdmin() {
   const u = getCurrentUser();
   return !!u && (u.role === "admin");
@@ -95,18 +94,15 @@ export function canAccessRoute(routeKey) {
   const u = getCurrentUser();
   if (!u) return false;
 
-  // admin tem acesso a tudo
   if (u.role === "admin") return true;
-
   if (!routeKey) return true;
   if (u.rotas?.includes("*")) return true;
 
   return Array.isArray(u.rotas) && u.rotas.includes(routeKey);
 }
 
-export function requireRoute(routeKey, fallbackUrl = "./app-operacao/menu.html") {
+export function requireRoute(routeKey, fallbackUrl = "./app-operacao/html/menu.html") {
   if (!canAccessRoute(routeKey)) {
-    // se não puder, manda pro menu da operação (ou outro lugar que você passar)
     window.location.replace(fallbackUrl);
     return false;
   }
