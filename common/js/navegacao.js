@@ -1,6 +1,7 @@
 // common/js/navegacao.js
 
 import { getCurrentUser, canAccessRoute } from "./auth.js";
+import { getURLBackend } from "./servicos.js";
 
 // ===== raiz do site (GitHub Pages ou domínio próprio) =====
 function getRootPath() {
@@ -15,7 +16,6 @@ function getRootPath() {
 
 const ROOT = getRootPath();
 
-
 // ===== páginas -> rotas =====
 const ROTAS_POR_PAGINA = {
   "lancamento.html": "operacao-lancamento",
@@ -24,33 +24,10 @@ const ROTAS_POR_PAGINA = {
   "calculoSalas.html": "operacao-salas"
 };
 
-
-// ===== backend =====
-export function getURLBackend() {
-  return (
-    localStorage.getItem("URL_BACKEND") ||
-    "https://webapp-backend-8abe.onrender.com"
-  );
+// ===== caminho do menu =====
+function menuPath() {
+  return `${ROOT}app-operacao/html/menu.html`;
 }
-
-
-// ===== status online =====
-export async function isOnline() {
-  const url = `${getURLBackend()}/health`;
-
-  try {
-    const resp = await fetch(url, { method: "GET", cache: "no-store" });
-
-    if (!resp.ok) return false;
-
-    const j = await resp.json().catch(() => ({}));
-
-    return j?.status === "ok" || j?.mongo === "connected";
-  } catch {
-    return false;
-  }
-}
-
 
 // ===== logout =====
 function logout() {
@@ -58,19 +35,47 @@ function logout() {
   window.location.replace(`${ROOT}login.html`);
 }
 
+// ===== wake automático do backend =====
+export function acordarBackend() {
+  const base = getURLBackend();
+  const healthUrl = `${base}/health`;
 
-// ===== menu padrão =====
-function menuPath() {
-  return `${ROOT}app-operacao/html/menu.html`;
+  fetch(healthUrl, {
+    method: "GET",
+    cache: "no-store"
+  })
+    .then(() => {
+      console.log("🌐 Backend acionado");
+    })
+    .catch(() => {
+      console.log("⏳ Backend ainda dormindo ou indisponível");
+    });
 }
 
+// ===== status online =====
+export async function isOnline() {
+  const url = `${getURLBackend()}/health`;
+
+  try {
+    const resp = await fetch(url, {
+      method: "GET",
+      cache: "no-store"
+    });
+
+    if (!resp.ok) return false;
+
+    const json = await resp.json().catch(() => ({}));
+
+    return json?.status === "ok" || json?.mongo === "connected";
+  } catch {
+    return false;
+  }
+}
 
 // ===== montar cabeçalho =====
 function montarHeader(titulo, backHref) {
-
   const usuario = getCurrentUser();
   const onlineDotId = "online-dot";
-
   const hrefVoltar = backHref || menuPath();
 
   const header = document.createElement("header");
@@ -83,17 +88,28 @@ function montarHeader(titulo, backHref) {
       display:flex;
       align-items:center;
       justify-content:space-between;
+      gap:10px;
     ">
-
-      <div style="display:flex;align-items:center;gap:10px;">
-        <a href="${hrefVoltar}" style="color:#fff;text-decoration:none;font-weight:700;">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+        <a href="${hrefVoltar}" style="
+          color:#fff;
+          text-decoration:none;
+          font-weight:700;
+          display:flex;
+          align-items:center;
+          gap:6px;
+          min-width:0;
+        ">
           <i class="fa-solid fa-arrow-left"></i>
-          <span style="margin-left:6px">${titulo}</span>
+          <span style="
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+          ">${titulo}</span>
         </a>
       </div>
 
-      <div style="display:flex;align-items:center;gap:10px;">
-
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
         <span id="${onlineDotId}" style="
           width:10px;
           height:10px;
@@ -102,49 +118,44 @@ function montarHeader(titulo, backHref) {
           display:inline-block;
         "></span>
 
-        <span>${usuario?.nome ?? ""}</span>
+        <span style="font-weight:600;">${usuario?.nome ?? ""}</span>
 
         <button id="btn-logout"
+          type="button"
+          title="Sair"
           style="
             border:0;
             background:transparent;
             color:#fff;
             cursor:pointer;
             font-size:16px;
-          "
-          title="Sair">
-
+            padding:4px;
+          ">
           <i class="fa-solid fa-right-from-bracket"></i>
-
         </button>
-
       </div>
     </div>
   `;
 
   document.body.prepend(header);
 
-  // logout
-  header.querySelector("#btn-logout").addEventListener("click", logout);
+  const btnLogout = header.querySelector("#btn-logout");
+  btnLogout?.addEventListener("click", logout);
 
-  // status online
-  (async () => {
-
-    const ok = await isOnline();
-
-    const dot = document.getElementById(onlineDotId);
-
-    if (dot) {
-      dot.style.background = ok ? "#16a34a" : "#aaa";
-    }
-
-  })();
+  atualizarStatusOnline();
 }
 
+// ===== atualizar bolinha online/offline =====
+async function atualizarStatusOnline() {
+  const dot = document.getElementById("online-dot");
+  if (!dot) return;
+
+  const ok = await isOnline();
+  dot.style.background = ok ? "#16a34a" : "#aaa";
+}
 
 // ===== registrar service worker =====
 function registrarServiceWorker() {
-
   if (!("serviceWorker" in navigator)) return;
 
   const swPath = `${ROOT}sw.js`;
@@ -155,14 +166,12 @@ function registrarServiceWorker() {
       console.log("[SW] registrado:", reg.scope);
     })
     .catch((err) => {
-      console.warn("[SW] erro:", err);
+      console.warn("[SW] erro ao registrar:", err);
     });
 }
 
-
 // ===== inicializar página =====
 export async function inicializarPagina(titulo, appKey, options = {}) {
-
   const usuario = getCurrentUser();
 
   if (!usuario) {
@@ -170,8 +179,7 @@ export async function inicializarPagina(titulo, appKey, options = {}) {
     return;
   }
 
-  const pagina = window.location.pathname.split("/").pop();
-
+  const pagina = window.location.pathname.split("/").pop().split("?")[0];
   const routeKey = ROTAS_POR_PAGINA[pagina];
 
   if (routeKey && !canAccessRoute(routeKey)) {
@@ -180,6 +188,12 @@ export async function inicializarPagina(titulo, appKey, options = {}) {
   }
 
   montarHeader(titulo, options.backHref);
-
   registrarServiceWorker();
+
+  // acorda o backend logo após entrar na página
+  setTimeout(acordarBackend, 800);
+
+  // atualiza a bolinha de tempos em tempos
+  setTimeout(atualizarStatusOnline, 1800);
+  setInterval(atualizarStatusOnline, 30000);
 }

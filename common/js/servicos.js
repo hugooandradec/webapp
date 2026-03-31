@@ -1,100 +1,99 @@
 // common/js/servicos.js
-// Centraliza envio de dados ao backend
 
-// Define a URL do backend com fallback automático
-const URL_BACKEND =
-  localStorage.getItem("URL_BACKEND") ||
-  (window.__CONFIG && window.__CONFIG.apiBase) ||
-  "https://webapp-backend-8abe.onrender.com";
+const URL_PADRAO_BACKEND = "https://ajudante-api.onrender.com";
 
-/**
- * Envia dados ao backend (estrutura { acao, dados })
- * @param {string} acao - nome da ação
- * @param {object} dados - payload
- */
-export async function enviarDados(acao, dados) {
+export function getURLBackend() {
+  const url = localStorage.getItem("URL_BACKEND") || URL_PADRAO_BACKEND;
+  return String(url).replace(/\/+$/, "");
+}
+
+export function setURLBackend(url) {
+  if (!url) return;
+  localStorage.setItem("URL_BACKEND", String(url).replace(/\/+$/, ""));
+}
+
+export async function enviarDados(acao, dados = {}) {
+  const url = getURLBackend();
+
   try {
-    const resp = await fetch(URL_BACKEND, {
+    const resposta = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ acao, dados }),
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ acao, dados })
     });
 
-    if (!resp.ok) {
-      throw new Error("Erro na requisição: " + resp.status);
+    const texto = await resposta.text();
+    let json = {};
+
+    try {
+      json = texto ? JSON.parse(texto) : {};
+    } catch {
+      json = { sucesso: false, mensagem: texto || "Resposta inválida do servidor." };
     }
 
-    return await resp.json();
-  } catch (err) {
-    console.error("Falha ao enviar dados:", err);
-    throw err;
+    if (!resposta.ok) {
+      return {
+        sucesso: false,
+        mensagem: json?.mensagem || `Erro HTTP ${resposta.status}`,
+        status: resposta.status,
+        ...json
+      };
+    }
+
+    return {
+      sucesso: json?.sucesso !== false,
+      ...json
+    };
+  } catch (erro) {
+    console.error("❌ Erro ao enviar dados:", erro);
+    return {
+      sucesso: false,
+      mensagem: "Não foi possível conectar ao servidor."
+    };
   }
 }
 
-/**
- * Exemplo de função utilitária para GET (se quiser usar endpoints REST)
- * @param {string} endpoint - rota (ex: /app-erp/produtos)
- */
-export async function getDados(endpoint) {
+export async function buscarDados(caminho = "") {
+  const base = getURLBackend();
+  const url = caminho
+    ? `${base}/${String(caminho).replace(/^\/+/, "")}`
+    : base;
+
   try {
-    const resp = await fetch(`${URL_BACKEND}${endpoint}`, {
+    const resposta = await fetch(url, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      cache: "no-store"
     });
 
-    if (!resp.ok) {
-      throw new Error("Erro na requisição GET: " + resp.status);
+    const texto = await resposta.text();
+    let json = {};
+
+    try {
+      json = texto ? JSON.parse(texto) : {};
+    } catch {
+      json = { sucesso: false, mensagem: texto || "Resposta inválida do servidor." };
     }
 
-    return await resp.json();
-  } catch (err) {
-    console.error("Falha ao obter dados:", err);
-    throw err;
-  }
-}
-
-/**
- * Exemplo de função utilitária para PUT (atualizar no backend REST)
- * @param {string} endpoint
- * @param {object} dados
- */
-export async function atualizarDados(endpoint, dados) {
-  try {
-    const resp = await fetch(`${URL_BACKEND}${endpoint}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(dados),
-    });
-
-    if (!resp.ok) {
-      throw new Error("Erro na requisição PUT: " + resp.status);
+    if (!resposta.ok) {
+      return {
+        sucesso: false,
+        mensagem: json?.mensagem || `Erro HTTP ${resposta.status}`,
+        status: resposta.status,
+        ...json
+      };
     }
 
-    return await resp.json();
-  } catch (err) {
-    console.error("Falha ao atualizar dados:", err);
-    throw err;
-  }
-}
-
-/**
- * Exemplo de função utilitária para DELETE
- * @param {string} endpoint
- */
-export async function deletarDados(endpoint) {
-  try {
-    const resp = await fetch(`${URL_BACKEND}${endpoint}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-    });
-
-    if (!resp.ok) {
-      throw new Error("Erro na requisição DELETE: " + resp.status);
-    }
-
-    return await resp.json();
-  } catch (err) {
-    console.error("Falha ao deletar dados:", err);
-    throw err;
+    return {
+      sucesso: true,
+      ...json
+    };
+  } catch (erro) {
+    console.error("❌ Erro ao buscar dados:", erro);
+    return {
+      sucesso: false,
+      mensagem: "Não foi possível conectar ao servidor."
+    };
   }
 }
