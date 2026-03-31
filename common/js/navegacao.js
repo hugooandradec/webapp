@@ -35,41 +35,85 @@ function logout() {
   window.location.replace(`${ROOT}login.html`);
 }
 
-// ===== wake automático do backend =====
-export function acordarBackend() {
-  const base = getURLBackend();
-  const healthUrl = `${base}/health`;
-
-  fetch(healthUrl, {
-    method: "GET",
-    cache: "no-store"
-  })
-    .then(() => {
-      console.log("🌐 Backend acionado");
-    })
-    .catch(() => {
-      console.log("⏳ Backend ainda dormindo ou indisponível");
-    });
-}
-
-// ===== status online =====
-export async function isOnline() {
-  const url = `${getURLBackend()}/health`;
+// ===== helper de fetch leve =====
+async function tentarFetch(url, { timeout = 8000, parseJson = false } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
 
   try {
     const resp = await fetch(url, {
       method: "GET",
-      cache: "no-store"
+      cache: "no-store",
+      signal: controller.signal
     });
 
-    if (!resp.ok) return false;
+    let json = null;
+    if (parseJson) {
+      try {
+        json = await resp.json();
+      } catch {
+        json = null;
+      }
+    }
 
-    const json = await resp.json().catch(() => ({}));
-
-    return json?.status === "ok" || json?.mongo === "connected";
-  } catch {
-    return false;
+    return { ok: resp.ok, status: resp.status, json };
+  } catch (erro) {
+    return { ok: false, status: 0, json: null, erro };
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+// ===== wake automático do backend =====
+export async function acordarBackend() {
+  const base = getURLBackend();
+  const tentativas = [
+    `${base}`,
+    `${base}/`,
+    `${base}/health`
+  ];
+
+  for (const url of tentativas) {
+    const resp = await tentarFetch(url, { timeout: 10000, parseJson: false });
+    if (resp.ok || resp.status === 404 || resp.status === 405) {
+      console.log("🌐 Backend acionado:", url);
+      return true;
+    }
+  }
+
+  console.log("⏳ Backend ainda dormindo ou indisponível");
+  return false;
+}
+
+// ===== status online =====
+export async function isOnline() {
+  const base = getURLBackend();
+
+  // 1) tenta rota health, se existir
+  const health = await tentarFetch(`${base}/health`, {
+    timeout: 8000,
+    parseJson: true
+  });
+
+  if (health.ok) {
+    const json = health.json || {};
+    if (json?.status === "ok" || json?.mongo === "connected") {
+      return true;
+    }
+    return true; // respondeu 200, então backend está vivo
+  }
+
+  // 2) fallback para a raiz do backend
+  const raiz = await tentarFetch(`${base}`, {
+    timeout: 8000,
+    parseJson: false
+  });
+
+  if (raiz.ok || raiz.status === 404 || raiz.status === 405) {
+    return true;
+  }
+
+  return false;
 }
 
 // ===== montar cabeçalho =====
@@ -191,9 +235,29 @@ export async function inicializarPagina(titulo, appKey, options = {}) {
   registrarServiceWorker();
 
   // acorda o backend logo após entrar na página
-  setTimeout(acordarBackend, 800);
+  setTimeout(() => {
+    acordarBackend();
+  }, 800);
 
   // atualiza a bolinha de tempos em tempos
   setTimeout(atualizarStatusOnline, 1800);
   setInterval(atualizarStatusOnline, 30000);
+
+  // quando voltar a aba, tenta reacordar e atualizar status
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      acordarBackend();
+      atualizarStatusOnline();
+    }
+  });
+
+  window.addEventListener("focus", () => {
+    acordarBackend();
+    atualizarStatusOnline();
+  });
+
+  window.addEventListener("online", () => {
+    acordarBackend();
+    atualizarStatusOnline();
+  });
 }
