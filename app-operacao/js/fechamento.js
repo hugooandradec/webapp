@@ -1,532 +1,482 @@
 const STORAGE_KEY = "fechamento_dados_v1";
 
-function num(v) {
-  if (v == null) return 0;
+const camposPrincipaisIds = [
+  "periodo",
+  "turano",
+  "rc",
+  "centro",
+  "total",
+  "comissao",
+  "cartaoPassado",
+  "cartaoAtual",
+  "debitosResumo",
+  "devedoresResumo",
+  "recebimentosAnteriores",
+  "firma"
+];
 
-  const texto = String(v).trim();
+const listaDebitos = document.getElementById("listaDebitos");
+const listaDevedores = document.getElementById("listaDevedores");
 
-  if (!texto) return 0;
+const btnAdicionarDebito = document.getElementById("btnAdicionarDebito");
+const btnAdicionarDevedor = document.getElementById("btnAdicionarDevedor");
+const btnVisualizarResumo = document.getElementById("btnVisualizarResumo");
+const btnGerarRelatorio = document.getElementById("btnGerarRelatorio");
+const btnFecharModal = document.getElementById("btnFecharModal");
+const btnImprimir = document.getElementById("btnImprimir");
+const btnLimparTudo = document.getElementById("btnLimparTudo");
 
-  return Number(
-    texto
-      .replace(/\./g, "")
-      .replace(",", ".")
-      .replace(/[^\d.-]/g, "")
-  ) || 0;
+const modalRelatorio = document.getElementById("modalRelatorio");
+const conteudoRelatorio = document.getElementById("conteudoRelatorio");
+
+const estado = {
+  debitos: [],
+  devedores: []
+};
+
+function obterCampo(id) {
+  return document.getElementById(id);
 }
 
-function moeda(v) {
-  const valor = Number(v) || 0;
-  return valor.toLocaleString("pt-BR", {
+function obterCamposPrincipais() {
+  const dados = {};
+  camposPrincipaisIds.forEach(id => {
+    dados[id] = obterCampo(id).value || "";
+  });
+  return dados;
+}
+
+function moedaBR(valor) {
+  return Number(valor || 0).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL"
   });
 }
 
-function formatarMoedaDigitada(valor) {
-  const somenteDigitos = String(valor || "").replace(/\D/g, "");
+function converterTextoParaNumero(texto) {
+  if (texto === null || texto === undefined) return 0;
+  if (typeof texto === "number") return texto;
 
-  if (!somenteDigitos) return "0,00";
+  let valor = String(texto).trim();
 
-  const numero = Number(somenteDigitos) / 100;
+  if (!valor) return 0;
 
+  valor = valor.replace(/\s/g, "");
+
+  if (valor.includes(",")) {
+    valor = valor.replace(/\./g, "").replace(",", ".");
+  }
+
+  valor = valor.replace(/[^\d.-]/g, "");
+
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : 0;
+}
+
+function formatarInputMoeda(input) {
+  let valor = input.value || "";
+
+  valor = valor.replace(/\D/g, "");
+
+  if (!valor) {
+    input.value = "";
+    return;
+  }
+
+  const numero = Number(valor) / 100;
+
+  input.value = numero.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function aplicarMascaraMoedaNosCampos() {
+  const idsMoeda = [
+    "turano",
+    "rc",
+    "centro",
+    "total",
+    "comissao",
+    "cartaoPassado",
+    "cartaoAtual",
+    "debitosResumo",
+    "devedoresResumo",
+    "recebimentosAnteriores",
+    "firma"
+  ];
+
+  idsMoeda.forEach(id => {
+    const campo = obterCampo(id);
+
+    campo.addEventListener("input", () => {
+      formatarInputMoeda(campo);
+      atualizarResumo();
+      salvarTudo();
+    });
+  });
+}
+
+function classeValor(valor) {
+  if (valor > 0) return "positivo";
+  if (valor < 0) return "negativo";
+  return "";
+}
+
+function criarCardResumo(id, valor) {
+  const el = document.getElementById(id);
+  el.textContent = moedaBR(valor);
+  el.classList.remove("positivo", "negativo");
+
+  const classe = classeValor(valor);
+  if (classe) el.classList.add(classe);
+}
+
+function atualizarMiniResumo(id, valor, tipo = "neutro") {
+  const el = document.getElementById(id);
+  el.textContent = moedaBR(valor);
+  el.className = "";
+
+  if (tipo === "positivo") {
+    el.classList.add("valor-positivo");
+  } else if (tipo === "negativo") {
+    el.classList.add("valor-negativo");
+  } else {
+    el.classList.add("valor-neutro");
+  }
+}
+
+function adicionarDebito(dados = {}) {
+  estado.debitos.push({
+    descricao: dados.descricao || "",
+    conta: dados.conta || "",
+    valor: dados.valor || ""
+  });
+
+  renderizarDebitos();
+  salvarTudo();
+}
+
+function adicionarDevedor(dados = {}) {
+  estado.devedores.push({
+    ponto: dados.ponto || "",
+    valorAnterior: dados.valorAnterior || "",
+    pagamento: dados.pagamento || "",
+    novoDebito: dados.novoDebito || "",
+    valorAtual: dados.valorAtual || ""
+  });
+
+  renderizarDevedores();
+  salvarTudo();
+}
+
+function removerDebito(index) {
+  estado.debitos.splice(index, 1);
+  renderizarDebitos();
+  atualizarResumo();
+  salvarTudo();
+}
+
+function removerDevedor(index) {
+  estado.devedores.splice(index, 1);
+  renderizarDevedores();
+  atualizarResumo();
+  salvarTudo();
+}
+
+function renderizarDebitos() {
+  if (!estado.debitos.length) {
+    listaDebitos.innerHTML = `
+      <div class="estado-vazio">
+        Nenhum débito adicionado ainda.
+      </div>
+    `;
+    return;
+  }
+
+  listaDebitos.innerHTML = estado.debitos.map((debito, index) => `
+    <div class="linha-item">
+      <div class="subtitulo-lista">
+        <span>Débito ${index + 1}</span>
+        <button class="btn btn-vermelho" type="button" onclick="window.removerDebito(${index})">
+          <i class="fas fa-trash"></i>
+          Remover
+        </button>
+      </div>
+
+      <div class="grid-3">
+        <div class="campo">
+          <label>Descrição</label>
+          <input
+            type="text"
+            value="${escapeHtml(debito.descricao)}"
+            oninput="window.atualizarCampoDebito(${index}, 'descricao', this.value)"
+            placeholder="Ex.: Loja Camerino"
+          >
+        </div>
+
+        <div class="campo">
+          <label>Conta</label>
+          <input
+            type="text"
+            value="${escapeHtml(debito.conta)}"
+            oninput="window.atualizarCampoDebito(${index}, 'conta', this.value)"
+            placeholder="Ex.: Aluguel"
+          >
+        </div>
+
+        <div class="campo">
+          <label>Valor</label>
+          <input
+            type="text"
+            value="${escapeHtml(debito.valor)}"
+            inputmode="numeric"
+            oninput="window.atualizarCampoDebito(${index}, 'valor', this.value, true)"
+            placeholder="0,00"
+          >
+        </div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function renderizarDevedores() {
+  if (!estado.devedores.length) {
+    listaDevedores.innerHTML = `
+      <div class="estado-vazio">
+        Nenhum devedor adicionado ainda.
+      </div>
+    `;
+    return;
+  }
+
+  listaDevedores.innerHTML = estado.devedores.map((devedor, index) => `
+    <div class="linha-item">
+      <div class="subtitulo-lista">
+        <span>Devedor ${index + 1}</span>
+        <button class="btn btn-vermelho" type="button" onclick="window.removerDevedor(${index})">
+          <i class="fas fa-trash"></i>
+          Remover
+        </button>
+      </div>
+
+      <div class="grid-4">
+        <div class="campo">
+          <label>Ponto</label>
+          <input
+            type="text"
+            value="${escapeHtml(devedor.ponto)}"
+            oninput="window.atualizarCampoDevedor(${index}, 'ponto', this.value)"
+            placeholder="Ex.: Nosso Ponto"
+          >
+        </div>
+
+        <div class="campo">
+          <label>Valor Ant.</label>
+          <input
+            type="text"
+            value="${escapeHtml(devedor.valorAnterior)}"
+            inputmode="numeric"
+            oninput="window.atualizarCampoDevedor(${index}, 'valorAnterior', this.value, true)"
+            placeholder="0,00"
+          >
+        </div>
+
+        <div class="campo">
+          <label>PG</label>
+          <input
+            type="text"
+            value="${escapeHtml(devedor.pagamento)}"
+            inputmode="numeric"
+            oninput="window.atualizarCampoDevedor(${index}, 'pagamento', this.value, true)"
+            placeholder="0,00"
+          >
+        </div>
+
+        <div class="campo">
+          <label>Novo Déb.</label>
+          <input
+            type="text"
+            value="${escapeHtml(devedor.novoDebito)}"
+            inputmode="numeric"
+            oninput="window.atualizarCampoDevedor(${index}, 'novoDebito', this.value, true)"
+            placeholder="0,00"
+          >
+        </div>
+
+        <div class="campo" style="grid-column: 1 / -1;">
+          <label>Valor Att.</label>
+          <input
+            type="text"
+            value="${escapeHtml(devedor.valorAtual)}"
+            inputmode="numeric"
+            oninput="window.atualizarCampoDevedor(${index}, 'valorAtual', this.value, true)"
+            placeholder="0,00"
+          >
+        </div>
+      </div>
+    </div>
+  `).join("");
+}
+
+function atualizarCampoDebito(index, campo, valor, ehMoeda = false) {
+  if (ehMoeda) {
+    valor = formatarValorDigitado(valor);
+  }
+
+  estado.debitos[index][campo] = valor;
+  atualizarResumo();
+  salvarTudo();
+}
+
+function atualizarCampoDevedor(index, campo, valor, ehMoeda = false) {
+  if (ehMoeda) {
+    valor = formatarValorDigitado(valor);
+  }
+
+  estado.devedores[index][campo] = valor;
+  atualizarResumo();
+  salvarTudo();
+}
+
+function formatarValorDigitado(valor) {
+  let limpo = String(valor || "").replace(/\D/g, "");
+  if (!limpo) return "";
+
+  const numero = Number(limpo) / 100;
   return numero.toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
 }
 
-function aplicarMascaraMoeda(input) {
-  if (!input) return;
-
-  if (input.dataset.maskApplied === "true") return;
-  input.dataset.maskApplied = "true";
-
-  input.addEventListener("focus", () => {
-    if (!input.value.trim()) {
-      input.value = "0,00";
-    }
-  });
-
-  input.addEventListener("input", () => {
-    input.value = formatarMoedaDigitada(input.value);
-    atualizarResumo();
-    salvarDados();
-  });
-
-  input.addEventListener("blur", () => {
-    if (!input.value.trim()) {
-      input.value = "0,00";
-    } else {
-      input.value = formatarMoedaDigitada(input.value);
-    }
-
-    atualizarResumo();
-    salvarDados();
-  });
+function somarDebitosLista() {
+  return estado.debitos.reduce((soma, item) => {
+    return soma + converterTextoParaNumero(item.valor);
+  }, 0);
 }
 
-function configurarCampoTexto(input) {
-  if (!input) return;
-
-  if (input.dataset.textConfigured === "true") return;
-  input.dataset.textConfigured = "true";
-
-  input.addEventListener("input", () => {
-    salvarDados();
-    atualizarResumo();
-  });
-
-  input.addEventListener("blur", salvarDados);
-}
-
-function valorCampo(id) {
-  const el = document.getElementById(id);
-  if (!el) return 0;
-  return num(el.value);
-}
-
-function textoCampo(id) {
-  const el = document.getElementById(id);
-  if (!el) return "";
-  return el.value.trim();
-}
-
-function atualizarCampo(id, valor) {
-  const campo = document.getElementById(id);
-  if (!campo) return;
-  campo.value = formatarMoedaDigitada(Math.round((Number(valor) || 0) * 100));
-}
-
-function atualizarTexto(id, valor, classe = "") {
-  const el = document.getElementById(id);
-  if (!el) return;
-
-  el.textContent = moeda(valor);
-
-  el.classList.remove("valor-negativo", "valor-positivo", "valor-neutro");
-
-  if (classe) {
-    el.classList.add(classe);
-    return;
-  }
-
-  if (valor < 0) {
-    el.classList.add("valor-negativo");
-  } else if (valor > 0) {
-    el.classList.add("valor-positivo");
-  } else {
-    el.classList.add("valor-neutro");
-  }
-}
-
-function atualizarCard(id, valor) {
-  const el = document.getElementById(id);
-  if (!el) return;
-
-  el.textContent = moeda(valor);
-  el.classList.remove("negativo", "positivo");
-
-  if (valor < 0) {
-    el.classList.add("negativo");
-  } else if (valor > 0) {
-    el.classList.add("positivo");
-  }
-}
-
-function somarDebitos() {
-  let total = 0;
-
-  document.querySelectorAll(".debitoValor").forEach((input) => {
-    total += num(input.value);
-  });
-
-  return total;
-}
-
-function somarDevedores() {
-  let total = 0;
-
-  document.querySelectorAll(".devedorLinha").forEach((linha) => {
-    const anterior = num(linha.querySelector(".valorAnterior")?.value);
-    const atual = num(linha.querySelector(".valorAtual")?.value);
-
-    total += anterior - atual;
-  });
-
-  return total;
-}
-
-function obterDebitos() {
-  return Array.from(document.querySelectorAll(".debitoLinha")).map((linha) => ({
-    nome: linha.querySelector(".debitoNome")?.value?.trim() || "",
-    valor: linha.querySelector(".debitoValor")?.value?.trim() || "0,00"
-  }));
-}
-
-function obterDevedores() {
-  return Array.from(document.querySelectorAll(".devedorLinha")).map((linha) => ({
-    nome: linha.querySelector(".devedorNome")?.value?.trim() || "",
-    anterior: linha.querySelector(".valorAnterior")?.value?.trim() || "0,00",
-    atual: linha.querySelector(".valorAtual")?.value?.trim() || "0,00"
-  }));
+function somarDevedoresLista() {
+  return estado.devedores.reduce((soma, item) => {
+    return soma + converterTextoParaNumero(item.valorAtual);
+  }, 0);
 }
 
 function atualizarResumo() {
-  const turano = valorCampo("turano");
-  const rc = valorCampo("rc");
-  const centro = valorCampo("centro");
+  const turano = converterTextoParaNumero(obterCampo("turano").value);
+  const rc = converterTextoParaNumero(obterCampo("rc").value);
+  const centro = converterTextoParaNumero(obterCampo("centro").value);
 
-  const totalRota = turano + rc + centro;
+  const total = converterTextoParaNumero(obterCampo("total").value);
+  const comissao = converterTextoParaNumero(obterCampo("comissao").value);
+  const cartaoPassado = converterTextoParaNumero(obterCampo("cartaoPassado").value);
+  const cartaoAtual = converterTextoParaNumero(obterCampo("cartaoAtual").value);
+  const debitosCampo = converterTextoParaNumero(obterCampo("debitosResumo").value);
+  const devedoresCampo = converterTextoParaNumero(obterCampo("devedoresResumo").value);
+  const recebimentos = converterTextoParaNumero(obterCampo("recebimentosAnteriores").value);
+  const firma = converterTextoParaNumero(obterCampo("firma").value);
 
-  const comissao = totalRota > 0 ? (totalRota / 0.915) - totalRota : 0;
+  const debitosLista = somarDebitosLista();
+  const devedoresLista = somarDevedoresLista();
 
-  const cartaoPassado = valorCampo("cartaoPassado");
-  const cartaoPassadoLiquido = cartaoPassado * 0.95;
+  const debitosUsados = debitosCampo || debitosLista;
+  const devedoresUsados = devedoresCampo || devedoresLista;
 
-  const cartaoAtual = valorCampo("cartaoAtual");
-  const devAntReceb = valorCampo("recebimentosAnteriores");
+  criarCardResumo("cardTotal", total);
+  criarCardResumo("cardComissao", comissao);
+  criarCardResumo("cardSaidas", debitosUsados + devedoresUsados);
+  criarCardResumo("cardFirma", firma);
 
-  const debitos = somarDebitos();
-  const devedores = somarDevedores();
+  atualizarMiniResumo("resTurano", turano);
+  atualizarMiniResumo("resRc", rc);
+  atualizarMiniResumo("resCentro", centro);
+  atualizarMiniResumo("resCartaoPassado", cartaoPassado);
+  atualizarMiniResumo("resCartaoAtual", cartaoAtual, cartaoAtual < 0 ? "negativo" : "neutro");
+  atualizarMiniResumo("resRecebimentos", recebimentos, recebimentos > 0 ? "positivo" : "neutro");
 
-  const firma =
-    totalRota +
-    cartaoPassadoLiquido -
-    cartaoAtual -
-    debitos +
-    devedores +
-    devAntReceb;
-
-  atualizarCampo("total", totalRota);
-  atualizarCampo("comissao", comissao);
-  atualizarCampo("debitosResumo", debitos);
-  atualizarCampo("devedoresResumo", devedores);
-  atualizarCampo("firma", firma);
-
-  atualizarCard("cardTotal", totalRota);
-  atualizarCard("cardComissao", comissao);
-  atualizarCard("cardSaidas", debitos + devedores);
-  atualizarCard("cardFirma", firma);
-
-  atualizarTexto("resTurano", turano, turano > 0 ? "valor-positivo" : "valor-neutro");
-  atualizarTexto("resRc", rc, rc > 0 ? "valor-positivo" : "valor-neutro");
-  atualizarTexto("resCentro", centro, centro > 0 ? "valor-positivo" : "valor-neutro");
-
-  atualizarTexto("resCartaoPassado", cartaoPassadoLiquido, cartaoPassadoLiquido > 0 ? "valor-positivo" : "valor-neutro");
-  atualizarTexto("resCartaoAtual", cartaoAtual, cartaoAtual > 0 ? "valor-negativo" : "valor-neutro");
-  atualizarTexto("resRecebimentos", devAntReceb, devAntReceb > 0 ? "valor-positivo" : "valor-neutro");
-
-  atualizarTexto("finalTotal", totalRota);
-  atualizarTexto("finalComissao", comissao, comissao > 0 ? "valor-negativo" : "valor-neutro");
-  atualizarTexto("finalCartaoPassado", cartaoPassadoLiquido, cartaoPassadoLiquido > 0 ? "valor-positivo" : "valor-neutro");
-  atualizarTexto("finalCartaoAtual", cartaoAtual, cartaoAtual > 0 ? "valor-negativo" : "valor-neutro");
-  atualizarTexto("finalDebitos", debitos, debitos > 0 ? "valor-negativo" : "valor-neutro");
-  atualizarTexto("finalDevedores", devedores, devedores !== 0 ? (devedores < 0 ? "valor-positivo" : "valor-negativo") : "valor-neutro");
-  atualizarTexto("finalRecebimentos", devAntReceb, devAntReceb > 0 ? "valor-positivo" : "valor-neutro");
-  atualizarTexto("finalFirma", firma);
-
-  atualizarEstadosVazios();
+  atualizarMiniResumo("finalTotal", total);
+  atualizarMiniResumo("finalComissao", comissao);
+  atualizarMiniResumo("finalCartaoPassado", cartaoPassado);
+  atualizarMiniResumo("finalCartaoAtual", cartaoAtual, cartaoAtual < 0 ? "negativo" : "neutro");
+  atualizarMiniResumo("finalDebitos", debitosUsados, debitosUsados ? "negativo" : "neutro");
+  atualizarMiniResumo("finalDevedores", devedoresUsados, devedoresUsados ? "negativo" : "neutro");
+  atualizarMiniResumo("finalRecebimentos", recebimentos, recebimentos ? "positivo" : "neutro");
+  atualizarMiniResumo("finalFirma", firma, firma > 0 ? "positivo" : firma < 0 ? "negativo" : "neutro");
 }
 
-function atualizarEstadosVazios() {
-  const listaDebitos = document.getElementById("listaDebitos");
-  const listaDevedores = document.getElementById("listaDevedores");
+function gerarRelatorioHTML() {
+  const dados = obterCamposPrincipais();
 
-  if (listaDebitos && !listaDebitos.querySelector(".debitoLinha")) {
-    listaDebitos.innerHTML = `<div class="estado-vazio" id="vazioDebitos">Nenhum débito adicionado.</div>`;
-  } else {
-    document.getElementById("vazioDebitos")?.remove();
-  }
+  const periodo = dados.periodo || "-";
+  const turano = converterTextoParaNumero(dados.turano);
+  const rc = converterTextoParaNumero(dados.rc);
+  const centro = converterTextoParaNumero(dados.centro);
+  const total = converterTextoParaNumero(dados.total);
+  const comissao = converterTextoParaNumero(dados.comissao);
+  const cartaoPassado = converterTextoParaNumero(dados.cartaoPassado);
+  const cartaoAtual = converterTextoParaNumero(dados.cartaoAtual);
+  const debitosCampo = converterTextoParaNumero(dados.debitosResumo);
+  const devedoresCampo = converterTextoParaNumero(dados.devedoresResumo);
+  const recebimentos = converterTextoParaNumero(dados.recebimentosAnteriores);
+  const firma = converterTextoParaNumero(dados.firma);
 
-  if (listaDevedores && !listaDevedores.querySelector(".devedorLinha")) {
-    listaDevedores.innerHTML = `<div class="estado-vazio" id="vazioDevedores">Nenhum devedor adicionado.</div>`;
-  } else {
-    document.getElementById("vazioDevedores")?.remove();
-  }
-}
+  const totalDebitos = debitosCampo || somarDebitosLista();
+  const totalDevedores = devedoresCampo || somarDevedoresLista();
 
-function criarLinhaDebito(dados = {}) {
-  document.getElementById("vazioDebitos")?.remove();
-
-  const linha = document.createElement("div");
-  linha.className = "linha-item debitoLinha";
-
-  linha.innerHTML = `
-    <div class="subtitulo-lista">
-      <span><i class="fas fa-minus-circle"></i> Débito</span>
-      <button class="btn btn-vermelho btnRemoverDebito" type="button">
-        <i class="fas fa-trash"></i>
-        Remover
-      </button>
-    </div>
-
-    <div class="grid-2">
-      <div class="campo">
-        <label>Nome / Descrição</label>
-        <input type="text" class="debitoNome" placeholder="Ex.: Adiantamento" value="${escapeHtml(dados.nome || "")}">
-      </div>
-
-      <div class="campo">
-        <label>Valor</label>
-        <input type="text" class="debitoValor" inputmode="numeric" placeholder="0,00" value="${escapeHtml(dados.valor || "0,00")}">
-      </div>
-    </div>
-  `;
-
-  const btnRemover = linha.querySelector(".btnRemoverDebito");
-  const nome = linha.querySelector(".debitoNome");
-  const valor = linha.querySelector(".debitoValor");
-
-  btnRemover.addEventListener("click", () => {
-    linha.remove();
-    atualizarEstadosVazios();
-    atualizarResumo();
-    salvarDados();
-  });
-
-  configurarCampoTexto(nome);
-  aplicarMascaraMoeda(valor);
-
-  document.getElementById("listaDebitos").appendChild(linha);
-
-  valor.value = formatarMoedaDigitada(valor.value);
-  atualizarResumo();
-  salvarDados();
-}
-
-function criarLinhaDevedor(dados = {}) {
-  document.getElementById("vazioDevedores")?.remove();
-
-  const linha = document.createElement("div");
-  linha.className = "linha-item devedorLinha";
-
-  linha.innerHTML = `
-    <div class="subtitulo-lista">
-      <span><i class="fas fa-user-minus"></i> Devedor</span>
-      <button class="btn btn-vermelho btnRemoverDevedor" type="button">
-        <i class="fas fa-trash"></i>
-        Remover
-      </button>
-    </div>
-
-    <div class="grid-3">
-      <div class="campo">
-        <label>Nome</label>
-        <input type="text" class="devedorNome" placeholder="Ex.: Gaspar" value="${escapeHtml(dados.nome || "")}">
-      </div>
-
-      <div class="campo">
-        <label>Valor Anterior</label>
-        <input type="text" class="valorAnterior" inputmode="numeric" placeholder="0,00" value="${escapeHtml(dados.anterior || "0,00")}">
-      </div>
-
-      <div class="campo">
-        <label>Valor Atual</label>
-        <input type="text" class="valorAtual" inputmode="numeric" placeholder="0,00" value="${escapeHtml(dados.atual || "0,00")}">
-      </div>
-    </div>
-  `;
-
-  const btnRemover = linha.querySelector(".btnRemoverDevedor");
-  const nome = linha.querySelector(".devedorNome");
-  const anterior = linha.querySelector(".valorAnterior");
-  const atual = linha.querySelector(".valorAtual");
-
-  btnRemover.addEventListener("click", () => {
-    linha.remove();
-    atualizarEstadosVazios();
-    atualizarResumo();
-    salvarDados();
-  });
-
-  configurarCampoTexto(nome);
-  aplicarMascaraMoeda(anterior);
-  aplicarMascaraMoeda(atual);
-
-  document.getElementById("listaDevedores").appendChild(linha);
-
-  anterior.value = formatarMoedaDigitada(anterior.value);
-  atual.value = formatarMoedaDigitada(atual.value);
-
-  atualizarResumo();
-  salvarDados();
-}
-
-function escapeHtml(texto) {
-  return String(texto || "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function coletarDados() {
-  return {
-    periodo: textoCampo("periodo"),
-    turano: document.getElementById("turano")?.value || "0,00",
-    rc: document.getElementById("rc")?.value || "0,00",
-    centro: document.getElementById("centro")?.value || "0,00",
-    cartaoPassado: document.getElementById("cartaoPassado")?.value || "0,00",
-    cartaoAtual: document.getElementById("cartaoAtual")?.value || "0,00",
-    recebimentosAnteriores: document.getElementById("recebimentosAnteriores")?.value || "0,00",
-    debitos: obterDebitos(),
-    devedores: obterDevedores()
-  };
-}
-
-function salvarDados() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(coletarDados()));
-  } catch (erro) {
-    console.warn("Não foi possível salvar o fechamento no localStorage.", erro);
-  }
-}
-
-function carregarDados() {
-  try {
-    const bruto = localStorage.getItem(STORAGE_KEY);
-    if (!bruto) return null;
-    return JSON.parse(bruto);
-  } catch (erro) {
-    console.warn("Não foi possível carregar os dados salvos.", erro);
-    return null;
-  }
-}
-
-function preencherCampo(id, valor, mascara = false) {
-  const el = document.getElementById(id);
-  if (!el) return;
-
-  el.value = valor || (mascara ? "0,00" : "");
-  if (mascara) {
-    el.value = formatarMoedaDigitada(el.value);
-  }
-}
-
-function restaurarDados() {
-  const dados = carregarDados();
-  if (!dados) {
-    atualizarEstadosVazios();
-    atualizarResumo();
-    return;
-  }
-
-  preencherCampo("periodo", dados.periodo || "");
-  preencherCampo("turano", dados.turano || "0,00", true);
-  preencherCampo("rc", dados.rc || "0,00", true);
-  preencherCampo("centro", dados.centro || "0,00", true);
-  preencherCampo("cartaoPassado", dados.cartaoPassado || "0,00", true);
-  preencherCampo("cartaoAtual", dados.cartaoAtual || "0,00", true);
-  preencherCampo("recebimentosAnteriores", dados.recebimentosAnteriores || "0,00", true);
-
-  document.getElementById("listaDebitos").innerHTML = "";
-  document.getElementById("listaDevedores").innerHTML = "";
-
-  (dados.debitos || []).forEach((item) => criarLinhaDebito(item));
-  (dados.devedores || []).forEach((item) => criarLinhaDevedor(item));
-
-  atualizarEstadosVazios();
-  atualizarResumo();
-}
-
-function limparTudo() {
-  const confirmado = window.confirm("Deseja limpar todo o fechamento?");
-  if (!confirmado) return;
-
-  localStorage.removeItem(STORAGE_KEY);
-
-  preencherCampo("periodo", "");
-  preencherCampo("turano", "0,00", true);
-  preencherCampo("rc", "0,00", true);
-  preencherCampo("centro", "0,00", true);
-  preencherCampo("cartaoPassado", "0,00", true);
-  preencherCampo("cartaoAtual", "0,00", true);
-  preencherCampo("recebimentosAnteriores", "0,00", true);
-
-  document.getElementById("listaDebitos").innerHTML = "";
-  document.getElementById("listaDevedores").innerHTML = "";
-
-  atualizarEstadosVazios();
-  atualizarResumo();
-}
-
-function gerarHtmlRelatorio() {
-  const periodo = textoCampo("periodo") || "-";
-
-  const turano = valorCampo("turano");
-  const rc = valorCampo("rc");
-  const centro = valorCampo("centro");
-  const total = valorCampo("total");
-  const comissao = valorCampo("comissao");
-  const cartaoPassado = valorCampo("cartaoPassado");
-  const cartaoPassadoLiquido = cartaoPassado * 0.95;
-  const cartaoAtual = valorCampo("cartaoAtual");
-  const debitos = valorCampo("debitosResumo");
-  const devedores = valorCampo("devedoresResumo");
-  const recebimentos = valorCampo("recebimentosAnteriores");
-  const firma = valorCampo("firma");
-
-  const debitosLista = obterDebitos();
-  const devedoresLista = obterDevedores();
-
-  const htmlDebitos = debitosLista.length
-    ? debitosLista.map((item, i) => `
+  const linhasDebitos = estado.debitos.length
+    ? estado.debitos.map(item => `
         <tr>
-          <td>${i + 1}</td>
-          <td>${escapeHtml(item.nome || "-")}</td>
-          <td>${moeda(num(item.valor))}</td>
+          <td>${escapeHtml(item.descricao || "-")}</td>
+          <td>${escapeHtml(item.conta || "-")}</td>
+          <td class="${converterTextoParaNumero(item.valor) < 0 ? "valor-negativo" : "valor-neutro"}">
+            ${moedaBR(converterTextoParaNumero(item.valor))}
+          </td>
         </tr>
       `).join("")
     : `
       <tr>
-        <td colspan="3">Nenhum débito informado.</td>
+        <td colspan="3">Nenhum débito lançado.</td>
       </tr>
     `;
 
-  const htmlDevedores = devedoresLista.length
-    ? devedoresLista.map((item, i) => {
-        const anterior = num(item.anterior);
-        const atual = num(item.atual);
-        const saldo = anterior - atual;
-
-        return `
-          <tr>
-            <td>${i + 1}</td>
-            <td>${escapeHtml(item.nome || "-")}</td>
-            <td>${moeda(anterior)}</td>
-            <td>${moeda(atual)}</td>
-            <td class="${saldo < 0 ? "valor-positivo" : saldo > 0 ? "valor-negativo" : "valor-neutro"}">${moeda(saldo)}</td>
-          </tr>
-        `;
-      }).join("")
+  const linhasDevedores = estado.devedores.length
+    ? estado.devedores.map(item => `
+        <tr>
+          <td>${escapeHtml(item.ponto || "-")}</td>
+          <td>${moedaBR(converterTextoParaNumero(item.valorAnterior))}</td>
+          <td>${moedaBR(converterTextoParaNumero(item.pagamento))}</td>
+          <td>${moedaBR(converterTextoParaNumero(item.novoDebito))}</td>
+          <td>${moedaBR(converterTextoParaNumero(item.valorAtual))}</td>
+        </tr>
+      `).join("")
     : `
       <tr>
-        <td colspan="5">Nenhum devedor informado.</td>
+        <td colspan="5">Nenhum devedor lançado.</td>
       </tr>
     `;
 
   return `
     <div class="relatorio">
       <div class="relatorio-topo">
-        <h2>Resumo de Fechamento</h2>
+        <h2>Fechamento</h2>
         <p><strong>Período:</strong> ${escapeHtml(periodo)}</p>
+        <p><strong>Gerado em:</strong> ${new Date().toLocaleString("pt-BR")}</p>
       </div>
 
       <div class="relatorio-cards">
         <div class="rel-card">
           <div class="r1">Total</div>
-          <div class="r2">${moeda(total)}</div>
+          <div class="r2">${moedaBR(total)}</div>
         </div>
 
         <div class="rel-card">
           <div class="r1">Comissão</div>
-          <div class="r2">${moeda(comissao)}</div>
+          <div class="r2">${moedaBR(comissao)}</div>
         </div>
 
         <div class="rel-card">
           <div class="r1">Firma</div>
-          <div class="r2">${moeda(firma)}</div>
+          <div class="r2 ${firma < 0 ? "valor-negativo" : "valor-positivo"}">${moedaBR(firma)}</div>
         </div>
       </div>
 
@@ -543,10 +493,10 @@ function gerarHtmlRelatorio() {
           </thead>
           <tbody>
             <tr>
-              <td>${moeda(turano)}</td>
-              <td>${moeda(rc)}</td>
-              <td>${moeda(centro)}</td>
-              <td>${moeda(total)}</td>
+              <td>${moedaBR(turano)}</td>
+              <td>${moedaBR(rc)}</td>
+              <td>${moedaBR(centro)}</td>
+              <td>${moedaBR(total)}</td>
             </tr>
           </tbody>
         </table>
@@ -557,13 +507,13 @@ function gerarHtmlRelatorio() {
         <table class="tabela-relatorio">
           <thead>
             <tr>
-              <th>#</th>
               <th>Descrição</th>
+              <th>Conta</th>
               <th>Valor</th>
             </tr>
           </thead>
           <tbody>
-            ${htmlDebitos}
+            ${linhasDebitos}
           </tbody>
         </table>
       </div>
@@ -573,123 +523,156 @@ function gerarHtmlRelatorio() {
         <table class="tabela-relatorio">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Nome</th>
-              <th>Anterior</th>
-              <th>Atual</th>
-              <th>Saldo da Semana</th>
+              <th>Ponto</th>
+              <th>Valor Ant.</th>
+              <th>PG</th>
+              <th>Novo Déb.</th>
+              <th>Valor Att.</th>
             </tr>
           </thead>
           <tbody>
-            ${htmlDevedores}
+            ${linhasDevedores}
           </tbody>
         </table>
       </div>
 
       <div class="rodape-relatorio">
-        <div class="linha"><span>Cartão Passado (líquido 95%)</span><strong>${moeda(cartaoPassadoLiquido)}</strong></div>
-        <div class="linha"><span>Cartão Atual</span><strong>${moeda(cartaoAtual)}</strong></div>
-        <div class="linha"><span>Débitos</span><strong>${moeda(debitos)}</strong></div>
-        <div class="linha"><span>Devedores</span><strong>${moeda(devedores)}</strong></div>
-        <div class="linha"><span>Dev. Ant. Receb.</span><strong>${moeda(recebimentos)}</strong></div>
-        <div class="linha"><span>Firma</span><strong>${moeda(firma)}</strong></div>
+        <div class="linha"><span>Cartão Passado</span><strong>${moedaBR(cartaoPassado)}</strong></div>
+        <div class="linha"><span>Cartão Atual</span><strong class="${cartaoAtual < 0 ? "valor-negativo" : "valor-neutro"}">${moedaBR(cartaoAtual)}</strong></div>
+        <div class="linha"><span>Débitos</span><strong class="valor-negativo">${moedaBR(totalDebitos)}</strong></div>
+        <div class="linha"><span>Devedores</span><strong class="valor-negativo">${moedaBR(totalDevedores)}</strong></div>
+        <div class="linha"><span>Dev. Ant. Receb.</span><strong class="valor-positivo">${moedaBR(recebimentos)}</strong></div>
+        <div class="linha"><span>Firma</span><strong>${moedaBR(firma)}</strong></div>
       </div>
     </div>
   `;
 }
 
 function abrirModalRelatorio() {
-  const modal = document.getElementById("modalRelatorio");
-  const conteudo = document.getElementById("conteudoRelatorio");
-
-  if (!modal || !conteudo) return;
-
-  conteudo.innerHTML = gerarHtmlRelatorio();
-  modal.classList.add("ativo");
+  conteudoRelatorio.innerHTML = gerarRelatorioHTML();
+  modalRelatorio.classList.add("ativo");
 }
 
 function fecharModalRelatorio() {
-  const modal = document.getElementById("modalRelatorio");
-  if (!modal) return;
-  modal.classList.remove("ativo");
+  modalRelatorio.classList.remove("ativo");
 }
 
-function imprimirRelatorio() {
-  abrirModalRelatorio();
+function salvarTudo() {
+  const dados = {
+    principais: obterCamposPrincipais(),
+    debitos: estado.debitos,
+    devedores: estado.devedores
+  };
 
-  setTimeout(() => {
-    window.print();
-  }, 150);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
 }
 
-function configurarCamposFixos() {
-  const camposTexto = ["periodo"];
-  const camposMoeda = [
-    "turano",
-    "rc",
-    "centro",
-    "cartaoPassado",
-    "cartaoAtual",
-    "recebimentosAnteriores"
-  ];
+function carregarTudo() {
+  const salvo = localStorage.getItem(STORAGE_KEY);
+  if (!salvo) {
+    renderizarDebitos();
+    renderizarDevedores();
+    atualizarResumo();
+    return;
+  }
 
-  camposTexto.forEach((id) => {
-    configurarCampoTexto(document.getElementById(id));
-  });
+  try {
+    const dados = JSON.parse(salvo);
 
-  camposMoeda.forEach((id) => {
-    const input = document.getElementById(id);
-    aplicarMascaraMoeda(input);
-
-    if (!input.value.trim()) {
-      input.value = "0,00";
-    } else {
-      input.value = formatarMoedaDigitada(input.value);
+    if (dados.principais) {
+      camposPrincipaisIds.forEach(id => {
+        obterCampo(id).value = dados.principais[id] || "";
+      });
     }
-  });
 
-  ["total", "comissao", "debitosResumo", "devedoresResumo", "firma"].forEach((id) => {
-    const input = document.getElementById(id);
-    if (!input) return;
-    input.readOnly = true;
-    input.tabIndex = -1;
-  });
+    estado.debitos = Array.isArray(dados.debitos) ? dados.debitos : [];
+    estado.devedores = Array.isArray(dados.devedores) ? dados.devedores : [];
+
+    renderizarDebitos();
+    renderizarDevedores();
+    atualizarResumo();
+  } catch {
+    renderizarDebitos();
+    renderizarDevedores();
+    atualizarResumo();
+  }
 }
 
-function configurarBotoes() {
-  document.getElementById("btnAdicionarDebito")?.addEventListener("click", () => {
-    criarLinhaDebito();
+function limparTudo() {
+  const confirmou = window.confirm("Deseja limpar todo o fechamento?");
+  if (!confirmou) return;
+
+  camposPrincipaisIds.forEach(id => {
+    obterCampo(id).value = "";
   });
 
-  document.getElementById("btnAdicionarDevedor")?.addEventListener("click", () => {
-    criarLinhaDevedor();
-  });
+  estado.debitos = [];
+  estado.devedores = [];
 
-  document.getElementById("btnVisualizarResumo")?.addEventListener("click", abrirModalRelatorio);
-  document.getElementById("btnGerarRelatorio")?.addEventListener("click", abrirModalRelatorio);
-  document.getElementById("btnImprimir")?.addEventListener("click", imprimirRelatorio);
-  document.getElementById("btnFecharModal")?.addEventListener("click", fecharModalRelatorio);
-  document.getElementById("btnLimparTudo")?.addEventListener("click", limparTudo);
+  localStorage.removeItem(STORAGE_KEY);
 
-  document.getElementById("modalRelatorio")?.addEventListener("click", (e) => {
-    if (e.target.id === "modalRelatorio") {
-      fecharModalRelatorio();
-    }
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      fecharModalRelatorio();
-    }
-  });
-}
-
-function init() {
-  configurarCamposFixos();
-  configurarBotoes();
-  atualizarEstadosVazios();
-  restaurarDados();
+  renderizarDebitos();
+  renderizarDevedores();
   atualizarResumo();
+  fecharModalRelatorio();
 }
 
-document.addEventListener("DOMContentLoaded", init);
+function escapeHtml(valor) {
+  return String(valor ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function registrarEventosCamposPrincipais() {
+  camposPrincipaisIds.forEach(id => {
+    const campo = obterCampo(id);
+
+    if (id === "periodo") {
+      campo.addEventListener("input", () => {
+        atualizarResumo();
+        salvarTudo();
+      });
+    } else {
+      campo.addEventListener("blur", () => {
+        atualizarResumo();
+        salvarTudo();
+      });
+    }
+  });
+}
+
+window.removerDebito = removerDebito;
+window.removerDevedor = removerDevedor;
+window.atualizarCampoDebito = atualizarCampoDebito;
+window.atualizarCampoDevedor = atualizarCampoDevedor;
+
+btnAdicionarDebito.addEventListener("click", () => adicionarDebito());
+btnAdicionarDevedor.addEventListener("click", () => adicionarDevedor());
+btnVisualizarResumo.addEventListener("click", abrirModalRelatorio);
+btnGerarRelatorio.addEventListener("click", abrirModalRelatorio);
+btnFecharModal.addEventListener("click", fecharModalRelatorio);
+btnLimparTudo.addEventListener("click", limparTudo);
+
+btnImprimir.addEventListener("click", () => {
+  abrirModalRelatorio();
+  setTimeout(() => window.print(), 150);
+});
+
+modalRelatorio.addEventListener("click", (event) => {
+  if (event.target === modalRelatorio) {
+    fecharModalRelatorio();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    fecharModalRelatorio();
+  }
+});
+
+aplicarMascaraMoedaNosCampos();
+registrarEventosCamposPrincipais();
+carregarTudo();
