@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fechamento</title>
+  <meta name="theme-color" content="#6a1b9a" />
+
+  <link rel="manifest" href="../../manifest.json" />
+  <link rel="icon" href="../../common/img/favicon.ico" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <script type="module">
+    import { inicializarPagina } from "../../common/js/navegacao.js";
+    inicializarPagina("Fechamento", "operacao");
+  </script>
+
+  <style>
+    :root{
+      --roxo:#6a1b9a;
+      --roxo-escuro:#4a1270;
+      --verde:#16a34a;
+      --vermelho:#dc2626;
+      --amarelo:#f59e0b;
+      --azul:#2563eb;
+      --fundo:#f5f1f8;
+      --card:#ffffff;
+      --texto:#1f2937;
+      --borda:#e5d9ee;
+      --linha:#d8c7e3;
+      --sombra:0 10px 30px rgba(106,27,154,.10);
+    }
+
+    *{
+      box-sizing:border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body{
+      margin:0;
+      padding:0;
+      background:var(--fundo);
+      font-family:Arial, Helvetica, sans-serif;
+      color:var(--texto);
+    }
+
+    body{
+      min-height:100vh;
+    }
+
+    main{
+      max-width:1100px;
+      margin:0 auto;
+      padding:18px 14px 90px;
+    }
+
+    .bloco{
+      background:var(--card);
+      border-radius:18px;
+      box-shadow:var(--sombra);
+      padding:16px;
+      margin-bottom:16px;
+      border:1px solid rgba(106,27,154,.08);
+    }
+
+    .titulo-bloco{
+      margin:0 0 14px;
+      color:var(--roxo);
+      font-size:20px;
+      font-weight:700;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-4{
+      display:grid;
+      gap:12px;
+    }
+
+    .grid-2{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    .grid-3{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
+    .grid-4{ grid-template-columns:repeat(4, minmax(0, 1fr)); }
+
+    .campo{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .campo label{
+      font-size:13px;
+      font-weight:700;
+      color:var(--roxo);
+    }
+
+    .campo input{
+      width:100%;
+      border:none;
+      border-bottom:2px solid var(--linha);
+      background:transparent;
+      padding:10px 4px;
+      font-size:16px;
+      outline:none;
+      border-radius:0;
+    }
+
+    .campo input:focus{
+      border-bottom-color:var(--roxo);
+    }
+
+    .acoes-topo,
+    .acoes-lista,
+    .acoes-finais{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+
+    .acoes-topo{
+      margin-top:12px;
+    }
+
+    .btn{
+      border:none;
+      border-radius:14px;
+      padding:12px 16px;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      transition:.2s ease;
+      min-height:46px;
+    }
+
+    .btn:active{
+      transform:scale(.98);
+    }
+
+    .btn-roxo{
+      background:var(--roxo);
+      color:#fff;
+    }
+
+    .btn-roxo:hover{
+      background:var(--roxo-escuro);
+    }
+
+    .btn-claro{
+      background:#f3e8ff;
+      color:var(--roxo);
+    }
+
+    .btn-verde{
+      background:var(--verde);
+      color:#fff;
+    }
+
+    .btn-vermelho{
+      background:var(--vermelho);
+      color:#fff;
+    }
+
+    .linha-item{
+      border:1px solid var(--borda);
+      border-radius:16px;
+      padding:12px;
+      margin-bottom:12px;
+      background:#fffdfa;
+    }
+
+    .linha-item:last-child{
+      margin-bottom:0;
+    }
+
+    .subtitulo-lista{
+      margin:0 0 10px;
+      font-size:15px;
+      font-weight:700;
+      color:var(--roxo);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+
+    .resumo-cards{
+      display:grid;
+      grid-template-columns:repeat(4, minmax(0, 1fr));
+      gap:12px;
+      margin-top:10px;
+    }
+
+    .card-resumo{
+      background:linear-gradient(180deg, #ffffff 0%, #faf5ff 100%);
+      border:1px solid var(--borda);
+      border-radius:18px;
+      padding:14px;
+      box-shadow:var(--sombra);
+    }
+
+    .card-resumo .rotulo{
+      font-size:13px;
+      color:#6b7280;
+      margin-bottom:8px;
+      font-weight:700;
+    }
+
+    .card-resumo .valor{
+      font-size:24px;
+      font-weight:800;
+      color:var(--roxo);
+      word-break:break-word;
+    }
+
+    .card-resumo .valor.negativo{
+      color:var(--vermelho);
+    }
+
+    .card-resumo .valor.positivo{
+      color:var(--verde);
+    }
+
+    .mini-resumo{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:12px;
+    }
+
+    .mini-card{
+      background:#fafafa;
+      border:1px solid #ececec;
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .mini-card h3{
+      margin:0 0 10px;
+      font-size:16px;
+      color:var(--roxo);
+    }
+
+    .mini-card .linha{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:8px 0;
+      border-bottom:1px dashed #ddd;
+      font-size:15px;
+    }
+
+    .mini-card .linha:last-child{
+      border-bottom:none;
+      padding-bottom:0;
+    }
+
+    .valor-negativo{
+      color:var(--vermelho);
+      font-weight:700;
+    }
+
+    .valor-positivo{
+      color:var(--verde);
+      font-weight:700;
+    }
+
+    .valor-neutro{
+      color:var(--texto);
+      font-weight:700;
+    }
+
+    .estado-vazio{
+      text-align:center;
+      color:#6b7280;
+      font-size:14px;
+      padding:12px 6px;
+      border:1px dashed #d8c7e3;
+      border-radius:14px;
+      background:#fcfaff;
+    }
+
+    .modal{
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index:9999;
+    }
+
+    .modal.ativo{
+      display:flex;
+    }
+
+    .modal-conteudo{
+      width:min(100%, 980px);
+      max-height:92vh;
+      overflow:auto;
+      background:#fff;
+      border-radius:20px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25);
+      padding:20px;
+      position:relative;
+    }
+
+    .fechar-modal{
+      position:sticky;
+      top:0;
+      margin-left:auto;
+      display:flex;
+      justify-content:flex-end;
+      background:linear-gradient(to bottom, #fff 70%, rgba(255,255,255,0));
+      padding-bottom:8px;
+      z-index:2;
+    }
+
+    .btn-fechar{
+      width:40px;
+      height:40px;
+      border:none;
+      border-radius:999px;
+      background:#f3e8ff;
+      color:var(--roxo);
+      font-size:20px;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .relatorio{
+      color:#111827;
+    }
+
+    .relatorio-topo{
+      text-align:center;
+      margin-bottom:20px;
+    }
+
+    .relatorio-topo h2{
+      margin:0 0 8px;
+      color:var(--roxo);
+      font-size:28px;
+    }
+
+    .relatorio-topo p{
+      margin:4px 0;
+      font-size:15px;
+    }
+
+    .relatorio-cards{
+      display:grid;
+      grid-template-columns:repeat(3, minmax(0, 1fr));
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    .rel-card{
+      border:1px solid var(--borda);
+      border-radius:16px;
+      padding:14px;
+      background:#faf5ff;
+    }
+
+    .rel-card .r1{
+      font-size:13px;
+      color:#6b7280;
+      font-weight:700;
+      margin-bottom:8px;
+    }
+
+    .rel-card .r2{
+      font-size:22px;
+      font-weight:800;
+      color:var(--roxo);
+    }
+
+    .tabela-relatorio{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+      margin-bottom:18px;
+      overflow:hidden;
+      border-radius:16px;
+    }
+
+    .tabela-relatorio thead th{
+      background:#dbeafe;
+      color:#111827;
+      padding:10px 8px;
+      font-size:14px;
+      text-align:center;
+      border:1px solid #c7d2fe;
+    }
+
+    .tabela-relatorio tbody td{
+      padding:10px 8px;
+      font-size:14px;
+      border:1px solid #e5e7eb;
+      text-align:center;
+      background:#fffdf2;
+    }
+
+    .secao-relatorio h3{
+      margin:18px 0 10px;
+      color:var(--roxo);
+      font-size:20px;
+    }
+
+    .rodape-relatorio{
+      margin-top:20px;
+      padding:16px;
+      border-radius:18px;
+      background:#f8fafc;
+      border:1px solid #e5e7eb;
+    }
+
+    .rodape-relatorio .linha{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      padding:8px 0;
+      border-bottom:1px dashed #d1d5db;
+      font-size:16px;
+    }
+
+    .rodape-relatorio .linha:last-child{
+      border-bottom:none;
+      font-size:20px;
+      font-weight:800;
+      color:var(--roxo);
+      padding-top:14px;
+    }
+
+    @media (max-width: 900px){
+      .grid-4,
+      .grid-3,
+      .resumo-cards,
+      .relatorio-cards{
+        grid-template-columns:repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 700px){
+      .grid-2,
+      .grid-3,
+      .grid-4,
+      .resumo-cards,
+      .mini-resumo,
+      .relatorio-cards{
+        grid-template-columns:1fr;
+      }
+
+      main{
+        padding:14px 10px 80px;
+      }
+
+      .bloco{
+        padding:14px;
+        border-radius:16px;
+      }
+
+      .titulo-bloco{
+        font-size:18px;
+      }
+
+      .card-resumo .valor{
+        font-size:22px;
+      }
+
+      .relatorio-topo h2{
+        font-size:24px;
+      }
+
+      .tabela-relatorio thead th,
+      .tabela-relatorio tbody td{
+        font-size:13px;
+        padding:8px 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="bloco">
+      <h2 class="titulo-bloco">
+        <i class="fas fa-file-invoice-dollar"></i>
+        Dados Principais
+      </h2>
+
+      <div class="grid-4">
+        <div class="campo">
+          <label for="periodo">Período</label>
+          <input type="text" id="periodo" placeholder="Ex.: 30/03 - 05/04">
+        </div>
+
+        <div class="campo">
+          <label for="turano">Turano</label>
+          <input type="text" id="turano" inputmode="numeric" placeholder="0,00">
+        </div>
+
+        <div class="campo">
+          <label for="rc">RC</label>
+          <input type="text" id="rc" inputmode="numeric" placeholder="0,00">
+        </div>
+
+        <div class="campo">
+          <label for="centro">Centro</label>
+          <input type="text" id="centro" inputmode="numeric" placeholder="0,00">
+        </div>
+
+        <div class="campo">
+          <label for="total">Total</label>
+          <input type="text" id="total" inputmode="numeric" placeholder="0,00">
+        </div>
+
+        <div class="campo">
+          <label for="comissao">Comissão</label>
+          <input type="text" id="comissao" inputmode="numeric" placeholder="0,00">
+        </div>
+
+        <div class="campo">
+          <label for="cartaoPassado">Cartão Passado</label>
+          <input type="text" id="cartaoPassado" inputmode="numeric" placeholder="0,00">
+        </div>
+
+        <div class="campo">
+          <label for="cartaoAtual">Cartão Atual</label>
+          <input type="text" id="cartaoAtual" inputmode="numeric" placeholder="0,00">
+        </div>
+
+        <div class="campo">
+          <label for="debitosResumo">Débitos</label>
+          <input type="text" id="debitosResumo" inputmode="numeric" placeholder="0,00">
+        </div>
+
+        <div class="campo">
+          <label for="devedoresResumo">Devedores</label>
+          <input type="text" id="devedoresResumo" inputmode="numeric" placeholder="0,00">
+        </div>
+
+        <div class="campo">
+          <label for="recebimentosAnteriores">Dev. Ant. Receb.</label>
+          <input type="text" id="recebimentosAnteriores" inputmode="numeric" placeholder="0,00">
+        </div>
+
+        <div class="campo">
+          <label for="firma">Firma</label>
+          <input type="text" id="firma" inputmode="numeric" placeholder="0,00">
+        </div>
+      </div>
+
+      <div class="acoes-topo">
+        <button class="btn btn-roxo" id="btnVisualizarResumo" type="button">
+          <i class="fas fa-eye"></i>
+          Visualizar Resumo
+        </button>
+
+        <button class="btn btn-claro" id="btnLimparTudo" type="button">
+          <i class="fas fa-broom"></i>
+          Limpar Tudo
+        </button>
+      </div>
+
+      <div class="resumo-cards">
+        <div class="card-resumo">
+          <div class="rotulo">Total Consolidado</div>
+          <div class="valor" id="cardTotal">R$ 0,00</div>
+        </div>
+
+        <div class="card-resumo">
+          <div class="rotulo">Comissão</div>
+          <div class="valor" id="cardComissao">R$ 0,00</div>
+        </div>
+
+        <div class="card-resumo">
+          <div class="rotulo">Débitos + Devedores</div>
+          <div class="valor" id="cardSaidas">R$ 0,00</div>
+        </div>
+
+        <div class="card-resumo">
+          <div class="rotulo">Firma</div>
+          <div class="valor" id="cardFirma">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div class="mini-resumo">
+        <div class="mini-card">
+          <h3>Origem dos Valores</h3>
+          <div class="linha"><span>Turano</span><strong id="resTurano">R$ 0,00</strong></div>
+          <div class="linha"><span>RC</span><strong id="resRc">R$ 0,00</strong></div>
+          <div class="linha"><span>Centro</span><strong id="resCentro">R$ 0,00</strong></div>
+        </div>
+
+        <div class="mini-card">
+          <h3>Complementos</h3>
+          <div class="linha"><span>Cartão Passado</span><strong id="resCartaoPassado">R$ 0,00</strong></div>
+          <div class="linha"><span>Cartão Atual</span><strong id="resCartaoAtual">R$ 0,00</strong></div>
+          <div class="linha"><span>Dev. Ant. Receb.</span><strong id="resRecebimentos">R$ 0,00</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="bloco">
+      <h2 class="titulo-bloco">
+        <i class="fas fa-file-circle-minus"></i>
+        Débitos
+      </h2>
+
+      <div id="listaDebitos"></div>
+
+      <div class="acoes-lista">
+        <button class="btn btn-roxo" id="btnAdicionarDebito" type="button">
+          <i class="fas fa-plus"></i>
+          Adicionar Débito
+        </button>
+      </div>
+    </section>
+
+    <section class="bloco">
+      <h2 class="titulo-bloco">
+        <i class="fas fa-users-slash"></i>
+        Devedores
+      </h2>
+
+      <div id="listaDevedores"></div>
+
+      <div class="acoes-lista">
+        <button class="btn btn-roxo" id="btnAdicionarDevedor" type="button">
+          <i class="fas fa-plus"></i>
+          Adicionar Devedor
+        </button>
+      </div>
+    </section>
+
+    <section class="bloco">
+      <h2 class="titulo-bloco">
+        <i class="fas fa-calculator"></i>
+        Resumo Final
+      </h2>
+
+      <div class="mini-card">
+        <div class="linha"><span>Total</span><strong id="finalTotal" class="valor-neutro">R$ 0,00</strong></div>
+        <div class="linha"><span>Comissão</span><strong id="finalComissao" class="valor-neutro">R$ 0,00</strong></div>
+        <div class="linha"><span>Cartão Passado</span><strong id="finalCartaoPassado" class="valor-neutro">R$ 0,00</strong></div>
+        <div class="linha"><span>Cartão Atual</span><strong id="finalCartaoAtual" class="valor-neutro">R$ 0,00</strong></div>
+        <div class="linha"><span>Débitos</span><strong id="finalDebitos" class="valor-negativo">R$ 0,00</strong></div>
+        <div class="linha"><span>Devedores</span><strong id="finalDevedores" class="valor-negativo">R$ 0,00</strong></div>
+        <div class="linha"><span>Dev. Ant. Receb.</span><strong id="finalRecebimentos" class="valor-positivo">R$ 0,00</strong></div>
+        <div class="linha"><span>Firma</span><strong id="finalFirma" class="valor-neutro">R$ 0,00</strong></div>
+      </div>
+
+      <div class="acoes-finais" style="margin-top:14px;">
+        <button class="btn btn-verde" id="btnGerarRelatorio" type="button">
+          <i class="fas fa-file-lines"></i>
+          Gerar Relatório
+        </button>
+
+        <button class="btn btn-claro" id="btnImprimir" type="button">
+          <i class="fas fa-print"></i>
+          Imprimir Relatório
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal" id="modalRelatorio">
+    <div class="modal-conteudo">
+      <div class="fechar-modal">
+        <button class="btn-fechar" id="btnFecharModal" type="button">×</button>
+      </div>
+      <div id="conteudoRelatorio"></div>
+    </div>
+  </div>
+
+  <script defer src="../js/fechamento.js"></script>
+</body>
+</html>
