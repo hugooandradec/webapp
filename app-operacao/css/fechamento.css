@@ -1,0 +1,308 @@
+/* =========================================
+   VARIÁVEIS DE TEMA
+========================================= */
+:root {
+  --roxo: #6a1b9a;
+  --roxo-escuro: #4a1270;
+  --verde: #16a34a;
+  --vermelho: #dc2626;
+  --amarelo: #f59e0b;
+  --azul: #2563eb;
+  --fundo: #f5f1f8;
+  --card: #ffffff;
+  --texto: #1f2937;
+  --borda: #e5d9ee;
+  --linha: #d8c7e3;
+  --sombra: rgba(0, 0, 0, 0.1);
+}
+
+/* =========================================
+   RESET BÁSICO
+========================================= */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--fundo);
+  color: var(--texto);
+  line-height: 1.5;
+  padding: 16px;
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* =========================================
+   BLOCOS E CARDS
+========================================= */
+.bloco {
+  background: var(--card);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px var(--sombra);
+  border: 1px solid var(--borda);
+}
+
+.titulo-bloco {
+  font-size: 1.25rem;
+  color: var(--roxo);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid var(--borda);
+  padding-bottom: 8px;
+}
+
+/* =========================================
+   GRIDS E LAYOUT
+========================================= */
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* =========================================
+   FORMULÁRIOS
+========================================= */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.campo label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.campo input {
+  padding: 8px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.campo input:focus {
+  outline: none;
+  border-color: var(--roxo);
+  box-shadow: 0 0 0 2px rgba(106, 27, 154, 0.2);
+}
+
+.campo input[readonly] {
+  background-color: var(--fundo);
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   BOTÕES
+========================================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  font-size: 0.9rem;
+}
+
+.btn:hover { opacity: 0.9; }
+.btn:active { transform: scale(0.98); }
+
+.btn-roxo { background-color: var(--roxo); color: white; }
+.btn-verde { background-color: var(--verde); color: white; }
+.btn-vermelho { background-color: var(--vermelho); color: white; padding: 6px 12px; font-size: 0.8rem; }
+.btn-claro { background-color: #e5e7eb; color: var(--texto); }
+
+.acoes-topo, .acoes-finais {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.acoes-lista {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* =========================================
+   RESUMOS (CARDS E LISTAS)
+========================================= */
+.resumo-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.card-resumo {
+  background: var(--fundo);
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid var(--linha);
+}
+
+.card-resumo .rotulo {
+  font-size: 0.85rem;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
+.card-resumo .valor {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: var(--roxo-escuro);
+}
+
+.mini-resumo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.mini-card {
+  background: var(--fundo);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--linha);
+}
+
+.mini-card h3 {
+  font-size: 1rem;
+  color: var(--roxo);
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--linha);
+  padding-bottom: 4px;
+}
+
+.linha {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px dashed var(--linha);
+  font-size: 0.9rem;
+}
+.linha:last-child { border-bottom: none; }
+
+/* =========================================
+   LISTAS DINÂMICAS (Débitos e Devedores)
+========================================= */
+.linha-item {
+  background: var(--fundo);
+  border: 1px solid var(--linha);
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.subtitulo-lista {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--roxo-escuro);
+  font-size: 0.9rem;
+}
+
+.estado-vazio {
+  text-align: center;
+  padding: 20px;
+  color: #6b7280;
+  font-style: italic;
+  background: var(--fundo);
+  border-radius: 6px;
+  border: 1px dashed var(--linha);
+}
+
+/* =========================================
+   CORES DE STATUS (Helpers)
+========================================= */
+.valor-positivo { color: var(--verde) !important; }
+.valor-negativo { color: var(--vermelho) !important; }
+.valor-neutro { color: var(--texto) !important; }
+
+/* =========================================
+   MODAL
+========================================= */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.modal.ativo { display: flex; }
+
+.modal-conteudo {
+  background: var(--card);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 8px;
+  padding: 24px;
+  position: relative;
+}
+
+.fechar-modal {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.btn-fechar {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.btn-fechar:hover { color: var(--vermelho); }
+
+/* =========================================
+   RELATÓRIO INTERNO (Para o Modal)
+========================================= */
+.relatorio-topo { text-align: center; margin-bottom: 20px; }
+.relatorio-topo h2 { color: var(--roxo); }
+.relatorio-cards { display: flex; gap: 12px; margin-bottom: 20px; }
+.rel-card { flex: 1; background: var(--fundo); padding: 12px; text-align: center; border-radius: 6px; }
+.rel-card .r1 { font-size: 0.8rem; color: #4b5563; }
+.rel-card .r2 { font-weight: bold; color: var(--roxo-escuro); }
+.rodape-relatorio { margin-top: 20px; background: var(--roxo); color: white; padding: 12px; border-radius: 6px; }
+
+/* =========================================
+   IMPRESSÃO
+========================================= */
+@media print {
+  body * { visibility: hidden; }
+  .modal, .modal * { visibility: visible; }
+  .modal { position: absolute; left: 0; top: 0; padding: 0; background: none; }
+  .modal-conteudo { box-shadow: none; max-width: 100%; }
+  .fechar-modal { display: none; }
+}
