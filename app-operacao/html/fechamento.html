@@ -111,6 +111,12 @@
       border-bottom-color:var(--roxo);
     }
 
+    .campo input[readonly]{
+      background:#faf7fd;
+      cursor:default;
+      color:#4b5563;
+    }
+
     .acoes-topo,
     .acoes-lista,
     .acoes-finais{
@@ -284,6 +290,42 @@
       border:1px dashed #d8c7e3;
       border-radius:14px;
       background:#fcfaff;
+    }
+
+    .linha-acoes{
+      display:flex;
+      justify-content:flex-end;
+      margin-top:10px;
+    }
+
+    .btn-icone{
+      width:42px;
+      height:42px;
+      border:none;
+      border-radius:12px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      font-size:15px;
+    }
+
+    .btn-excluir{
+      background:#fee2e2;
+      color:#b91c1c;
+    }
+
+    .saldo-linha{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:#faf5ff;
+      border:1px solid var(--borda);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:14px;
+      font-weight:700;
     }
 
     .modal{
@@ -503,57 +545,57 @@
 
         <div class="campo">
           <label for="turano">Turano</label>
-          <input type="text" id="turano" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="turano" class="campo-moeda" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
           <label for="rc">RC</label>
-          <input type="text" id="rc" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="rc" class="campo-moeda" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
           <label for="centro">Centro</label>
-          <input type="text" id="centro" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="centro" class="campo-moeda" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
           <label for="total">Total</label>
-          <input type="text" id="total" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="total" inputmode="numeric" placeholder="0,00" readonly>
         </div>
 
         <div class="campo">
           <label for="comissao">Comissão</label>
-          <input type="text" id="comissao" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="comissao" inputmode="numeric" placeholder="0,00" readonly>
         </div>
 
         <div class="campo">
           <label for="cartaoPassado">Cartão Passado</label>
-          <input type="text" id="cartaoPassado" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="cartaoPassado" class="campo-moeda" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
           <label for="cartaoAtual">Cartão Atual</label>
-          <input type="text" id="cartaoAtual" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="cartaoAtual" class="campo-moeda" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
           <label for="debitosResumo">Débitos</label>
-          <input type="text" id="debitosResumo" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="debitosResumo" inputmode="numeric" placeholder="0,00" readonly>
         </div>
 
         <div class="campo">
           <label for="devedoresResumo">Devedores</label>
-          <input type="text" id="devedoresResumo" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="devedoresResumo" inputmode="numeric" placeholder="0,00" readonly>
         </div>
 
         <div class="campo">
           <label for="recebimentosAnteriores">Dev. Ant. Receb.</label>
-          <input type="text" id="recebimentosAnteriores" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="recebimentosAnteriores" class="campo-moeda" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
           <label for="firma">Firma</label>
-          <input type="text" id="firma" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="firma" inputmode="numeric" placeholder="0,00" readonly>
         </div>
       </div>
 
