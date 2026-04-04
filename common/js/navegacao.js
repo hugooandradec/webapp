@@ -21,7 +21,8 @@ const ROTAS_POR_PAGINA = {
   "lancamento.html": "operacao-lancamento",
   "preFecho.html": "operacao-preFecho",
   "calculoRetencao.html": "operacao-retencao",
-  "calculoSalas.html": "operacao-salas"
+  "calculoSalas.html": "operacao-salas",
+  "fechamento.html": "operacao-fechamento"
 };
 
 // ===== caminho do menu =====
@@ -35,8 +36,15 @@ function logout() {
   window.location.replace(`${ROOT}login.html`);
 }
 
-// ===== helper de fetch leve =====
-async function tentarFetch(url, { timeout = 8000, parseJson = false } = {}) {
+// ===== helper de fetch =====
+async function tentarFetch(
+  url,
+  {
+    timeout = 8000,
+    parseJson = false,
+    noCors = false
+  } = {}
+) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
 
@@ -44,10 +52,22 @@ async function tentarFetch(url, { timeout = 8000, parseJson = false } = {}) {
     const resp = await fetch(url, {
       method: "GET",
       cache: "no-store",
-      signal: controller.signal
+      signal: controller.signal,
+      mode: noCors ? "no-cors" : "cors"
     });
 
+    // Em no-cors, a resposta costuma vir como "opaque"
+    if (resp.type === "opaque") {
+      return {
+        ok: true,
+        status: 0,
+        json: null,
+        opaque: true
+      };
+    }
+
     let json = null;
+
     if (parseJson) {
       try {
         json = await resp.json();
@@ -56,9 +76,20 @@ async function tentarFetch(url, { timeout = 8000, parseJson = false } = {}) {
       }
     }
 
-    return { ok: resp.ok, status: resp.status, json };
+    return {
+      ok: resp.ok,
+      status: resp.status,
+      json,
+      opaque: false
+    };
   } catch (erro) {
-    return { ok: false, status: 0, json: null, erro };
+    return {
+      ok: false,
+      status: 0,
+      json: null,
+      erro,
+      opaque: false
+    };
   } finally {
     clearTimeout(timer);
   }
@@ -67,16 +98,47 @@ async function tentarFetch(url, { timeout = 8000, parseJson = false } = {}) {
 // ===== wake automático do backend =====
 export async function acordarBackend() {
   const base = getURLBackend();
-  const tentativas = [
+
+  if (!base) {
+    console.warn("URL do backend não configurada.");
+    return false;
+  }
+
+  const tentativasCors = [
+    `${base}/health`,
     `${base}`,
-    `${base}/`,
-    `${base}/health`
+    `${base}/`
   ];
 
-  for (const url of tentativas) {
-    const resp = await tentarFetch(url, { timeout: 10000, parseJson: false });
+  for (const url of tentativasCors) {
+    const resp = await tentarFetch(url, {
+      timeout: 8000,
+      parseJson: false,
+      noCors: false
+    });
+
     if (resp.ok || resp.status === 404 || resp.status === 405) {
       console.log("🌐 Backend acionado:", url);
+      return true;
+    }
+  }
+
+  // fallback silencioso para acordar sem depender de CORS
+  const tentativasNoCors = [
+    `${base}/health`,
+    `${base}`,
+    `${base}/`
+  ];
+
+  for (const url of tentativasNoCors) {
+    const resp = await tentarFetch(url, {
+      timeout: 8000,
+      parseJson: false,
+      noCors: true
+    });
+
+    if (resp.ok || resp.opaque) {
+      console.log("🌐 Backend acionado (no-cors):", url);
       return true;
     }
   }
@@ -89,27 +151,44 @@ export async function acordarBackend() {
 export async function isOnline() {
   const base = getURLBackend();
 
-  // 1) tenta rota health, se existir
+  if (!base) return false;
+
+  // 1) tenta health com CORS normal
   const health = await tentarFetch(`${base}/health`, {
-    timeout: 8000,
-    parseJson: true
+    timeout: 6000,
+    parseJson: true,
+    noCors: false
   });
 
   if (health.ok) {
     const json = health.json || {};
+
     if (json?.status === "ok" || json?.mongo === "connected") {
       return true;
     }
-    return true; // respondeu 200, então backend está vivo
+
+    return true;
   }
 
-  // 2) fallback para a raiz do backend
+  // 2) tenta raiz com CORS normal
   const raiz = await tentarFetch(`${base}`, {
-    timeout: 8000,
-    parseJson: false
+    timeout: 6000,
+    parseJson: false,
+    noCors: false
   });
 
   if (raiz.ok || raiz.status === 404 || raiz.status === 405) {
+    return true;
+  }
+
+  // 3) fallback no-cors
+  const pingNoCors = await tentarFetch(`${base}`, {
+    timeout: 6000,
+    parseJson: false,
+    noCors: true
+  });
+
+  if (pingNoCors.ok || pingNoCors.opaque) {
     return true;
   }
 
@@ -133,6 +212,9 @@ function montarHeader(titulo, backHref) {
       align-items:center;
       justify-content:space-between;
       gap:10px;
+      position:sticky;
+      top:0;
+      z-index:999;
     ">
       <div style="display:flex;align-items:center;gap:10px;min-width:0;">
         <a href="${hrefVoltar}" style="
@@ -162,9 +244,16 @@ function montarHeader(titulo, backHref) {
           display:inline-block;
         "></span>
 
-        <span style="font-weight:600;">${usuario?.nome ?? ""}</span>
+        <span style="
+          font-weight:600;
+          max-width:120px;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+        ">${usuario?.nome ?? ""}</span>
 
-        <button id="btn-logout"
+        <button
+          id="btn-logout"
           type="button"
           title="Sair"
           style="
@@ -174,7 +263,8 @@ function montarHeader(titulo, backHref) {
             cursor:pointer;
             font-size:16px;
             padding:4px;
-          ">
+          "
+        >
           <i class="fa-solid fa-right-from-bracket"></i>
         </button>
       </div>
@@ -194,8 +284,14 @@ async function atualizarStatusOnline() {
   const dot = document.getElementById("online-dot");
   if (!dot) return;
 
-  const ok = await isOnline();
-  dot.style.background = ok ? "#16a34a" : "#aaa";
+  try {
+    const ok = await isOnline();
+    dot.style.background = ok ? "#16a34a" : "#9ca3af";
+    dot.title = ok ? "Backend online" : "Backend offline";
+  } catch {
+    dot.style.background = "#9ca3af";
+    dot.title = "Status indisponível";
+  }
 }
 
 // ===== registrar service worker =====
@@ -234,30 +330,38 @@ export async function inicializarPagina(titulo, appKey, options = {}) {
   montarHeader(titulo, options.backHref);
   registrarServiceWorker();
 
-  // acorda o backend logo após entrar na página
+  // acorda o backend depois que a página já montou
   setTimeout(() => {
-    acordarBackend();
+    acordarBackend().catch(() => {});
   }, 800);
 
-  // atualiza a bolinha de tempos em tempos
-  setTimeout(atualizarStatusOnline, 1800);
-  setInterval(atualizarStatusOnline, 30000);
+  // atualiza o status com segurança
+  setTimeout(() => {
+    atualizarStatusOnline().catch(() => {});
+  }, 1800);
 
-  // quando voltar a aba, tenta reacordar e atualizar status
+  setInterval(() => {
+    atualizarStatusOnline().catch(() => {});
+  }, 30000);
+
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
-      acordarBackend();
-      atualizarStatusOnline();
+      acordarBackend().catch(() => {});
+      atualizarStatusOnline().catch(() => {});
     }
   });
 
   window.addEventListener("focus", () => {
-    acordarBackend();
-    atualizarStatusOnline();
+    acordarBackend().catch(() => {});
+    atualizarStatusOnline().catch(() => {});
   });
 
   window.addEventListener("online", () => {
-    acordarBackend();
-    atualizarStatusOnline();
+    acordarBackend().catch(() => {});
+    atualizarStatusOnline().catch(() => {});
+  });
+
+  window.addEventListener("offline", () => {
+    atualizarStatusOnline().catch(() => {});
   });
 }
