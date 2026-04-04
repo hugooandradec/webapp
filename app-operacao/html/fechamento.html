@@ -29,6 +29,7 @@
       --borda:#e5d9ee;
       --linha:#d8c7e3;
       --sombra:0 10px 30px rgba(106,27,154,.10);
+      --campo-readonly:#faf5ff;
     }
 
     *{
@@ -75,7 +76,8 @@
 
     .grid-2,
     .grid-3,
-    .grid-4{
+    .grid-4,
+    .grid-5{
       display:grid;
       gap:12px;
     }
@@ -83,6 +85,7 @@
     .grid-2{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
     .grid-3{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
     .grid-4{ grid-template-columns:repeat(4, minmax(0, 1fr)); }
+    .grid-5{ grid-template-columns:repeat(5, minmax(0, 1fr)); }
 
     .campo{
       display:flex;
@@ -112,9 +115,11 @@
     }
 
     .campo input[readonly]{
-      background:#faf7fd;
+      background:var(--campo-readonly);
+      color:var(--roxo);
+      font-weight:700;
+      border-bottom-color:#c9a9df;
       cursor:default;
-      color:#4b5563;
     }
 
     .acoes-topo,
@@ -292,42 +297,6 @@
       background:#fcfaff;
     }
 
-    .linha-acoes{
-      display:flex;
-      justify-content:flex-end;
-      margin-top:10px;
-    }
-
-    .btn-icone{
-      width:42px;
-      height:42px;
-      border:none;
-      border-radius:12px;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-      font-size:15px;
-    }
-
-    .btn-excluir{
-      background:#fee2e2;
-      color:#b91c1c;
-    }
-
-    .saldo-linha{
-      margin-top:10px;
-      padding:10px 12px;
-      border-radius:12px;
-      background:#faf5ff;
-      border:1px solid var(--borda);
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      font-size:14px;
-      font-weight:700;
-    }
-
     .modal{
       position:fixed;
       inset:0;
@@ -483,6 +452,7 @@
 
     @media (max-width: 900px){
       .grid-4,
+      .grid-5,
       .grid-3,
       .resumo-cards,
       .relatorio-cards{
@@ -494,6 +464,7 @@
       .grid-2,
       .grid-3,
       .grid-4,
+      .grid-5,
       .resumo-cards,
       .mini-resumo,
       .relatorio-cards{
@@ -545,21 +516,21 @@
 
         <div class="campo">
           <label for="turano">Turano</label>
-          <input type="text" id="turano" class="campo-moeda" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="turano" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
           <label for="rc">RC</label>
-          <input type="text" id="rc" class="campo-moeda" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="rc" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
           <label for="centro">Centro</label>
-          <input type="text" id="centro" class="campo-moeda" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="centro" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
-          <label for="total">Total</label>
+          <label for="total">Total Rota</label>
           <input type="text" id="total" inputmode="numeric" placeholder="0,00" readonly>
         </div>
 
@@ -570,12 +541,12 @@
 
         <div class="campo">
           <label for="cartaoPassado">Cartão Passado</label>
-          <input type="text" id="cartaoPassado" class="campo-moeda" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="cartaoPassado" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
           <label for="cartaoAtual">Cartão Atual</label>
-          <input type="text" id="cartaoAtual" class="campo-moeda" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="cartaoAtual" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
@@ -590,7 +561,7 @@
 
         <div class="campo">
           <label for="recebimentosAnteriores">Dev. Ant. Receb.</label>
-          <input type="text" id="recebimentosAnteriores" class="campo-moeda" inputmode="numeric" placeholder="0,00">
+          <input type="text" id="recebimentosAnteriores" inputmode="numeric" placeholder="0,00">
         </div>
 
         <div class="campo">
@@ -613,7 +584,7 @@
 
       <div class="resumo-cards">
         <div class="card-resumo">
-          <div class="rotulo">Total Consolidado</div>
+          <div class="rotulo">Total Rota</div>
           <div class="valor" id="cardTotal">R$ 0,00</div>
         </div>
 
@@ -689,7 +660,7 @@
       </h2>
 
       <div class="mini-card">
-        <div class="linha"><span>Total</span><strong id="finalTotal" class="valor-neutro">R$ 0,00</strong></div>
+        <div class="linha"><span>Total Rota</span><strong id="finalTotal" class="valor-neutro">R$ 0,00</strong></div>
         <div class="linha"><span>Comissão</span><strong id="finalComissao" class="valor-neutro">R$ 0,00</strong></div>
         <div class="linha"><span>Cartão Passado</span><strong id="finalCartaoPassado" class="valor-neutro">R$ 0,00</strong></div>
         <div class="linha"><span>Cartão Atual</span><strong id="finalCartaoAtual" class="valor-neutro">R$ 0,00</strong></div>
