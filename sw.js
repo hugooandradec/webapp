@@ -29,6 +29,10 @@ const CORE_ASSETS = [
   "app-operacao/js/calculoRetencao.js",
   "app-operacao/js/calculoSalas.js",
   "app-operacao/js/sync.js"
+  
+  "/app-operacao-react/dist/"
+  
+  
 ].map(p => new URL(p, ROOT).toString());
 
 self.addEventListener("install", (event) => {
