@@ -6,9 +6,11 @@ import Devedores from "../components/Devedores";
 import { useDialog } from "../components/dialogContext";
 import ModalRelatorio from "../components/ModalRelatorio";
 import PageLayout from "../components/PageLayout";
+import { useToast } from "../components/toastContext";
 import "../styles/module-base.css";
 import "../styles/buttons.css";
 import "../styles/fechamento.css";
+import { isSyncEnabled } from "../../app.config.js";
 import {
   calcularResumoDevedores,
   calcularTotaisFechamento,
@@ -27,6 +29,7 @@ import {
   lerUsuarioLogado,
   limparDadosLogin,
 } from "../utils/session.js";
+import { carregarDocumentoSync, salvarDocumentoSync } from "../utils/syncApi.js";
 
 function carregarEstadoInicial() {
   const estadoBase = criarEstadoInicial();
@@ -43,8 +46,45 @@ function carregarEstadoInicial() {
   };
 }
 
+function normalizarEstadoFechamento(payload) {
+  const estadoBase = criarEstadoInicial();
+  const dados = payload?.dados || {};
+  const debitos = Array.isArray(payload?.debitos) ? payload.debitos : [];
+  const devedores = Array.isArray(payload?.devedores) ? payload.devedores : [];
+
+  return {
+    dados: { ...estadoBase.dados, ...dados },
+    debitos,
+    devedores,
+  };
+}
+
+function estadoFechamentoTemConteudo(payload) {
+  const estado = normalizarEstadoFechamento(payload);
+
+  const dadosPreenchidos = Object.values(estado.dados).some((valor) =>
+    Boolean(String(valor || "").trim())
+  );
+
+  if (dadosPreenchidos) return true;
+
+  if (estado.debitos.some((item) => item?.ponto?.trim() || numeroDeMoeda(item?.valor) !== 0)) {
+    return true;
+  }
+
+  return estado.devedores.some(
+    (item) =>
+      item?.ponto?.trim() ||
+      numeroDeMoeda(item?.valorAnterior) !== 0 ||
+      numeroDeMoeda(item?.pago) !== 0 ||
+      numeroDeMoeda(item?.semana) !== 0 ||
+      numeroDeMoeda(item?.valorAtual) !== 0
+  );
+}
+
 export default function Fechamento() {
   const dialog = useDialog();
+  const toast = useToast();
   const estadoPadrao = useMemo(() => criarEstadoInicial(), []);
   const estadoPersistido = useMemo(() => carregarEstadoInicial(), []);
 
@@ -53,13 +93,100 @@ export default function Fechamento() {
   const [devedores, setDevedores] = useState(estadoPersistido.devedores);
   const [modalAberto, setModalAberto] = useState(false);
   const [usuario] = useState(() => lerUsuarioLogado());
+  const [syncInicializado, setSyncInicializado] = useState(false);
 
   const refsDebitos = useRef([]);
   const refsDevedores = useRef([]);
+  const estadoInicialRef = useRef(estadoPersistido);
+  const erroSyncCarregamentoRef = useRef(false);
+  const erroSyncSalvarRef = useRef(false);
+  const ultimoPayloadSincronizadoRef = useRef("");
+  const syncHabilitada = isSyncEnabled();
+  const loginUsuario = String(usuario?.login || "").trim().toLowerCase();
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function hidratarSync() {
+      if (!syncHabilitada || !loginUsuario) {
+        setSyncInicializado(true);
+        return;
+      }
+
+      try {
+        const documento = await carregarDocumentoSync("fechamento", loginUsuario);
+        if (!ativo) return;
+
+        if (documento?.payload) {
+          const estadoRemoto = normalizarEstadoFechamento(documento.payload);
+          ultimoPayloadSincronizadoRef.current = JSON.stringify(estadoRemoto);
+          setDados(estadoRemoto.dados);
+          setDebitos(estadoRemoto.debitos);
+          setDevedores(estadoRemoto.devedores);
+        } else {
+          const estadoLocal = normalizarEstadoFechamento(estadoInicialRef.current);
+
+          if (!estadoFechamentoTemConteudo(estadoLocal)) {
+            ultimoPayloadSincronizadoRef.current = JSON.stringify(estadoLocal);
+          }
+        }
+      } catch (error) {
+        console.error("Falha ao carregar sincronizacao do fechamento:", error);
+        ultimoPayloadSincronizadoRef.current = JSON.stringify(
+          normalizarEstadoFechamento(estadoInicialRef.current)
+        );
+
+        if (!erroSyncCarregamentoRef.current) {
+          erroSyncCarregamentoRef.current = true;
+          toast.warning("Não foi possível carregar o Fechamento online. Usando dados locais.");
+        }
+      } finally {
+        if (ativo) {
+          setSyncInicializado(true);
+        }
+      }
+    }
+
+    hidratarSync();
+
+    return () => {
+      ativo = false;
+    };
+  }, [loginUsuario, syncHabilitada, toast]);
 
   useEffect(() => {
     salvarLocalmente({ dados, debitos, devedores });
   }, [dados, debitos, devedores]);
+
+  useEffect(() => {
+    if (!syncHabilitada || !syncInicializado || !loginUsuario) return undefined;
+
+    const payload = normalizarEstadoFechamento({ dados, debitos, devedores });
+    const payloadSerializado = JSON.stringify(payload);
+
+    if (payloadSerializado === ultimoPayloadSincronizadoRef.current) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        await salvarDocumentoSync("fechamento", loginUsuario, payload);
+        ultimoPayloadSincronizadoRef.current = payloadSerializado;
+        erroSyncSalvarRef.current = false;
+      } catch (error) {
+        console.error("Falha ao salvar sincronizacao do fechamento:", error);
+
+        if (!erroSyncSalvarRef.current) {
+          erroSyncSalvarRef.current = true;
+          toast.warning("Não foi possível sincronizar o Fechamento agora. Os dados continuam salvos neste aparelho.");
+        }
+      }
+    }, 700);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [dados, debitos, devedores, loginUsuario, syncHabilitada, syncInicializado, toast]);
 
   function atualizarCampo(campo, valor, monetario = false) {
     setDados((prev) => ({
