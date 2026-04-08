@@ -1,4 +1,4 @@
-export const PROD_APP_BASE_PATH = "/webapp/app-operacao-react";
+export const PROD_APP_BASE_PATH = "/webapp";
 export const PROD_APP_BASE_URL = `${PROD_APP_BASE_PATH}/`;
 export const DEFAULT_DEV_API_BASE_URL = "http://localhost:3000/api";
 
