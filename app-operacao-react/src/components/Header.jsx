@@ -11,7 +11,8 @@ export default function Header({
     usuario?.nomeExibicao ||
     usuario?.nome ||
     usuario?.login ||
-    "vt";
+    "";
+  const mostrarSessao = Boolean(nomeUsuario) && typeof onLogout === "function";
 
   const online =
     typeof navigator !== "undefined" ? navigator.onLine : true;
@@ -39,24 +40,30 @@ export default function Header({
       </div>
 
       <div className="app-header-side app-header-side--right">
-        <span
-          className={`app-header-status ${online ? "online" : "offline"}`}
-          title={online ? "Online" : "Offline"}
-        />
+        {mostrarSessao ? (
+          <>
+            <span
+              className={`app-header-status ${online ? "online" : "offline"}`}
+              title={online ? "Online" : "Offline"}
+            />
 
-        <span className="app-header-user" title={nomeUsuario}>
-          {nomeUsuario}
-        </span>
+            <span className="app-header-user" title={nomeUsuario}>
+              {nomeUsuario}
+            </span>
 
-        <button
-          type="button"
-          className="app-header-btn"
-          onClick={onLogout}
-          aria-label="Sair"
-          title="Sair"
-        >
-          <FaRightFromBracket aria-hidden="true" />
-        </button>
+            <button
+              type="button"
+              className="app-header-btn"
+              onClick={onLogout}
+              aria-label="Sair"
+              title="Sair"
+            >
+              <FaRightFromBracket aria-hidden="true" />
+            </button>
+          </>
+        ) : (
+          <div className="app-header-placeholder" />
+        )}
       </div>
     </header>
   );
