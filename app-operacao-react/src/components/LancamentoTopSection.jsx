@@ -1,4 +1,9 @@
-import { FaTrashCan } from "react-icons/fa6";
+import {
+  FaFileLines,
+  FaList,
+  FaPlus,
+  FaTrashCan,
+} from "react-icons/fa6";
 
 import {
   classeValor,
@@ -77,7 +82,7 @@ export default function LancamentoTopSection({
           </div>
         </div>
 
-        <div className="campo">
+        <div className="campo campo-data-react">
           <label>Data</label>
           <input
             type="date"
@@ -87,7 +92,7 @@ export default function LancamentoTopSection({
           />
         </div>
 
-        <div className="campo">
+        <div className="campo campo-valor-inicial-react">
           <label>Valor Inicial</label>
           <input
             type="text"
@@ -104,41 +109,61 @@ export default function LancamentoTopSection({
         </div>
       </div>
 
-      <div className="acoes-topo">
+      <div className="acoes-topo acoes-topo--lancamento">
         <button
-          className="btn btn-roxo"
+          className="btn btn-roxo btn-acao-topo-mobile"
           type="button"
           onClick={onAbrirNovaEntrada}
           disabled={!caixaAtiva}
+          aria-label="Nova entrada"
+          title="Nova entrada"
         >
-          Nova Entrada
+          <span className="btn-icone" aria-hidden="true">
+            <FaPlus />
+          </span>
+          <span className="btn-label">Nova Entrada</span>
         </button>
 
         <button
-          className="btn btn-claro"
+          className="btn btn-claro btn-acao-topo-mobile"
           type="button"
           onClick={onAbrirResumoCaixa}
           disabled={!caixaAtiva}
+          aria-label="Visualizar relatório"
+          title="Visualizar relatório"
         >
-          Visualizar Relatório
+          <span className="btn-icone" aria-hidden="true">
+            <FaFileLines />
+          </span>
+          <span className="btn-label">Visualizar Relatório</span>
         </button>
 
         <button
-          className="btn btn-claro"
+          className="btn btn-claro btn-acao-topo-mobile"
           type="button"
           onClick={onAbrirResumoTotal}
           disabled={dadosApp.caixas.length === 0}
+          aria-label="Relatório total dos caixas"
+          title="Relatório total dos caixas"
         >
-          Relatório Total dos Caixas
+          <span className="btn-icone" aria-hidden="true">
+            <FaList />
+          </span>
+          <span className="btn-label">Relatório Total dos Caixas</span>
         </button>
 
         <button
-          className="btn btn-claro"
+          className="btn btn-claro btn-acao-topo-mobile"
           type="button"
           onClick={onLimparLancamentos}
           disabled={!caixaAtiva}
+          aria-label="Limpar tudo"
+          title="Limpar tudo"
         >
-          Limpar Tudo
+          <span className="btn-icone" aria-hidden="true">
+            <FaTrashCan />
+          </span>
+          <span className="btn-label">Limpar Tudo</span>
         </button>
       </div>
 
