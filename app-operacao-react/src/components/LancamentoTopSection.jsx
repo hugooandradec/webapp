@@ -1,4 +1,6 @@
-﻿import {
+import { FaTrashCan } from "react-icons/fa6";
+
+import {
   classeValor,
   formatarMoedaDigitada,
   valorComSinal,
@@ -17,6 +19,7 @@ export default function LancamentoTopSection({
   valorTotal,
   onTrocarCaixa,
   onCriarNovoCaixa,
+  onExcluirCaixa,
   onAtualizarDadosCaixaAtual,
   onAbrirNovaEntrada,
   onAbrirResumoCaixa,
@@ -59,6 +62,17 @@ export default function LancamentoTopSection({
               aria-label="Novo caixa"
             >
               <span aria-hidden="true">+</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn-acao btn-acao-icon btn-acao-icon--excluir btn-remover-caixa-react"
+              onClick={onExcluirCaixa}
+              title="Excluir caixa"
+              aria-label="Excluir caixa"
+              disabled={!caixaAtiva}
+            >
+              <FaTrashCan aria-hidden="true" />
             </button>
           </div>
         </div>

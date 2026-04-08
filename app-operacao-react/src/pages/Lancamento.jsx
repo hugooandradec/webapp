@@ -290,6 +290,37 @@ export default function Lancamento() {
     setFormEntrada(EMPTY_FORM_ENTRADA);
   }
 
+  async function excluirCaixaAtual() {
+    if (!caixaAtiva) return;
+
+    const confirmou = await dialog.confirm(
+      `Deseja excluir o caixa "${caixaAtiva}" e todos os lancamentos dele?`,
+      {
+        title: "Excluir caixa",
+        confirmLabel: "Excluir",
+      }
+    );
+    if (!confirmou) return;
+
+    setDadosApp((prev) => {
+      const caixasRestantes = (prev.caixas || []).filter((caixa) => caixa !== caixaAtiva);
+      const dadosPorCaixa = { ...prev.dadosPorCaixa };
+      delete dadosPorCaixa[caixaAtiva];
+
+      const proximoCaixaAtiva = caixasRestantes[0] || "";
+
+      setCaixaAtiva(proximoCaixaAtiva);
+      setFormEntrada(EMPTY_FORM_ENTRADA);
+
+      return {
+        ...prev,
+        caixas: caixasRestantes,
+        caixaAtiva: proximoCaixaAtiva,
+        dadosPorCaixa,
+      };
+    });
+  }
+
   function trocarCaixa(valor) {
     setCaixaAtiva(normalizarCaixa(valor));
     setFormEntrada(EMPTY_FORM_ENTRADA);
@@ -461,6 +492,7 @@ export default function Lancamento() {
         valorTotal={valorTotal}
         onTrocarCaixa={trocarCaixa}
         onCriarNovoCaixa={criarNovoCaixa}
+        onExcluirCaixa={excluirCaixaAtual}
         onAtualizarDadosCaixaAtual={atualizarDadosCaixaAtual}
         onAbrirNovaEntrada={abrirNovaEntrada}
         onAbrirResumoCaixa={abrirResumoCaixa}
