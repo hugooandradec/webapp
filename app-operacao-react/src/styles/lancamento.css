@@ -197,28 +197,42 @@
 
 @media (max-width: 700px) {
   .lancamento-topo-grid{
-    grid-template-columns: minmax(0, 1fr) 122px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px 12px;
     align-items: end;
   }
 
   .campo-caixa{
-    grid-column: 1;
+    grid-column: 1 / -1;
     grid-row: 1;
   }
 
   .campo-data-react{
-    grid-column: 2;
-    grid-row: 1;
+    grid-column: 1;
+    grid-row: 2;
   }
 
   .campo-valor-inicial-react{
-    grid-column: 1 / -1;
+    grid-column: 2;
     grid-row: 2;
   }
 
   .caixa-linha-react {
     gap: 6px;
+  }
+
+  .campo-data-react input,
+  .campo-valor-inicial-react input{
+    font-size: 14px;
+  }
+
+  .campo-data-react input[type="date"]::-webkit-datetime-edit{
+    padding: 0;
+    font-size: 14px;
+  }
+
+  .campo-data-react input[type="date"]::-webkit-calendar-picker-indicator{
+    margin-left: 4px;
   }
 
   .btn-add-caixa-react.btn-acao{
@@ -244,9 +258,9 @@
   }
 
   .acoes-topo--lancamento .btn{
-    min-height: 44px;
+    min-height: 40px;
     padding: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     gap: 0;
   }
 
@@ -269,9 +283,30 @@
     gap: 8px;
   }
 
+  .lancamento-resumo-cards .card-resumo:nth-child(1){
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .lancamento-resumo-cards .card-resumo:nth-child(4){
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .lancamento-resumo-cards .card-resumo:nth-child(2){
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .lancamento-resumo-cards .card-resumo:nth-child(3){
+    grid-column: 2;
+    grid-row: 2;
+  }
+
   .lancamento-resumo-cards .card-resumo{
     padding: 10px 12px;
     border-radius: 16px;
+    min-height: 94px;
   }
 
   .lancamento-resumo-cards .card-resumo .rotulo{
