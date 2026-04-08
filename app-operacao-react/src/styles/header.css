@@ -1,0 +1,136 @@
+.app-header {
+  position: relative;
+  height: 48px;
+  background: #6f22a8;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.app-header-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 96px;
+  z-index: 1;
+}
+
+.app-header-side--left {
+  justify-content: flex-start;
+}
+
+.app-header-side--right {
+  justify-content: flex-end;
+}
+
+.app-header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.app-header-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.app-header-user {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+}
+
+.app-header-btn,
+.app-header-placeholder {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex: 0 0 32px;
+}
+
+.app-header-btn {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  vertical-align: middle;
+}
+
+.app-header-btn--back {
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.app-header-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.app-header-btn svg {
+  display: block;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: currentColor;
+  fill: currentColor;
+  vertical-align: middle;
+  transform: translateY(-1px);
+}
+
+.app-header-status {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.app-header-status.online {
+  background: #8ee000;
+}
+
+.app-header-status.offline {
+  background: #ff5a5a;
+}
+
+@media (max-width: 640px) {
+  .app-header {
+    padding: 0 8px;
+  }
+
+  .app-header-side {
+    min-width: 72px;
+  }
+
+  .app-header-user {
+    font-size: 13px;
+    max-width: 32px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-header-title {
+    font-size: 16px;
+  }
+}

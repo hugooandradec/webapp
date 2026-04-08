@@ -1,0 +1,295 @@
+.pagina-pre-fecho .bloco{
+  max-width:960px;
+}
+
+.pre-fecho-importacao-topo,
+.pre-fecho-resumo-topo{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+}
+
+.pre-fecho-importacao-titulo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:var(--roxo);
+  font-size:18px;
+  font-weight:800;
+}
+
+.pre-fecho-importacao-titulo svg{
+  width:18px;
+  height:18px;
+}
+
+.campo-textarea{
+  margin-top:10px;
+}
+
+.pre-fecho-textarea{
+  min-height:180px;
+  resize:vertical;
+  border:1px solid var(--roxo-borda) !important;
+  border-radius:16px !important;
+  padding:12px 14px !important;
+  background:#fcfaff !important;
+  font-family:"Consolas", "Courier New", monospace;
+  line-height:1.45;
+}
+
+.pre-fecho-textarea:focus{
+  background:#fff !important;
+}
+
+.pre-fecho-atalhos{
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0, 1fr));
+  gap:10px;
+  margin-top:14px;
+}
+
+.pre-fecho-atalho{
+  border:1px solid var(--roxo-borda);
+  border-radius:16px;
+  background:#fff;
+  color:var(--roxo);
+  min-height:88px;
+  padding:12px 10px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  cursor:pointer;
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.pre-fecho-atalho:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 22px rgba(106,27,154,.08);
+}
+
+.pre-fecho-atalho-icone{
+  width:36px;
+  height:36px;
+  border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:#f3e8ff;
+}
+
+.pre-fecho-atalho-icone svg{
+  width:16px;
+  height:16px;
+}
+
+.pre-fecho-atalho-label{
+  font-size:13px;
+  font-weight:800;
+  line-height:1.2;
+}
+
+.pre-fecho-atalho--primario{
+  background:linear-gradient(180deg, #ffffff 0%, #f7f0ff 100%);
+}
+
+.pre-fecho-atalho--primario .pre-fecho-atalho-icone{
+  background:var(--roxo);
+  color:#fff;
+}
+
+.pre-fecho-atalho--claro{
+  background:#fcfaff;
+}
+
+.pre-fecho-atalho--perigo{
+  color:#d92d20;
+  background:#fff8f7;
+  border-color:#f7d1cd;
+}
+
+.pre-fecho-atalho--perigo .pre-fecho-atalho-icone{
+  background:#ef2d24;
+  color:#fff;
+}
+
+.pre-fecho-lista{
+  display:grid;
+  gap:14px;
+}
+
+.pre-fecho-card{
+  border-radius:18px;
+  padding:14px;
+}
+
+.pre-fecho-card-topo{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:12px;
+}
+
+.pre-fecho-card-titulo{
+  margin:0 0 4px;
+  color:var(--roxo);
+  font-size:18px;
+  font-weight:800;
+}
+
+.pre-fecho-card-ajuda{
+  margin:0;
+  color:var(--texto-suave);
+  font-size:13px;
+  line-height:1.35;
+}
+
+.pre-fecho-btn-remover{
+  flex:0 0 auto;
+}
+
+.pre-fecho-btn-remover svg{
+  width:15px;
+  height:15px;
+}
+
+.pre-fecho-campos-topo{
+  margin-bottom:12px;
+}
+
+.pre-fecho-relogios{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:12px;
+}
+
+.pre-fecho-painel{
+  border:1px solid var(--roxo-borda);
+  border-radius:16px;
+  padding:14px;
+  background:#fcfaff;
+}
+
+.pre-fecho-painel h4{
+  margin:0 0 12px;
+  color:var(--roxo);
+  font-size:16px;
+}
+
+.pre-fecho-resultado-linha,
+.pre-fecho-total-maquina{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.pre-fecho-resultado-linha{
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px dashed var(--linha);
+}
+
+.pre-fecho-resultado-linha span,
+.pre-fecho-total-maquina span{
+  color:#4b5563;
+  font-size:14px;
+  font-weight:700;
+}
+
+.pre-fecho-resultado-linha strong,
+.pre-fecho-total-maquina strong{
+  text-align:right;
+  font-size:16px;
+}
+
+.pre-fecho-total-maquina{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid var(--roxo-borda);
+}
+
+.pre-fecho-total-maquina strong{
+  font-size:18px;
+}
+
+.pre-fecho-modal-conteudo{
+  max-width:920px;
+}
+
+.pre-fecho-relatorio-lista{
+  display:grid;
+  gap:12px;
+}
+
+.pre-fecho-relatorio-card{
+  margin-bottom:0;
+}
+
+.pre-fecho-relatorio-total{
+  background:linear-gradient(180deg, #fdf8ff 0%, #f7efff 100%);
+}
+
+@media (max-width: 700px){
+  .pre-fecho-importacao-topo,
+  .pre-fecho-resumo-topo,
+  .pre-fecho-card-topo{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .pre-fecho-atalhos{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+
+  .pre-fecho-atalho{
+    min-height:82px;
+  }
+
+  .pre-fecho-card{
+    padding:12px;
+  }
+
+  .pre-fecho-btn-remover{
+    align-self:flex-end;
+    width:34px;
+    min-width:34px;
+    height:34px;
+    min-height:34px;
+    border-radius:12px;
+  }
+
+  .pre-fecho-relogios{
+    grid-template-columns:1fr;
+  }
+
+  .pre-fecho-painel{
+    padding:12px;
+  }
+
+  .pre-fecho-textarea{
+    min-height:160px;
+  }
+}
+
+@media (max-width: 420px){
+  .pre-fecho-atalhos{
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+
+  .pre-fecho-atalho{
+    min-height:76px;
+    border-radius:14px;
+    padding:10px 8px;
+  }
+
+  .pre-fecho-atalho-label{
+    font-size:12px;
+  }
+}

@@ -1,0 +1,205 @@
+.btn{
+  border:none;
+  border-radius:14px;
+  padding:11px 16px;
+  font-size:15px;
+  font-weight:800;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  transition:.2s ease;
+  min-height:44px;
+  line-height:1;
+  text-decoration:none;
+  box-shadow:none;
+}
+
+.btn:active{
+  transform:scale(.98);
+}
+
+.btn-icone{
+  width:18px;
+  height:18px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  color:var(--roxo);
+}
+
+.btn-icone svg{
+  width:18px;
+  height:18px;
+  stroke:currentColor;
+}
+
+.btn-roxo{
+  background:var(--roxo);
+  color:#fff;
+}
+
+.btn-roxo:hover{
+  background:var(--roxo-escuro);
+}
+
+.btn-roxo .btn-icone{
+  color:var(--roxo);
+  background:#fff;
+  width:20px;
+  height:20px;
+  border-radius:999px;
+  padding:0;
+}
+
+.btn-roxo .btn-icone svg{
+  width:12px;
+  height:12px;
+}
+
+.btn-claro{
+  background:var(--roxo-claro);
+  color:var(--roxo);
+  border:1px solid transparent;
+}
+
+.btn-claro:hover{
+  background:#ead7fb;
+}
+
+.btn-vermelho{
+  background:#ef2d24;
+  color:#fff;
+}
+
+.btn-vermelho:hover{
+  filter:brightness(.96);
+}
+
+.btn-vermelho .btn-icone{
+  color:#ef2d24;
+  background:#fff;
+  width:20px;
+  height:20px;
+  border-radius:999px;
+}
+
+.btn-vermelho .btn-icone svg{
+  width:12px;
+  height:12px;
+}
+
+.btn-acao,
+.btn-acao-icon{
+  width:36px;
+  min-width:36px;
+  height:36px;
+  min-height:36px;
+  padding:0;
+  border-radius:10px;
+  border:1px solid #d7c7f3;
+  background:#f7f3ff;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  color:var(--roxo);
+  font-size:16px;
+  line-height:1;
+  transition:all .15s ease;
+  outline:none;
+  box-shadow:none;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.btn-acao:hover,
+.btn-acao-icon:hover{
+  background:#eee6ff;
+  transform:translateY(-1px);
+}
+
+.btn-acao:focus,
+.btn-acao:focus-visible,
+.btn-acao-icon:focus,
+.btn-acao-icon:focus-visible{
+  outline:none;
+  box-shadow:none;
+}
+
+.btn-acao svg,
+.btn-acao i,
+.btn-acao span,
+.btn-acao-icon svg,
+.btn-acao-icon i,
+.btn-acao-icon span{
+  font-size:16px;
+  line-height:1;
+}
+
+.btn-acao-icon svg{
+  width:15px;
+  height:15px;
+  stroke:currentColor;
+  fill:none;
+  stroke-width:1.9;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.btn-editar,
+.btn-historico{
+  border-color:#d7c7f3;
+  background:#f7f3ff;
+  color:var(--roxo);
+}
+
+.btn-editar:hover,
+.btn-historico:hover{
+  background:#eee6ff;
+}
+
+.btn-excluir,
+.btn-acao-icon--excluir{
+  border-color:#f3c7c7;
+  background:#fff5f5;
+  color:#e03131;
+}
+
+.btn-acao--close{
+  font-size:16px;
+  font-weight:700;
+  line-height:1;
+  font-family:Arial, Helvetica, sans-serif;
+}
+
+.btn-acao--close svg{
+  width:15px;
+  height:15px;
+}
+
+.btn-excluir:hover,
+.btn-acao-icon--excluir:hover{
+  background:#ffe9e9;
+}
+
+.btn-adicionar{
+  border-color:#d7c7f3;
+  background:#f7f3ff;
+  color:#7b2cbf;
+}
+
+.btn-adicionar:hover{
+  background:#eee6ff;
+}
+
+@media (max-width: 700px){
+  .btn-acao--close{
+    width:34px;
+    min-width:34px;
+    height:34px;
+    min-height:34px;
+    border-radius:12px;
+  }
+}

@@ -1,16 +1,83 @@
-# React + Vite
+# App Operacao React
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicacao React que substitui o sistema legado de operacao.
 
-Currently, two official plugins are available:
+## Estado atual
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Todos os modulos principais ja foram migrados:
 
-## React Compiler
+- Login
+- Menu
+- Lancamento
+- Fechamento
+- Pre-Fecho
+- Retencao
+- Calculo Salas
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Hoje o foco mais importante ja nao e migracao de modulo, e sim consolidacao da base:
 
-## Expanding the ESLint configuration
+- limpeza da casca legada da raiz
+- definicao final de deploy
+- padronizacao fina de estilos e componentes
+- revisao mobile
+- revisao de textos e encoding
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Stack
+
+- React 19
+- Vite
+- React Router
+- React Icons
+- ESLint
+
+## Scripts
+
+- `npm run dev`: ambiente local
+- `npm run build`: build de producao
+- `npm run lint`: validacao de codigo
+- `npm run preview`: preview do build
+
+## Estrutura
+
+- `src/pages`
+  Paginas principais da aplicacao.
+
+- `src/components`
+  Blocos reutilizaveis de interface e modais.
+
+- `src/utils`
+  Regras de negocio, sessao, formatacao e parser de modulos.
+
+- `src/hooks`
+  Hooks compartilhados de comportamento de interface.
+
+- `src/styles`
+  Base visual, layout, header, botoes e estilos por modulo.
+
+## Padroes atuais
+
+- `app.config.js`
+  Centraliza o caminho base usado por Vite, router e navegacao interna.
+
+- `module-base.css`
+  Base visual compartilhada entre os modulos migrados.
+
+- `buttons.css`
+  Padrao de botoes principais, botoes compactos e acoes de remover.
+
+- `header.css` e `layout.css`
+  Estrutura comum de cabecalho e shell da aplicacao.
+
+- `session.js`
+  Centraliza leitura de usuario logado, limpeza de sessao e navegacao interna.
+
+- `useBodyScrollLock.js`
+  Evita scroll da tela de fundo enquanto modais estao abertos.
+
+## Pendencias principais
+
+- revisar e limpar arquivos legados da raiz do repositorio
+- decidir a estrategia final de `dist` e deploy
+- reduzir o tamanho de `module-base.css`
+- trocar `alert/confirm/prompt` por dialogs ou toasts padronizados
+- revisar textos com possivel encoding inconsistente

@@ -1,10 +1,21 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./styles/index.css";
-import App from "./App.jsx";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import { getRuntimeBasePath } from "../app.config";
+import App from "./App";
+import { DialogProvider } from "./components/DialogProvider";
+import { ToastProvider } from "./components/ToastProvider";
 
-createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
+const APP_BASE_PATH = getRuntimeBasePath();
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <BrowserRouter basename={APP_BASE_PATH || undefined}>
+      <ToastProvider>
+        <DialogProvider>
+          <App />
+        </DialogProvider>
+      </ToastProvider>
+    </BrowserRouter>
+  </React.StrictMode>
 );

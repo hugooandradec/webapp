@@ -1,0 +1,77 @@
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.dialog-card {
+  width: min(100%, 440px);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  padding: 20px;
+  color: #24163f;
+}
+
+.dialog-header h2 {
+  margin: 0;
+  color: #6f22a8;
+  font-size: 1.3rem;
+}
+
+.dialog-body {
+  margin-top: 12px;
+}
+
+.dialog-body p {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.dialog-input {
+  width: 100%;
+  margin-top: 14px;
+  border: 1px solid #d8c4f2;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font: inherit;
+  color: #24163f;
+  background: #fcfaff;
+}
+
+.dialog-input:focus {
+  outline: 2px solid rgba(111, 34, 168, 0.18);
+  border-color: #b58ee0;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+@media (max-width: 700px) {
+  .dialog-overlay {
+    padding: 14px;
+  }
+
+  .dialog-card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .dialog-actions {
+    flex-direction: column-reverse;
+  }
+
+  .dialog-actions .btn {
+    width: 100%;
+  }
+}
