@@ -162,6 +162,11 @@
   border-radius:10px;
 }
 
+.btn-remover-caixa-react.btn-acao-icon svg{
+  fill: currentColor;
+  stroke: none;
+}
+
 .modal-conteudo-lancamento {
   padding-top: 18px;
 }
