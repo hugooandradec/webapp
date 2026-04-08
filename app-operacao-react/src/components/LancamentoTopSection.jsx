@@ -98,14 +98,16 @@ export default function LancamentoTopSection({
             type="text"
             inputMode="numeric"
             placeholder="Digite aqui..."
-            value={dadosCaixaAtual.valorInicial || ""}
-            onChange={(e) =>
-              onAtualizarDadosCaixaAtual({
-                valorInicial: formatarMoedaDigitada(e.target.value),
-              })
-            }
-            disabled={!caixaAtiva}
-          />
+              value={dadosCaixaAtual.valorInicial || ""}
+              onChange={(e) =>
+                onAtualizarDadosCaixaAtual({
+                  valorInicial: formatarMoedaDigitada(e.target.value, {
+                    allowNegative: true,
+                  }),
+                })
+              }
+              disabled={!caixaAtiva}
+            />
         </div>
       </div>
 

@@ -2,13 +2,17 @@ export function somenteDigitos(valor) {
   return String(valor || "").replace(/\D/g, "");
 }
 
-export function formatarMoedaDigitada(valor) {
+export function formatarMoedaDigitada(valor, options = {}) {
+  const { allowNegative = false } = options;
+  const texto = String(valor || "");
+  const negativo = allowNegative && texto.includes("-");
   const digitos = somenteDigitos(valor);
-  if (!digitos) return "";
+  if (!digitos) return negativo ? "-" : "";
 
   const numero = Number(digitos) / 100;
+  const numeroComSinal = negativo ? -numero : numero;
 
-  return numero.toLocaleString("pt-BR", {
+  return numeroComSinal.toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
