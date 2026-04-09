@@ -91,12 +91,16 @@ export default function Fechamento() {
   const [dados, setDados] = useState(estadoPersistido.dados);
   const [debitos, setDebitos] = useState(estadoPersistido.debitos);
   const [devedores, setDevedores] = useState(estadoPersistido.devedores);
+  const [debitoForm, setDebitoForm] = useState({ ...DEBITO_VAZIO });
+  const [valeForm, setValeForm] = useState({ ...VALE_VAZIO });
+  const [debitoEditIndex, setDebitoEditIndex] = useState(null);
+  const [valeEditIndex, setValeEditIndex] = useState(null);
   const [modalAberto, setModalAberto] = useState(false);
   const [usuario] = useState(() => lerUsuarioLogado());
   const [syncInicializado, setSyncInicializado] = useState(false);
 
-  const refsDebitos = useRef([]);
-  const refsDevedores = useRef([]);
+  const refDebitoForm = useRef(null);
+  const refValeForm = useRef(null);
   const estadoInicialRef = useRef(estadoPersistido);
   const erroSyncCarregamentoRef = useRef(false);
   const erroSyncSalvarRef = useRef(false);
@@ -195,82 +199,150 @@ export default function Fechamento() {
     }));
   }
 
-  function atualizarDebito(index, campo, valor, monetario = false) {
+  function atualizarDebitoForm(campo, valor, monetario = false) {
+    setDebitoForm((prev) => ({
+      ...prev,
+      [campo]: monetario ? formatarMoedaDigitada(valor) : valor,
+    }));
+  }
+
+  function atualizarValeForm(campo, valor, monetario = false) {
+    setValeForm((prev) => {
+      const atualizado = {
+        ...prev,
+        [campo]: monetario ? formatarMoedaDigitada(valor) : valor,
+      };
+
+      return {
+        ...atualizado,
+        valorAtual: calcularValorAtualVale(atualizado),
+      };
+    });
+  }
+
+  function salvarDebito() {
+    if (!String(debitoForm.ponto || "").trim() && numeroDeMoeda(debitoForm.valor) === 0) {
+      return;
+    }
+
     setDebitos((prev) =>
-      prev.map((item, i) =>
-        i === index
-          ? { ...item, [campo]: monetario ? formatarMoedaDigitada(valor) : valor }
-          : item
-      )
+      debitoEditIndex === null
+        ? [...prev, { ...debitoForm }]
+        : prev.map((item, index) => (index === debitoEditIndex ? { ...debitoForm } : item))
     );
+    setDebitoForm({ ...DEBITO_VAZIO });
+    setDebitoEditIndex(null);
+    setTimeout(() => refDebitoForm.current?.focus(), 0);
   }
 
-  function atualizarDevedor(index, campo, valor, monetario = false) {
-    setDevedores((prev) =>
-      prev.map((item, i) => {
-        if (i !== index) return item;
+  async function editarDebito(index) {
+    const item = debitos[index];
+    if (!item) return;
 
-        const atualizado = {
-          ...item,
-          [campo]: monetario ? formatarMoedaDigitada(valor) : valor,
-        };
-
-        return {
-          ...atualizado,
-          valorAtual: calcularValorAtualVale(atualizado),
-        };
-      })
+    const confirmar = await dialog.confirm(
+      `Deseja editar o debito "${item.ponto || "sem descricao"}"?`,
+      {
+        title: "Editar debito",
+        confirmLabel: "Editar",
+      }
     );
+    if (!confirmar) return;
+
+    setDebitoForm({ ...item });
+    setDebitoEditIndex(index);
+    setTimeout(() => refDebitoForm.current?.focus(), 0);
   }
 
-  function adicionarDebito() {
-    setDebitos((prev) => {
-      const proximo = [...prev, { ...DEBITO_VAZIO }];
-      setTimeout(() => refsDebitos.current[proximo.length - 1]?.focus(), 0);
-      return proximo;
-    });
-  }
+  async function removerDebito(index) {
+    const item = debitos[index];
+    if (!item) return;
 
-  function removerDebito(index) {
+    const confirmar = await dialog.confirm(
+      `Deseja apagar o debito "${item.ponto || "sem descricao"}"?`,
+      {
+        title: "Apagar debito",
+        confirmLabel: "Apagar",
+      }
+    );
+    if (!confirmar) return;
+
     setDebitos((prev) => prev.filter((_, i) => i !== index));
+    if (debitoEditIndex === index) {
+      setDebitoForm({ ...DEBITO_VAZIO });
+      setDebitoEditIndex(null);
+    } else if (debitoEditIndex !== null && debitoEditIndex > index) {
+      setDebitoEditIndex((prev) => prev - 1);
+    }
   }
 
-  function adicionarDevedor() {
-    setDevedores((prev) => {
-      const proximo = [...prev, { ...VALE_VAZIO }];
-      setTimeout(() => refsDevedores.current[proximo.length - 1]?.focus(), 0);
-      return proximo;
-    });
+  function salvarVale() {
+    const vazio =
+      !String(valeForm.ponto || "").trim() &&
+      numeroDeMoeda(valeForm.valorAnterior) === 0 &&
+      numeroDeMoeda(valeForm.pago) === 0 &&
+      numeroDeMoeda(valeForm.semana) === 0;
+
+    if (vazio) return;
+
+    setDevedores((prev) =>
+      valeEditIndex === null
+        ? [...prev, { ...valeForm }]
+        : prev.map((item, index) => (index === valeEditIndex ? { ...valeForm } : item))
+    );
+    setValeForm({ ...VALE_VAZIO });
+    setValeEditIndex(null);
+    setTimeout(() => refValeForm.current?.focus(), 0);
   }
 
-  function removerDevedor(index) {
+  async function editarVale(index) {
+    const item = devedores[index];
+    if (!item) return;
+
+    const confirmar = await dialog.confirm(
+      `Deseja editar o vale "${item.ponto || "sem ponto"}"?`,
+      {
+        title: "Editar vale",
+        confirmLabel: "Editar",
+      }
+    );
+    if (!confirmar) return;
+
+    setValeForm({ ...item });
+    setValeEditIndex(index);
+    setTimeout(() => refValeForm.current?.focus(), 0);
+  }
+
+  async function removerDevedor(index) {
+    const item = devedores[index];
+    if (!item) return;
+
+    const confirmar = await dialog.confirm(
+      `Deseja apagar o vale "${item.ponto || "sem ponto"}"?`,
+      {
+        title: "Apagar vale",
+        confirmLabel: "Apagar",
+      }
+    );
+    if (!confirmar) return;
+
     setDevedores((prev) => prev.filter((_, i) => i !== index));
+    if (valeEditIndex === index) {
+      setValeForm({ ...VALE_VAZIO });
+      setValeEditIndex(null);
+    } else if (valeEditIndex !== null && valeEditIndex > index) {
+      setValeEditIndex((prev) => prev - 1);
+    }
   }
 
   function limparTudo() {
     setDados(estadoPadrao.dados);
     setDebitos([]);
     setDevedores([]);
+    setDebitoForm({ ...DEBITO_VAZIO });
+    setValeForm({ ...VALE_VAZIO });
+    setDebitoEditIndex(null);
+    setValeEditIndex(null);
     limparStorageFechamento();
-  }
-
-  async function salvarAgora() {
-    const payload = normalizarEstadoFechamento({ dados, debitos, devedores });
-    salvarLocalmente(payload);
-
-    if (syncHabilitada && loginUsuario) {
-      try {
-        await salvarDocumentoSync("fechamento", loginUsuario, payload);
-        ultimoPayloadSincronizadoRef.current = JSON.stringify(payload);
-        erroSyncSalvarRef.current = false;
-      } catch (error) {
-        console.error("Falha ao salvar manualmente o fechamento:", error);
-        toast.warning("Os dados foram salvos neste aparelho, mas a sincronização online falhou agora.");
-        return;
-      }
-    }
-
-    toast.success("Fechamento salvo.");
   }
 
   async function confirmarLimpeza() {
@@ -383,25 +455,30 @@ export default function Fechamento() {
         cardsResumo={cardsResumo}
         linhasRotas={linhasRotas}
         linhasComplementos={linhasComplementos}
-        onSalvarTudo={salvarAgora}
         onAbrirResumo={() => setModalAberto(true)}
         onLimparTudo={confirmarLimpeza}
       />
 
       <Debitos
         debitos={debitos}
-        refsDebitos={refsDebitos}
-        atualizarDebito={atualizarDebito}
+        inputRef={refDebitoForm}
+        debitoForm={debitoForm}
+        editandoIndex={debitoEditIndex}
+        atualizarDebitoForm={atualizarDebitoForm}
+        salvarDebito={salvarDebito}
+        editarDebito={editarDebito}
         removerDebito={removerDebito}
-        adicionarDebito={adicionarDebito}
       />
 
       <Devedores
         devedores={devedores}
-        refsDevedores={refsDevedores}
-        atualizarDevedor={atualizarDevedor}
+        inputRef={refValeForm}
+        valeForm={valeForm}
+        editandoIndex={valeEditIndex}
+        atualizarValeForm={atualizarValeForm}
+        salvarVale={salvarVale}
+        editarVale={editarVale}
         removerDevedor={removerDevedor}
-        adicionarDevedor={adicionarDevedor}
       />
 
       <ModalRelatorio

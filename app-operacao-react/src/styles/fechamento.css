@@ -48,6 +48,92 @@
   margin-bottom:0;
 }
 
+.linha-item-salvo{
+  margin-bottom:12px;
+}
+
+.linha-item-resumo{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+}
+
+.linha-item-texto{
+  min-width:0;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+}
+
+.linha-item-ponto{
+  font-size:16px;
+  font-weight:800;
+  color:#374151;
+}
+
+.linha-item-separador{
+  font-size:14px;
+  font-weight:700;
+  color:var(--roxo);
+  line-height:1;
+}
+
+.linha-item-valor{
+  font-size:14px;
+  font-weight:700;
+  line-height:1.2;
+  white-space:nowrap;
+}
+
+.vale-mobile-resumo-linha{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+}
+
+.vale-mobile-ponto{
+  font-size:15px;
+  font-weight:800;
+  color:#374151;
+}
+
+.vale-mobile-separador{
+  font-size:13px;
+  font-weight:700;
+  color:var(--roxo);
+  line-height:1;
+}
+
+.vale-mobile-item{
+  font-size:13px;
+  font-weight:700;
+  line-height:1.3;
+  white-space:nowrap;
+}
+
+.linha-item-formulario{
+  margin-top:12px;
+}
+
+.acoes-item-salvo{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+}
+
+.acoes-item-salvo .btn-acao-icon svg{
+  width:15px;
+  height:15px;
+}
+
+.btn-salvar-item{
+  margin-top:14px;
+  align-self:flex-start;
+}
+
 .grid-vales{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
@@ -95,14 +181,16 @@
 
   .card-resumo .rotulo{
     min-height:32px;
+    font-size:14px;
+    font-weight:800;
   }
 
   .card-resumo .valor{
-    font-size:clamp(18px, 6vw, 28px);
-    line-height:1.05;
-    white-space:nowrap;
-    word-break:normal;
-    overflow-wrap:normal;
+    font-size:clamp(16px, 5vw, 24px);
+    line-height:1.1;
+    white-space:normal;
+    word-break:keep-all;
+    overflow-wrap:anywhere;
   }
 
   .mini-resumo{
@@ -112,6 +200,37 @@
   .debitos-grid,
   .grid-vales{
     grid-template-columns:1fr;
+  }
+
+  .linha-item-resumo{
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .linha-item-texto{
+    gap:6px;
+  }
+
+  .linha-item-ponto{
+    font-size:15px;
+  }
+
+  .linha-item-valor,
+  .linha-item-separador{
+    font-size:13px;
+  }
+
+  .vale-mobile-resumo-linha{
+    gap:6px;
+  }
+
+  .vale-mobile-ponto{
+    font-size:14px;
+  }
+
+  .vale-mobile-item,
+  .vale-mobile-separador{
+    font-size:12px;
   }
 
   .secao-relatorio{
@@ -134,5 +253,6 @@
 
   .card-resumo .rotulo{
     min-height:0;
+    font-size:14px;
   }
 }

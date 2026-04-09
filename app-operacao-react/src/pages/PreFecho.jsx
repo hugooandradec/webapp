@@ -83,7 +83,13 @@ export default function PreFecho() {
     );
   }
 
-  function removerMaquina(index) {
+  async function removerMaquina(index) {
+    const confirmar = await dialog.confirm("Deseja apagar esta maquina?", {
+      title: "Apagar maquina",
+      confirmLabel: "Apagar",
+    });
+    if (!confirmar) return;
+
     setMaquinas((prev) => prev.filter((_, posicao) => posicao !== index));
   }
 

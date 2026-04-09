@@ -1,11 +1,15 @@
-import { FaXmark } from "react-icons/fa6";
+import { valorComSinal } from "../utils/money.js";
+import { IconActionButton, IconEdit, IconTrash } from "./ActionButtons.jsx";
 
 export default function Debitos({
   debitos,
-  refsDebitos,
-  atualizarDebito,
+  inputRef,
+  debitoForm,
+  editandoIndex,
+  atualizarDebitoForm,
+  salvarDebito,
+  editarDebito,
   removerDebito,
-  adicionarDebito,
 }) {
   return (
     <section className="bloco">
@@ -17,57 +21,67 @@ export default function Debitos({
 
       <div className="debitos-grid">
         {debitos.map((item, index) => (
-          <div className="linha-item" key={`debito-${index}`}>
-            <div className="subtitulo-lista">
-              <button
-                className="btn-acao btn-acao--close btn-excluir"
-                type="button"
-                onClick={() => removerDebito(index)}
-                title="Remover debito"
-                aria-label="Remover debito"
-              >
-                <FaXmark />
-              </button>
-            </div>
-
-            <div className="grid-2">
-              <div className="campo">
-                <label>Ponto / Descricao</label>
-                <input
-                  ref={(el) => {
-                    refsDebitos.current[index] = el;
-                  }}
-                  type="text"
-                  value={item.ponto}
-                  onChange={(e) => atualizarDebito(index, "ponto", e.target.value)}
-                  placeholder="Digite aqui..."
-                />
+          <div className="linha-item linha-item-salvo" key={`debito-${index}`}>
+            <div className="linha-item-resumo">
+              <div className="linha-item-texto">
+                <span className="linha-item-ponto">{item.ponto || "-"}</span>
+                <span className="linha-item-separador">|</span>
+                <span className="linha-item-valor negativo">
+                  {valorComSinal(
+                    -Math.abs(Number(String(item.valor).replace(/\./g, "").replace(",", ".")) || 0)
+                  )}
+                </span>
               </div>
 
-              <div className="campo">
-                <label>Valor</label>
-                <input
-                  type="text"
-                  value={item.valor}
-                  onChange={(e) => atualizarDebito(index, "valor", e.target.value, true)}
-                  inputMode="numeric"
-                  placeholder="Digite aqui..."
-                />
+              <div className="acoes-item-salvo">
+                <IconActionButton title="Editar debito" onClick={() => editarDebito(index)}>
+                  <IconEdit />
+                </IconActionButton>
+
+                <IconActionButton
+                  title="Excluir debito"
+                  className="btn-acao-icon--excluir"
+                  onClick={() => removerDebito(index)}
+                >
+                  <IconTrash />
+                </IconActionButton>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="acoes-lista">
-        <button
-          className="btn-acao btn-adicionar"
-          type="button"
-          onClick={adicionarDebito}
-          title="Adicionar debito"
-          aria-label="Adicionar debito"
-        >
-          +
+      <div className="linha-item linha-item-formulario">
+        <div className="subtitulo-lista">
+          {editandoIndex !== null ? "Editando débito" : "Novo débito"}
+        </div>
+
+        <div className="grid-2">
+          <div className="campo">
+            <label>Ponto / Descricao</label>
+            <input
+              ref={inputRef}
+              type="text"
+              value={debitoForm.ponto}
+              onChange={(e) => atualizarDebitoForm("ponto", e.target.value)}
+              placeholder="Digite aqui..."
+            />
+          </div>
+
+          <div className="campo">
+            <label>Valor</label>
+            <input
+              type="text"
+              value={debitoForm.valor}
+              onChange={(e) => atualizarDebitoForm("valor", e.target.value, true)}
+              inputMode="numeric"
+              placeholder="Digite aqui..."
+            />
+          </div>
+        </div>
+
+        <button className="btn btn-roxo btn-salvar-item" type="button" onClick={salvarDebito}>
+          {editandoIndex !== null ? "Atualizar débito" : "Salvar débito"}
         </button>
       </div>
     </section>

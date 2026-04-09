@@ -330,8 +330,19 @@ export default function Lancamento() {
     abrirEdicaoEntrada();
   }
 
-  function abrirEdicaoEntrada(lancamento = null, index = null) {
+  async function abrirEdicaoEntrada(lancamento = null, index = null) {
     if (!caixaAtiva) return;
+
+    if (lancamento) {
+      const confirmar = await dialog.confirm(
+        `Deseja editar o lancamento do ponto "${lancamento.ponto}"?`,
+        {
+          title: "Editar lancamento",
+          confirmLabel: "Editar",
+        }
+      );
+      if (!confirmar) return;
+    }
 
     setFormEntrada({
       aberto: true,

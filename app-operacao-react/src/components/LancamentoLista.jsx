@@ -1,49 +1,5 @@
+import { IconActionButton, IconEdit, IconHistory, IconTrash } from "./ActionButtons.jsx";
 import { classeValor, valorComSinalSemCentavos } from "../utils/money.js";
-
-function IconButton({ title, className = "", onClick, children }) {
-  return (
-    <button
-      type="button"
-      className={`btn-acao-icon ${className}`.trim()}
-      onClick={onClick}
-      title={title}
-      aria-label={title}
-    >
-      {children}
-    </button>
-  );
-}
-
-function IconEdit() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 20h4l10.5-10.5a2.12 2.12 0 0 0-3-3L5 17v3z" />
-      <path d="M13.5 6.5l4 4" />
-    </svg>
-  );
-}
-
-function IconHistory() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3 12a9 9 0 1 0 3-6.7" />
-      <path d="M3 4v4h4" />
-      <path d="M12 7v5l3 2" />
-    </svg>
-  );
-}
-
-function IconTrash() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 7h16" />
-      <path d="M9 7V4h6v3" />
-      <path d="M7 7l1 13h8l1-13" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
-    </svg>
-  );
-}
 
 export default function LancamentoLista({
   caixaAtiva,
@@ -57,7 +13,7 @@ export default function LancamentoLista({
       <h2 className="titulo-bloco">Entradas</h2>
 
       {!caixaAtiva ? (
-        <div className="estado-vazio">Crie um caixa para começar os lançamentos.</div>
+        <div className="estado-vazio">Crie um caixa para comecar os lancamentos.</div>
       ) : listaLancamentos.length === 0 ? (
         <div className="estado-vazio">Sem entradas neste caixa.</div>
       ) : (
@@ -119,21 +75,21 @@ function LancamentoItem({ item, index, onEditar, onHistorico, onExcluir }) {
       </div>
 
       <div className="acoes-lancamento-react">
-        <IconButton title="Editar" onClick={() => onEditar(item, index)}>
+        <IconActionButton title="Editar" onClick={() => onEditar(item, index)}>
           <IconEdit />
-        </IconButton>
+        </IconActionButton>
 
-        <IconButton title="Histórico" onClick={() => onHistorico(index)}>
+        <IconActionButton title="Historico" onClick={() => onHistorico(index)}>
           <IconHistory />
-        </IconButton>
+        </IconActionButton>
 
-        <IconButton
+        <IconActionButton
           title="Excluir"
           className="btn-acao-icon--excluir"
           onClick={() => onExcluir(index)}
         >
           <IconTrash />
-        </IconButton>
+        </IconActionButton>
       </div>
     </div>
   );

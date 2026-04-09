@@ -183,9 +183,12 @@ function SecaoDebitos({ debitosParaResumo }) {
                 className="card-mobile card-mobile-linha-unica"
                 key={`debito-resumo-mobile-${index}`}
               >
-                <div className="linha-mobile-inline">
-                  <span>{item.ponto || "-"}</span>
-                  <strong className={classeValor(valor)}>{valorComSinal(valor)}</strong>
+                <div className="vale-mobile-resumo-linha">
+                  <span className="vale-mobile-ponto">{item.ponto || "-"}</span>
+                  <span className="vale-mobile-separador">|</span>
+                  <span className={`vale-mobile-item ${classeValor(valor)}`.trim()}>
+                    Valor: {valorComSinal(valor)}
+                  </span>
                 </div>
               </div>
             );
@@ -240,48 +243,29 @@ function SecaoVales({ devedoresParaResumo }) {
 
       <div className="lista-mobile">
         {devedoresParaResumo.length === 0 ? (
-          <div className="card-mobile card-mobile-vale">
-            <div className="titulo-mobile titulo-mobile-vale">-</div>
-
-            <div className="grid-mobile-vale">
-              <div className="info-mobile-vale">
-                <span>Anterior</span>
-                <strong>{moedaBR(0)}</strong>
-              </div>
-
-              <div className="info-mobile-vale">
-                <span>Atual</span>
-                <strong>{moedaBR(0)}</strong>
-              </div>
-
-              <div className="info-mobile-vale info-mobile-vale-full">
-                <span>Saldo da Semana</span>
-                <strong>{moedaBR(0)}</strong>
-              </div>
+          <div className="card-mobile card-mobile-linha-unica">
+            <div className="linha-mobile-inline">
+              <span>-</span>
+              <strong>{moedaBR(0)}</strong>
             </div>
           </div>
         ) : (
           devedoresParaResumo.map((item, index) => (
-            <div className="card-mobile card-mobile-vale" key={`devedor-resumo-mobile-${index}`}>
-              <div className="titulo-mobile titulo-mobile-vale">{item.ponto || "-"}</div>
-
-              <div className="grid-mobile-vale">
-                <div className="info-mobile-vale">
-                  <span>Anterior</span>
-                  <strong>{valorComSinal(numeroDeMoeda(item.valorAnterior))}</strong>
-                </div>
-
-                <div className="info-mobile-vale">
-                  <span>Atual</span>
-                  <strong>{valorComSinal(numeroDeMoeda(item.valorAtual))}</strong>
-                </div>
-
-                <div className="info-mobile-vale info-mobile-vale-full">
-                  <span>Saldo da Semana</span>
-                  <strong className={classeValor(item.saldoSemana)}>
-                    {valorComSinal(item.saldoSemana)}
-                  </strong>
-                </div>
+            <div className="card-mobile card-mobile-linha-unica" key={`devedor-resumo-mobile-${index}`}>
+              <div className="vale-mobile-resumo-linha">
+                <span className="vale-mobile-ponto">{item.ponto || "-"}</span>
+                <span className="vale-mobile-separador">|</span>
+                <span className="vale-mobile-item">
+                  Anterior: {valorComSinal(numeroDeMoeda(item.valorAnterior))}
+                </span>
+                <span className="vale-mobile-separador">|</span>
+                <span className="vale-mobile-item">
+                  Semana: {valorComSinal(numeroDeMoeda(item.semana))}
+                </span>
+                <span className="vale-mobile-separador">|</span>
+                <span className={`vale-mobile-item ${classeValor(numeroDeMoeda(item.valorAtual))}`.trim()}>
+                  Atual: {valorComSinal(numeroDeMoeda(item.valorAtual))}
+                </span>
               </div>
             </div>
           ))
