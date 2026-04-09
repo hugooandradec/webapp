@@ -209,7 +209,52 @@
   }
 
   .salas-atalhos{
-    grid-template-columns:1fr;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:8px;
+    margin-top:10px;
+  }
+
+  .salas-atalho{
+    min-height:40px;
+    padding:0;
+    border-radius:12px;
+    gap:0;
+  }
+
+  .salas-atalho__label{
+    display:none;
+  }
+
+  .salas-atalho__icon{
+    width:18px;
+    height:18px;
+    background:none;
+    border-radius:0;
+  }
+
+  .salas-atalho__icon svg{
+    width:18px;
+    height:18px;
+  }
+
+  .salas-atalho--primario{
+    background:var(--roxo);
+    border-color:var(--roxo);
+    color:#fff;
+  }
+
+  .salas-atalho--primario .salas-atalho__icon{
+    background:none;
+    color:#fff;
+  }
+
+  .salas-atalho--claro{
+    background:#f3e8ff;
+  }
+
+  .salas-atalho--perigo .salas-atalho__icon{
+    background:none;
+    color:inherit;
   }
 
   .salas-campos,
