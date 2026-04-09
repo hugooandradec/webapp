@@ -230,7 +230,7 @@ export default function LancamentoTopSection({
           className={classeValor(valorInicialNumero)}
         />
         <ResumoCard
-          rotulo="Valor Total"
+          rotulo="Valor Final"
           valor={valorComSinalSemCentavos(valorTotal)}
           className={classeValor(valorTotal)}
         />

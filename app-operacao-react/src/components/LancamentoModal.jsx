@@ -94,7 +94,7 @@ function ResumoCaixa({
 
       <div className="relatorio-cards relatorio-cards-resumo lancamento-modal-cards">
         <ResumoCard rotulo="Valor Inicial" valor={valorInicialNumero} />
-        <ResumoCard rotulo="Valor Total" valor={valorTotal} />
+        <ResumoCard rotulo="Valor Final" valor={valorTotal} />
       </div>
 
       <div className="secao-relatorio secao-resumo-geral">
@@ -110,7 +110,7 @@ function ResumoCaixa({
           <LinhaResumo label="Entrada" valor={totalEntrada} className="positivo" />
           <LinhaResumo label="Saída" valor={-totalSaida} className="negativo" />
           <LinhaResumo
-            label="Valor Total"
+            label="Valor Final"
             valor={valorTotal}
             className={classeValor(valorTotal)}
             total
