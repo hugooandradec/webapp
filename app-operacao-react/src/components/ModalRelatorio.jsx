@@ -211,6 +211,8 @@ function SecaoVales({ devedoresParaResumo }) {
               <th>#</th>
               <th>Ponto</th>
               <th>Anterior</th>
+              <th>Pago</th>
+              <th>Semana</th>
               <th>Atual</th>
               <th>Saldo da Semana</th>
             </tr>
@@ -223,6 +225,8 @@ function SecaoVales({ devedoresParaResumo }) {
                 <td>{moedaBR(0)}</td>
                 <td>{moedaBR(0)}</td>
                 <td>{moedaBR(0)}</td>
+                <td>{moedaBR(0)}</td>
+                <td>{moedaBR(0)}</td>
               </tr>
             ) : (
               devedoresParaResumo.map((item, index) => (
@@ -230,6 +234,8 @@ function SecaoVales({ devedoresParaResumo }) {
                   <td>{index + 1}</td>
                   <td>{item.ponto || "-"}</td>
                   <td>{valorComSinal(numeroDeMoeda(item.valorAnterior))}</td>
+                  <td>{valorComSinal(numeroDeMoeda(item.pago))}</td>
+                  <td>{valorComSinal(numeroDeMoeda(item.semana))}</td>
                   <td>{valorComSinal(numeroDeMoeda(item.valorAtual))}</td>
                   <td className={classeValor(item.saldoSemana)}>
                     {valorComSinal(item.saldoSemana)}
@@ -257,6 +263,10 @@ function SecaoVales({ devedoresParaResumo }) {
                 <span className="vale-mobile-separador">|</span>
                 <span className="vale-mobile-item">
                   Anterior: {valorComSinal(numeroDeMoeda(item.valorAnterior))}
+                </span>
+                <span className="vale-mobile-separador">|</span>
+                <span className="vale-mobile-item">
+                  Pago: {valorComSinal(numeroDeMoeda(item.pago))}
                 </span>
                 <span className="vale-mobile-separador">|</span>
                 <span className="vale-mobile-item">
