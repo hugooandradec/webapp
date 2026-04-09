@@ -6,6 +6,7 @@ export default function DadosPrincipais({
   cardsResumo,
   linhasRotas,
   linhasComplementos,
+  onSalvarTudo,
   onAbrirResumo,
   onLimparTudo,
 }) {
@@ -87,6 +88,10 @@ export default function DadosPrincipais({
       </div>
 
       <div className="acoes-topo">
+        <button className="btn btn-roxo" type="button" onClick={onSalvarTudo}>
+          Salvar
+        </button>
+
         <button className="btn btn-roxo" type="button" onClick={onAbrirResumo}>
           Resumo
         </button>

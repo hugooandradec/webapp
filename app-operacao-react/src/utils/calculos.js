@@ -92,8 +92,13 @@ export function calcularResumoDevedores(devedores) {
   return devedores.reduce(
     (acc, item) => {
       const anterior = numeroDeMoeda(item.valorAnterior);
+      const pago = numeroDeMoeda(item.pago);
+      const semana = numeroDeMoeda(item.semana);
       const atual = numeroDeMoeda(item.valorAtual);
       const saldoSemana = anterior - atual;
+
+      acc.totalPago += pago;
+      acc.totalSemana += semana;
 
       if (saldoSemana > 0) {
         acc.devAntReceb += saldoSemana;
@@ -111,6 +116,8 @@ export function calcularResumoDevedores(devedores) {
     {
       devAntReceb: 0,
       devedores: 0,
+      totalPago: 0,
+      totalSemana: 0,
       lista: [],
     }
   );
@@ -130,16 +137,16 @@ export function calcularTotaisFechamento({ dados, debitos, resumoDevedores }) {
     return acc + numeroDeMoeda(item.valor);
   }, 0);
 
-  const totalDevedores = resumoDevedores.devedores;
-  const devAntReceb = resumoDevedores.devAntReceb;
-  const debitosMaisDevedores = totalDebitos + totalDevedores;
+  const totalValesPagos = resumoDevedores.totalPago;
+  const totalValesSemana = resumoDevedores.totalSemana;
+  const debitosMaisVales = totalDebitos + totalValesSemana;
 
   const firma =
     totalRota -
-    debitosMaisDevedores -
+    debitosMaisVales -
     cartaoAtual +
     cartaoPassadoLiquido +
-    devAntReceb;
+    totalValesPagos;
 
   return {
     totalRota,
@@ -147,16 +154,16 @@ export function calcularTotaisFechamento({ dados, debitos, resumoDevedores }) {
     cartaoPassadoLiquido,
     cartaoAtual,
     totalDebitos,
-    totalDevedores,
-    devAntReceb,
-    debitosMaisDevedores,
+    totalValesPagos,
+    totalValesSemana,
+    debitosMaisVales,
     firma,
     totalRotasResumo: totalRota,
     cartaoAnteriorResumo: cartaoPassadoLiquido,
     cartaoAtualResumo: -cartaoAtual,
     debitosResumo: -totalDebitos,
-    valesResumo: -totalDevedores,
-    valesPagosResumo: devAntReceb,
+    valesResumo: -totalValesSemana,
+    valesPagosResumo: totalValesPagos,
     firmaResumo: firma,
   };
 }

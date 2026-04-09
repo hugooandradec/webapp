@@ -254,6 +254,25 @@ export default function Fechamento() {
     limparStorageFechamento();
   }
 
+  async function salvarAgora() {
+    const payload = normalizarEstadoFechamento({ dados, debitos, devedores });
+    salvarLocalmente(payload);
+
+    if (syncHabilitada && loginUsuario) {
+      try {
+        await salvarDocumentoSync("fechamento", loginUsuario, payload);
+        ultimoPayloadSincronizadoRef.current = JSON.stringify(payload);
+        erroSyncSalvarRef.current = false;
+      } catch (error) {
+        console.error("Falha ao salvar manualmente o fechamento:", error);
+        toast.warning("Os dados foram salvos neste aparelho, mas a sincronização online falhou agora.");
+        return;
+      }
+    }
+
+    toast.success("Fechamento salvo.");
+  }
+
   async function confirmarLimpeza() {
     const confirmar = await dialog.confirm(
       "Tem certeza que deseja limpar todos os dados do fechamento?",
@@ -326,8 +345,8 @@ export default function Fechamento() {
     () => [
       { label: "Cartao Anterior", valor: totais.cartaoPassadoLiquido },
       { label: "Cartao Atual", valor: -totais.cartaoAtual },
-      { label: "Vales Pagos", valor: totais.devAntReceb },
-      { label: "Debitos + Vales", valor: -totais.debitosMaisDevedores },
+      { label: "Vales Pagos", valor: totais.totalValesPagos },
+      { label: "Debitos + Vales", valor: -totais.debitosMaisVales },
     ],
     [totais]
   );
@@ -364,6 +383,7 @@ export default function Fechamento() {
         cardsResumo={cardsResumo}
         linhasRotas={linhasRotas}
         linhasComplementos={linhasComplementos}
+        onSalvarTudo={salvarAgora}
         onAbrirResumo={() => setModalAberto(true)}
         onLimparTudo={confirmarLimpeza}
       />
