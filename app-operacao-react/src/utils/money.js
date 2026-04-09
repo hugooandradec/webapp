@@ -3,18 +3,18 @@ export function somenteDigitos(valor) {
 }
 
 export function formatarMoedaDigitada(valor, options = {}) {
-  const { allowNegative = false } = options;
+  const { allowNegative = false, wholeUnits = false } = options;
   const texto = String(valor || "");
   const negativo = allowNegative && texto.includes("-");
   const digitos = somenteDigitos(valor);
   if (!digitos) return negativo ? "-" : "";
 
-  const numero = Number(digitos) / 100;
+  const numero = wholeUnits ? Number(digitos) : Number(digitos) / 100;
   const numeroComSinal = negativo ? -numero : numero;
 
   return numeroComSinal.toLocaleString("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: wholeUnits ? 0 : 2,
+    maximumFractionDigits: wholeUnits ? 0 : 2,
   });
 }
 

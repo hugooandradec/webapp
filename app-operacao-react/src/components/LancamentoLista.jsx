@@ -82,6 +82,8 @@ function LancamentoItem({ item, index, onEditar, onHistorico, onExcluir }) {
   const entrada = Number(item.dinheiro) || 0;
   const saida = Number(item.saida) || 0;
   const subtotal = entrada - saida;
+  const mostrarEntrada = entrada !== 0;
+  const mostrarSaida = saida !== 0;
 
   return (
     <div className="linha-item linha-item-lancamento">
@@ -89,15 +91,26 @@ function LancamentoItem({ item, index, onEditar, onHistorico, onExcluir }) {
         <div className="lancamento-topo">
           <div className="lancamento-linha-texto">
             <span className="lancamento-ponto">{item.ponto}</span>
-            <span className="lancamento-separador">•</span>
-            <span className="lancamento-valor-inline positivo">
-              E: {valorComSinalSemCentavos(entrada)}
-            </span>
-            <span className="lancamento-separador">•</span>
-            <span className="lancamento-valor-inline negativo">
-              S: {valorComSinalSemCentavos(-Math.abs(saida))}
-            </span>
-            <span className="lancamento-separador">•</span>
+
+            {mostrarEntrada ? (
+              <>
+                <span className="lancamento-separador">|</span>
+                <span className="lancamento-valor-inline positivo">
+                  E: {valorComSinalSemCentavos(entrada)}
+                </span>
+              </>
+            ) : null}
+
+            {mostrarSaida ? (
+              <>
+                <span className="lancamento-separador">|</span>
+                <span className="lancamento-valor-inline negativo">
+                  S: {valorComSinalSemCentavos(-Math.abs(saida))}
+                </span>
+              </>
+            ) : null}
+
+            <span className="lancamento-separador">|</span>
             <span className={`lancamento-valor-inline ${classeValor(subtotal)}`.trim()}>
               Total: {valorComSinalSemCentavos(subtotal)}
             </span>

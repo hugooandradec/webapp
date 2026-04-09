@@ -174,6 +174,8 @@ function ResumoCaixa({
           ) : (
             listaLancamentos.map((item, index) => {
               const total = (Number(item.dinheiro) || 0) - (Number(item.saida) || 0);
+              const mostrarEntrada = (Number(item.dinheiro) || 0) !== 0;
+              const mostrarSaida = (Number(item.saida) || 0) !== 0;
 
               return (
                 <div
@@ -182,15 +184,26 @@ function ResumoCaixa({
                 >
                   <div className="lancamento-mobile-resumo-linha">
                     <span className="lancamento-mobile-ponto">{item.ponto}</span>
-                    <span className="lancamento-separador">•</span>
-                    <span className="positivo">
-                      E: {valorComSinalSemCentavos(item.dinheiro)}
-                    </span>
-                    <span className="lancamento-separador">•</span>
-                    <span className="negativo">
-                      S: {valorComSinalSemCentavos(-Math.abs(item.saida))}
-                    </span>
-                    <span className="lancamento-separador">•</span>
+
+                    {mostrarEntrada ? (
+                      <>
+                        <span className="lancamento-separador">|</span>
+                        <span className="positivo">
+                          E: {valorComSinalSemCentavos(item.dinheiro)}
+                        </span>
+                      </>
+                    ) : null}
+
+                    {mostrarSaida ? (
+                      <>
+                        <span className="lancamento-separador">|</span>
+                        <span className="negativo">
+                          S: {valorComSinalSemCentavos(-Math.abs(item.saida))}
+                        </span>
+                      </>
+                    ) : null}
+
+                    <span className="lancamento-separador">|</span>
                     <span className={classeValor(total)}>
                       Total: {valorComSinalSemCentavos(total)}
                     </span>
@@ -276,63 +289,50 @@ function ResumoTotalCaixas({ resumoTotalCaixas }) {
 
         <div className="lista-mobile">
           {resumoTotalCaixas.linhas.map((item, index) => (
-            <div className="card-mobile card-mobile-vale" key={`total-caixas-mobile-${index}`}>
-              <div className="titulo-mobile titulo-mobile-vale">
-                {formatarNomeCaixa(item.caixa)}
-              </div>
-
-              <div className="grid-mobile-vale">
-                <InfoMobile label="Data" valor={formatarDataCurta(item.data)} />
-                <InfoMobile
-                  label="Inicial"
-                  valor={valorComSinalSemCentavos(item.valorInicial)}
-                  className={classeValor(item.valorInicial)}
-                />
-                <InfoMobile
-                  label="Entrada"
-                  valor={valorComSinalSemCentavos(item.entrada)}
-                  className="positivo"
-                />
-                <InfoMobile
-                  label="Saída"
-                  valor={valorComSinalSemCentavos(-item.saida)}
-                  className="negativo"
-                />
-                <InfoMobile
-                  label="Total"
-                  valor={valorComSinalSemCentavos(item.valorTotal)}
-                  className={classeValor(item.valorTotal)}
-                  full
-                />
+            <div className="card-mobile lancamento-mobile-resumo" key={`total-caixas-mobile-${index}`}>
+              <div className="lancamento-mobile-resumo-linha">
+                <span className="lancamento-mobile-ponto">{formatarNomeCaixa(item.caixa)}</span>
+                <span className="lancamento-separador">|</span>
+                <span>{formatarDataCurta(item.data)}</span>
+                <span className="lancamento-separador">|</span>
+                <span className={classeValor(item.valorInicial)}>
+                  Inicial: {valorComSinalSemCentavos(item.valorInicial)}
+                </span>
+                <span className="lancamento-separador">|</span>
+                <span className="positivo">
+                  E: {valorComSinalSemCentavos(item.entrada)}
+                </span>
+                <span className="lancamento-separador">|</span>
+                <span className="negativo">
+                  S: {valorComSinalSemCentavos(-item.saida)}
+                </span>
+                <span className="lancamento-separador">|</span>
+                <span className={classeValor(item.valorTotal)}>
+                  Total: {valorComSinalSemCentavos(item.valorTotal)}
+                </span>
               </div>
             </div>
           ))}
 
-          <div className="card-mobile card-mobile-vale">
-            <div className="titulo-mobile titulo-mobile-vale">Total Geral</div>
-
-            <div className="grid-mobile-vale">
-              <InfoMobile
-                label="Inicial"
-                valor={valorComSinalSemCentavos(resumoTotalCaixas.somaInicial)}
-                className={classeValor(resumoTotalCaixas.somaInicial)}
-              />
-              <InfoMobile
-                label="Entrada"
-                valor={valorComSinalSemCentavos(resumoTotalCaixas.somaEntrada)}
-                className="positivo"
-              />
-              <InfoMobile
-                label="Saída"
-                valor={valorComSinalSemCentavos(-resumoTotalCaixas.somaSaida)}
-                className="negativo"
-              />
-              <InfoMobile
-                label="Total"
-                valor={valorComSinalSemCentavos(resumoTotalCaixas.somaTotal)}
-                className={classeValor(resumoTotalCaixas.somaTotal)}
-                full
-              />
+          <div className="card-mobile lancamento-mobile-resumo">
+            <div className="lancamento-mobile-resumo-linha">
+              <span className="lancamento-mobile-ponto">Total Geral</span>
+              <span className="lancamento-separador">|</span>
+              <span className={classeValor(resumoTotalCaixas.somaInicial)}>
+                Inicial: {valorComSinalSemCentavos(resumoTotalCaixas.somaInicial)}
+              </span>
+              <span className="lancamento-separador">|</span>
+              <span className="positivo">
+                E: {valorComSinalSemCentavos(resumoTotalCaixas.somaEntrada)}
+              </span>
+              <span className="lancamento-separador">|</span>
+              <span className="negativo">
+                S: {valorComSinalSemCentavos(-resumoTotalCaixas.somaSaida)}
+              </span>
+              <span className="lancamento-separador">|</span>
+              <span className={classeValor(resumoTotalCaixas.somaTotal)}>
+                Total: {valorComSinalSemCentavos(resumoTotalCaixas.somaTotal)}
+              </span>
             </div>
           </div>
         </div>

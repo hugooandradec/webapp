@@ -100,12 +100,13 @@ export default function LancamentoTopSection({
             placeholder="Digite aqui..."
             value={dadosCaixaAtual.valorInicial || ""}
             onChange={(e) =>
-              onAtualizarDadosCaixaAtual({
-                valorInicial: formatarMoedaDigitada(e.target.value, {
-                  allowNegative: true,
-                }),
-              })
-            }
+                onAtualizarDadosCaixaAtual({
+                  valorInicial: formatarMoedaDigitada(e.target.value, {
+                    allowNegative: true,
+                    wholeUnits: true,
+                  }),
+                })
+              }
             disabled={!caixaAtiva}
           />
         </div>
