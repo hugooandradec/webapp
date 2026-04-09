@@ -142,18 +142,21 @@ function ResumoCaixa({
               ) : (
                 listaLancamentos.map((item, index) => {
                   const total = (Number(item.dinheiro) || 0) - (Number(item.saida) || 0);
+                  const mostrarEntrada = (Number(item.dinheiro) || 0) !== 0;
+                  const mostrarSaida = (Number(item.saida) || 0) !== 0;
+                  const mostrarTotal = mostrarEntrada && mostrarSaida;
 
                   return (
                     <tr key={`resumo-caixa-${index}`}>
                       <td>{item.ponto}</td>
                       <td className={classeValor(item.dinheiro)}>
-                        {valorComSinalSemCentavos(item.dinheiro)}
+                        {mostrarEntrada ? valorComSinalSemCentavos(item.dinheiro) : "-"}
                       </td>
                       <td className={classeValor(-Math.abs(item.saida))}>
-                        {valorComSinalSemCentavos(-Math.abs(item.saida))}
+                        {mostrarSaida ? valorComSinalSemCentavos(-Math.abs(item.saida)) : "-"}
                       </td>
                       <td className={classeValor(total)}>
-                        {valorComSinalSemCentavos(total)}
+                        {mostrarTotal ? valorComSinalSemCentavos(total) : "-"}
                       </td>
                     </tr>
                   );
@@ -172,45 +175,47 @@ function ResumoCaixa({
               </div>
             </div>
           ) : (
-            listaLancamentos.map((item, index) => {
-              const total = (Number(item.dinheiro) || 0) - (Number(item.saida) || 0);
-              const mostrarEntrada = (Number(item.dinheiro) || 0) !== 0;
-              const mostrarSaida = (Number(item.saida) || 0) !== 0;
+            <div className="card-mobile card-mobile-compacto lancamento-mobile-lista-card">
+              <div className="lancamento-mobile-tabela-cabecalho">
+                <span>Ponto</span>
+                <span>Entrada</span>
+                <span>Saída</span>
+                <span>Total</span>
+              </div>
 
-              return (
-                <div
-                  className="card-mobile lancamento-mobile-resumo"
-                  key={`resumo-caixa-mobile-${index}`}
-                >
-                  <div className="lancamento-mobile-resumo-linha">
-                    <span className="lancamento-mobile-ponto">{item.ponto}</span>
+              {listaLancamentos.map((item, index) => {
+                const total = (Number(item.dinheiro) || 0) - (Number(item.saida) || 0);
+                const mostrarEntrada = (Number(item.dinheiro) || 0) !== 0;
+                const mostrarSaida = (Number(item.saida) || 0) !== 0;
+                const mostrarTotal = mostrarEntrada && mostrarSaida;
 
-                    {mostrarEntrada ? (
-                      <>
-                        <span className="lancamento-separador">|</span>
-                        <span className="positivo">
-                          E: {valorComSinalSemCentavos(item.dinheiro)}
-                        </span>
-                      </>
-                    ) : null}
-
-                    {mostrarSaida ? (
-                      <>
-                        <span className="lancamento-separador">|</span>
-                        <span className="negativo">
-                          S: {valorComSinalSemCentavos(-Math.abs(item.saida))}
-                        </span>
-                      </>
-                    ) : null}
-
-                    <span className="lancamento-separador">|</span>
-                    <span className={classeValor(total)}>
-                      Total: {valorComSinalSemCentavos(total)}
+                return (
+                  <div
+                    className="lancamento-mobile-tabela-linha"
+                    key={`resumo-caixa-mobile-${index}`}
+                  >
+                    <span className="lancamento-mobile-col lancamento-mobile-col-ponto">
+                      {item.ponto}
                     </span>
+                    <strong
+                      className={`lancamento-mobile-col ${mostrarEntrada ? "positivo" : ""}`.trim()}
+                    >
+                      {mostrarEntrada ? valorComSinalSemCentavos(item.dinheiro) : "-"}
+                    </strong>
+                    <strong
+                      className={`lancamento-mobile-col ${mostrarSaida ? "negativo" : ""}`.trim()}
+                    >
+                      {mostrarSaida ? valorComSinalSemCentavos(-Math.abs(item.saida)) : "-"}
+                    </strong>
+                    <strong
+                      className={`lancamento-mobile-col ${mostrarTotal ? classeValor(total) : ""}`.trim()}
+                    >
+                      {mostrarTotal ? valorComSinalSemCentavos(total) : "-"}
+                    </strong>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

@@ -266,6 +266,10 @@ function SecaoVales({ devedoresParaResumo }) {
                 <span className={`vale-mobile-item ${classeValor(numeroDeMoeda(item.valorAtual))}`.trim()}>
                   Atual: {valorComSinal(numeroDeMoeda(item.valorAtual))}
                 </span>
+                <span className="vale-mobile-separador">|</span>
+                <span className={`vale-mobile-item ${classeValor(item.saldoSemana)}`.trim()}>
+                  Saldo: {valorComSinal(item.saldoSemana)}
+                </span>
               </div>
             </div>
           ))

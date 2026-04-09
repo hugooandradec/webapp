@@ -69,10 +69,10 @@ export default function CalculoSalasModal({
                       </div>
 
                       <Linha label="Bruto" valor={resumo.bruto} />
-                      <Linha label="Despesas Extras" valor={resumo.despesasExtras} />
-                      <Linha label="Despesas" valor={resumo.despesas} />
+                      <Linha label="Despesas Extras" valor={resumo.despesasExtras} negativo />
+                      <Linha label="Despesas" valor={resumo.despesas} negativo />
                       <Linha label="Cartão" valor={resumo.cartao} />
-                      <Linha label="Taxa Cartão" valor={resumo.taxa} />
+                      <Linha label="Taxa Cartão" valor={resumo.taxa} negativo />
                       <Linha label="Resultado" valor={resumo.resultado} destaque />
                       <Linha label="Pipo" valor={resumo.pipo} />
                       <Linha label="Pass" valor={resumo.pass} />
@@ -88,11 +88,13 @@ export default function CalculoSalasModal({
   );
 }
 
-function Linha({ label, valor, destaque = false }) {
+function Linha({ label, valor, destaque = false, negativo = false }) {
+  const valorExibicao = negativo ? -Math.abs(valor) : valor;
+
   return (
     <div className={`linha-mobile ${destaque ? "linha-mobile-total" : ""}`}>
       <span>{label}</span>
-      <strong className={classeValor(valor)}>{moedaBR(valor)}</strong>
+      <strong className={classeValor(valorExibicao)}>{moedaBR(valorExibicao)}</strong>
     </div>
   );
 }
