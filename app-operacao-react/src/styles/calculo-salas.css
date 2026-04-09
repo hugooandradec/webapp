@@ -202,6 +202,66 @@
   gap:12px;
 }
 
+.salas-relatorio-legado{
+  border:1px solid var(--roxo-borda);
+  border-radius:18px;
+  background:#fcfaff;
+  padding:16px 18px;
+}
+
+.salas-relatorio-item-legado{
+  padding:4px 0;
+}
+
+.salas-relatorio-item-titulo{
+  display:block;
+  margin-bottom:10px;
+  color:#1f2937;
+  font-size:18px;
+  font-weight:900;
+}
+
+.salas-relatorio-linha-legado{
+  padding:7px 0;
+}
+
+.salas-relatorio-linha-legado span{
+  color:#4b5563;
+}
+
+.salas-relatorio-linha-legado strong.azul{
+  color:#2563eb;
+}
+
+.salas-relatorio-partes-legado{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:8px;
+  font-size:15px;
+  color:#374151;
+  flex-wrap:wrap;
+}
+
+.salas-relatorio-partes-separador{
+  color:var(--roxo);
+  font-weight:800;
+}
+
+.salas-relatorio-divisor{
+  height:1px;
+  margin:14px 0 8px;
+  border-top:1px dashed #d1d5db;
+}
+
+.salas-relatorio-total-legado{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px dashed #d1d5db;
+  font-size:18px;
+  color:#1f2937;
+}
+
 @media (max-width: 700px){
   .salas-topo,
   .salas-card-topo{
@@ -283,6 +343,24 @@
   .salas-campos,
   .salas-divisao{
     grid-template-columns:1fr;
+  }
+
+  .salas-relatorio-legado{
+    padding:14px 12px;
+  }
+
+  .salas-relatorio-item-titulo{
+    font-size:16px;
+    line-height:1.35;
+  }
+
+  .salas-relatorio-partes-legado{
+    gap:8px;
+    font-size:14px;
+  }
+
+  .salas-relatorio-total-legado{
+    font-size:16px;
   }
 
   .salas-resultado{
