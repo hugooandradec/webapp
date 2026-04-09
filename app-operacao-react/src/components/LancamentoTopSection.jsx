@@ -8,7 +8,7 @@ import {
 import {
   classeValor,
   formatarMoedaDigitada,
-  valorComSinal,
+  valorComSinalSemCentavos,
 } from "../utils/money.js";
 import { formatarNomeCaixa, getHojeIso } from "../utils/lancamentoHelpers.js";
 
@@ -98,16 +98,16 @@ export default function LancamentoTopSection({
             type="text"
             inputMode="numeric"
             placeholder="Digite aqui..."
-              value={dadosCaixaAtual.valorInicial || ""}
-              onChange={(e) =>
-                onAtualizarDadosCaixaAtual({
-                  valorInicial: formatarMoedaDigitada(e.target.value, {
-                    allowNegative: true,
-                  }),
-                })
-              }
-              disabled={!caixaAtiva}
-            />
+            value={dadosCaixaAtual.valorInicial || ""}
+            onChange={(e) =>
+              onAtualizarDadosCaixaAtual({
+                valorInicial: formatarMoedaDigitada(e.target.value, {
+                  allowNegative: true,
+                }),
+              })
+            }
+            disabled={!caixaAtiva}
+          />
         </div>
       </div>
 
@@ -225,15 +225,23 @@ export default function LancamentoTopSection({
       <div className="resumo-cards lancamento-resumo-cards">
         <ResumoCard
           rotulo="Valor Inicial"
-          valor={valorComSinal(valorInicialNumero)}
+          valor={valorComSinalSemCentavos(valorInicialNumero)}
           className={classeValor(valorInicialNumero)}
         />
-        <ResumoCard rotulo="Entrada" valor={valorComSinal(totalEntrada)} className="positivo" />
-        <ResumoCard rotulo="Saída" valor={valorComSinal(-totalSaida)} className="negativo" />
         <ResumoCard
           rotulo="Valor Total"
-          valor={valorComSinal(valorTotal)}
+          valor={valorComSinalSemCentavos(valorTotal)}
           className={classeValor(valorTotal)}
+        />
+        <ResumoCard
+          rotulo="Entrada"
+          valor={valorComSinalSemCentavos(totalEntrada)}
+          className="positivo"
+        />
+        <ResumoCard
+          rotulo="Saída"
+          valor={valorComSinalSemCentavos(-totalSaida)}
+          className="negativo"
         />
       </div>
     </section>

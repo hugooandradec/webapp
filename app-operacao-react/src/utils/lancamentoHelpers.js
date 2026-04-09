@@ -181,6 +181,15 @@ export function formatarDataHora(timestamp) {
   });
 }
 
+export function formatarDataCurta(dataIso) {
+  if (!dataIso) return "-";
+
+  const [ano, mes, dia] = String(dataIso).split("-");
+  if (!ano || !mes || !dia) return dataIso;
+
+  return `${dia}/${mes}/${ano}`;
+}
+
 export function textoDataExtenso(dataIso) {
   if (!dataIso) return "-";
 

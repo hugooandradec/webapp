@@ -32,6 +32,15 @@ export function moedaBR(valor) {
   });
 }
 
+export function moedaBRSemCentavos(valor) {
+  return Number(valor || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+
 export function formatarMoedaSemSimbolo(valor) {
   return Number(valor || 0).toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
@@ -48,4 +57,9 @@ export function classeValor(valor) {
 export function valorComSinal(valor) {
   if (valor < 0) return `-${moedaBR(Math.abs(valor))}`;
   return moedaBR(valor);
+}
+
+export function valorComSinalSemCentavos(valor) {
+  if (valor < 0) return `-${moedaBRSemCentavos(Math.abs(valor))}`;
+  return moedaBRSemCentavos(valor);
 }

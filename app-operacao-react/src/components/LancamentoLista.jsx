@@ -1,4 +1,4 @@
-import { moedaBR, valorComSinal } from "../utils/money.js";
+import { classeValor, valorComSinalSemCentavos } from "../utils/money.js";
 
 function IconButton({ title, className = "", onClick, children }) {
   return (
@@ -79,8 +79,9 @@ export default function LancamentoLista({
 }
 
 function LancamentoItem({ item, index, onEditar, onHistorico, onExcluir }) {
-  const mostrarEntrada = Number(item.dinheiro) !== 0;
-  const mostrarSaida = Number(item.saida) !== 0;
+  const entrada = Number(item.dinheiro) || 0;
+  const saida = Number(item.saida) || 0;
+  const subtotal = entrada - saida;
 
   return (
     <div className="linha-item linha-item-lancamento">
@@ -88,26 +89,18 @@ function LancamentoItem({ item, index, onEditar, onHistorico, onExcluir }) {
         <div className="lancamento-topo">
           <div className="lancamento-linha-texto">
             <span className="lancamento-ponto">{item.ponto}</span>
-
-            {mostrarEntrada || mostrarSaida ? (
-              <span className="lancamento-separador">•</span>
-            ) : null}
-
-            {mostrarEntrada ? (
-              <span className="lancamento-valor-inline positivo">
-                Entrada: {moedaBR(item.dinheiro)}
-              </span>
-            ) : null}
-
-            {mostrarEntrada && mostrarSaida ? (
-              <span className="lancamento-separador">|</span>
-            ) : null}
-
-            {mostrarSaida ? (
-              <span className="lancamento-valor-inline negativo">
-                Saída: {valorComSinal(-Math.abs(item.saida))}
-              </span>
-            ) : null}
+            <span className="lancamento-separador">•</span>
+            <span className="lancamento-valor-inline positivo">
+              E: {valorComSinalSemCentavos(entrada)}
+            </span>
+            <span className="lancamento-separador">•</span>
+            <span className="lancamento-valor-inline negativo">
+              S: {valorComSinalSemCentavos(-Math.abs(saida))}
+            </span>
+            <span className="lancamento-separador">•</span>
+            <span className={`lancamento-valor-inline ${classeValor(subtotal)}`.trim()}>
+              Total: {valorComSinalSemCentavos(subtotal)}
+            </span>
           </div>
         </div>
       </div>

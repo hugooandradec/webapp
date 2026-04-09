@@ -1,8 +1,12 @@
-import { classeValor, moedaBR, valorComSinal } from "../utils/money.js";
 import {
+  classeValor,
+  moedaBRSemCentavos,
+  valorComSinalSemCentavos,
+} from "../utils/money.js";
+import {
+  formatarDataCurta,
   formatarDataHora,
   formatarNomeCaixa,
-  textoDataExtenso,
 } from "../utils/lancamentoHelpers.js";
 import useBodyScrollLock from "../hooks/useBodyScrollLock.js";
 
@@ -84,11 +88,11 @@ function ResumoCaixa({
           <strong>Caixa:</strong> {formatarNomeCaixa(caixaAtiva)}
         </p>
         <p>
-          <strong>Data:</strong> {textoDataExtenso(dadosCaixaAtual.data)}
+          <strong>Data:</strong> {formatarDataCurta(dadosCaixaAtual.data)}
         </p>
       </div>
 
-      <div className="relatorio-cards relatorio-cards-resumo">
+      <div className="relatorio-cards relatorio-cards-resumo lancamento-modal-cards">
         <ResumoCard rotulo="Valor Inicial" valor={valorInicialNumero} />
         <ResumoCard rotulo="Valor Total" valor={valorTotal} />
       </div>
@@ -97,6 +101,12 @@ function ResumoCaixa({
         <h3>Resumo</h3>
 
         <div className="resumo-geral-lista">
+          <LinhaResumo
+            label="Valor Inicial"
+            valor={valorInicialNumero}
+            className={classeValor(valorInicialNumero)}
+            mobileOnly
+          />
           <LinhaResumo label="Entrada" valor={totalEntrada} className="positivo" />
           <LinhaResumo label="Saída" valor={-totalSaida} className="negativo" />
           <LinhaResumo
@@ -118,31 +128,33 @@ function ResumoCaixa({
                 <th>Cliente</th>
                 <th>Entrada</th>
                 <th>Saída</th>
-                <th>Subtotal</th>
+                <th>Total</th>
               </tr>
             </thead>
             <tbody>
               {listaLancamentos.length === 0 ? (
                 <tr>
                   <td>-</td>
-                  <td>{moedaBR(0)}</td>
-                  <td>{moedaBR(0)}</td>
-                  <td>{moedaBR(0)}</td>
+                  <td>{moedaBRSemCentavos(0)}</td>
+                  <td>{moedaBRSemCentavos(0)}</td>
+                  <td>{moedaBRSemCentavos(0)}</td>
                 </tr>
               ) : (
                 listaLancamentos.map((item, index) => {
-                  const subtotal = (Number(item.dinheiro) || 0) - (Number(item.saida) || 0);
+                  const total = (Number(item.dinheiro) || 0) - (Number(item.saida) || 0);
 
                   return (
                     <tr key={`resumo-caixa-${index}`}>
                       <td>{item.ponto}</td>
                       <td className={classeValor(item.dinheiro)}>
-                        {item.dinheiro ? valorComSinal(item.dinheiro) : "-"}
+                        {valorComSinalSemCentavos(item.dinheiro)}
                       </td>
                       <td className={classeValor(-Math.abs(item.saida))}>
-                        {item.saida ? valorComSinal(-Math.abs(item.saida)) : "-"}
+                        {valorComSinalSemCentavos(-Math.abs(item.saida))}
                       </td>
-                      <td className={classeValor(subtotal)}>{valorComSinal(subtotal)}</td>
+                      <td className={classeValor(total)}>
+                        {valorComSinalSemCentavos(total)}
+                      </td>
                     </tr>
                   );
                 })
@@ -156,30 +168,32 @@ function ResumoCaixa({
             <div className="card-mobile card-mobile-linha-unica">
               <div className="linha-mobile-inline">
                 <span>Sem entradas.</span>
-                <strong>{moedaBR(0)}</strong>
+                <strong>{moedaBRSemCentavos(0)}</strong>
               </div>
             </div>
           ) : (
             listaLancamentos.map((item, index) => {
-              const subtotal = (Number(item.dinheiro) || 0) - (Number(item.saida) || 0);
+              const total = (Number(item.dinheiro) || 0) - (Number(item.saida) || 0);
 
               return (
-                <div className="card-mobile card-mobile-vale" key={`resumo-caixa-mobile-${index}`}>
-                  <div className="titulo-mobile titulo-mobile-vale">{item.ponto}</div>
-
-                  <div className="grid-mobile-vale">
-                    <InfoMobile label="Entrada" valor={item.dinheiro ? valorComSinal(item.dinheiro) : moedaBR(0)} className={classeValor(item.dinheiro)} />
-                    <InfoMobile
-                      label="Saída"
-                      valor={item.saida ? valorComSinal(-Math.abs(item.saida)) : moedaBR(0)}
-                      className={classeValor(-Math.abs(item.saida))}
-                    />
-                    <InfoMobile
-                      label="Subtotal"
-                      valor={valorComSinal(subtotal)}
-                      className={classeValor(subtotal)}
-                      full
-                    />
+                <div
+                  className="card-mobile lancamento-mobile-resumo"
+                  key={`resumo-caixa-mobile-${index}`}
+                >
+                  <div className="lancamento-mobile-resumo-linha">
+                    <span className="lancamento-mobile-ponto">{item.ponto}</span>
+                    <span className="lancamento-separador">•</span>
+                    <span className="positivo">
+                      E: {valorComSinalSemCentavos(item.dinheiro)}
+                    </span>
+                    <span className="lancamento-separador">•</span>
+                    <span className="negativo">
+                      S: {valorComSinalSemCentavos(-Math.abs(item.saida))}
+                    </span>
+                    <span className="lancamento-separador">•</span>
+                    <span className={classeValor(total)}>
+                      Total: {valorComSinalSemCentavos(total)}
+                    </span>
                   </div>
                 </div>
               );
@@ -226,14 +240,14 @@ function ResumoTotalCaixas({ resumoTotalCaixas }) {
               {resumoTotalCaixas.linhas.map((item, index) => (
                 <tr key={`total-caixas-${index}`}>
                   <td>{formatarNomeCaixa(item.caixa)}</td>
-                  <td>{item.data ? item.data.split("-").reverse().join("/") : "-"}</td>
+                  <td>{formatarDataCurta(item.data)}</td>
                   <td className={classeValor(item.valorInicial)}>
-                    {valorComSinal(item.valorInicial)}
+                    {valorComSinalSemCentavos(item.valorInicial)}
                   </td>
-                  <td className="positivo">{valorComSinal(item.entrada)}</td>
-                  <td className="negativo">{valorComSinal(-item.saida)}</td>
+                  <td className="positivo">{valorComSinalSemCentavos(item.entrada)}</td>
+                  <td className="negativo">{valorComSinalSemCentavos(-item.saida)}</td>
                   <td className={classeValor(item.valorTotal)}>
-                    {valorComSinal(item.valorTotal)}
+                    {valorComSinalSemCentavos(item.valorTotal)}
                   </td>
                 </tr>
               ))}
@@ -244,16 +258,16 @@ function ResumoTotalCaixas({ resumoTotalCaixas }) {
                   <strong>Total Geral</strong>
                 </td>
                 <td className={classeValor(resumoTotalCaixas.somaInicial)}>
-                  <strong>{valorComSinal(resumoTotalCaixas.somaInicial)}</strong>
+                  <strong>{valorComSinalSemCentavos(resumoTotalCaixas.somaInicial)}</strong>
                 </td>
                 <td className="positivo">
-                  <strong>{valorComSinal(resumoTotalCaixas.somaEntrada)}</strong>
+                  <strong>{valorComSinalSemCentavos(resumoTotalCaixas.somaEntrada)}</strong>
                 </td>
                 <td className="negativo">
-                  <strong>{valorComSinal(-resumoTotalCaixas.somaSaida)}</strong>
+                  <strong>{valorComSinalSemCentavos(-resumoTotalCaixas.somaSaida)}</strong>
                 </td>
                 <td className={classeValor(resumoTotalCaixas.somaTotal)}>
-                  <strong>{valorComSinal(resumoTotalCaixas.somaTotal)}</strong>
+                  <strong>{valorComSinalSemCentavos(resumoTotalCaixas.somaTotal)}</strong>
                 </td>
               </tr>
             </tfoot>
@@ -268,13 +282,25 @@ function ResumoTotalCaixas({ resumoTotalCaixas }) {
               </div>
 
               <div className="grid-mobile-vale">
-                <InfoMobile label="Data" valor={item.data ? item.data.split("-").reverse().join("/") : "-"} />
-                <InfoMobile label="Inicial" valor={valorComSinal(item.valorInicial)} className={classeValor(item.valorInicial)} />
-                <InfoMobile label="Entrada" valor={valorComSinal(item.entrada)} className="positivo" />
-                <InfoMobile label="Saída" valor={valorComSinal(-item.saida)} className="negativo" />
+                <InfoMobile label="Data" valor={formatarDataCurta(item.data)} />
+                <InfoMobile
+                  label="Inicial"
+                  valor={valorComSinalSemCentavos(item.valorInicial)}
+                  className={classeValor(item.valorInicial)}
+                />
+                <InfoMobile
+                  label="Entrada"
+                  valor={valorComSinalSemCentavos(item.entrada)}
+                  className="positivo"
+                />
+                <InfoMobile
+                  label="Saída"
+                  valor={valorComSinalSemCentavos(-item.saida)}
+                  className="negativo"
+                />
                 <InfoMobile
                   label="Total"
-                  valor={valorComSinal(item.valorTotal)}
+                  valor={valorComSinalSemCentavos(item.valorTotal)}
                   className={classeValor(item.valorTotal)}
                   full
                 />
@@ -288,22 +314,22 @@ function ResumoTotalCaixas({ resumoTotalCaixas }) {
             <div className="grid-mobile-vale">
               <InfoMobile
                 label="Inicial"
-                valor={valorComSinal(resumoTotalCaixas.somaInicial)}
+                valor={valorComSinalSemCentavos(resumoTotalCaixas.somaInicial)}
                 className={classeValor(resumoTotalCaixas.somaInicial)}
               />
               <InfoMobile
                 label="Entrada"
-                valor={valorComSinal(resumoTotalCaixas.somaEntrada)}
+                valor={valorComSinalSemCentavos(resumoTotalCaixas.somaEntrada)}
                 className="positivo"
               />
               <InfoMobile
                 label="Saída"
-                valor={valorComSinal(-resumoTotalCaixas.somaSaida)}
+                valor={valorComSinalSemCentavos(-resumoTotalCaixas.somaSaida)}
                 className="negativo"
               />
               <InfoMobile
                 label="Total"
-                valor={valorComSinal(resumoTotalCaixas.somaTotal)}
+                valor={valorComSinalSemCentavos(resumoTotalCaixas.somaTotal)}
                 className={classeValor(resumoTotalCaixas.somaTotal)}
                 full
               />
@@ -338,16 +364,16 @@ function HistoricoModal({ historicoModal, caixaAtiva, historicoDoPonto }) {
                 <th>Data</th>
                 <th>Entrada</th>
                 <th>Saída</th>
-                <th>Subtotal</th>
+                <th>Total</th>
               </tr>
             </thead>
             <tbody>
               {historicoDoPonto.length === 0 ? (
                 <tr>
                   <td>-</td>
-                  <td>{moedaBR(0)}</td>
-                  <td>{moedaBR(0)}</td>
-                  <td>{moedaBR(0)}</td>
+                  <td>{moedaBRSemCentavos(0)}</td>
+                  <td>{moedaBRSemCentavos(0)}</td>
+                  <td>{moedaBRSemCentavos(0)}</td>
                 </tr>
               ) : (
                 historicoDoPonto.map((item, index) => {
@@ -357,13 +383,13 @@ function HistoricoModal({ historicoModal, caixaAtiva, historicoDoPonto }) {
                     <tr key={`historico-${index}`}>
                       <td>{formatarDataHora(item.ts)}</td>
                       <td className={classeValor(linha.entrada)}>
-                        {linha.entrada ? valorComSinal(linha.entrada) : "-"}
+                        {valorComSinalSemCentavos(linha.entrada)}
                       </td>
                       <td className={classeValor(-linha.saida)}>
-                        {linha.saida ? valorComSinal(-linha.saida) : "-"}
+                        {valorComSinalSemCentavos(-linha.saida)}
                       </td>
                       <td className={classeValor(linha.subtotal)}>
-                        {valorComSinal(linha.subtotal)}
+                        {valorComSinalSemCentavos(linha.subtotal)}
                       </td>
                     </tr>
                   );
@@ -378,7 +404,7 @@ function HistoricoModal({ historicoModal, caixaAtiva, historicoDoPonto }) {
             <div className="card-mobile card-mobile-linha-unica">
               <div className="linha-mobile-inline">
                 <span>Sem entradas.</span>
-                <strong>{moedaBR(0)}</strong>
+                <strong>{moedaBRSemCentavos(0)}</strong>
               </div>
             </div>
           ) : (
@@ -394,17 +420,17 @@ function HistoricoModal({ historicoModal, caixaAtiva, historicoDoPonto }) {
                   <div className="grid-mobile-vale">
                     <InfoMobile
                       label="Entrada"
-                      valor={linha.entrada ? valorComSinal(linha.entrada) : moedaBR(0)}
+                      valor={valorComSinalSemCentavos(linha.entrada)}
                       className={classeValor(linha.entrada)}
                     />
                     <InfoMobile
                       label="Saída"
-                      valor={linha.saida ? valorComSinal(-linha.saida) : moedaBR(0)}
+                      valor={valorComSinalSemCentavos(-linha.saida)}
                       className={classeValor(-linha.saida)}
                     />
                     <InfoMobile
-                      label="Subtotal"
-                      valor={valorComSinal(linha.subtotal)}
+                      label="Total"
+                      valor={valorComSinalSemCentavos(linha.subtotal)}
                       className={classeValor(linha.subtotal)}
                       full
                     />
@@ -423,16 +449,18 @@ function ResumoCard({ rotulo, valor }) {
   return (
     <div className="rel-card">
       <div className="r1">{rotulo}</div>
-      <div className={`r2 ${classeValor(valor)}`}>{valorComSinal(valor)}</div>
+      <div className={`r2 ${classeValor(valor)}`}>{valorComSinalSemCentavos(valor)}</div>
     </div>
   );
 }
 
-function LinhaResumo({ label, valor, className = "", total = false }) {
+function LinhaResumo({ label, valor, className = "", total = false, mobileOnly = false }) {
   return (
-    <div className={`resumo-geral-linha ${total ? "total" : ""}`.trim()}>
+    <div
+      className={`resumo-geral-linha ${total ? "total" : ""} ${mobileOnly ? "lancamento-mobile-only" : ""}`.trim()}
+    >
       <span>{label}</span>
-      <strong className={className}>{valorComSinal(valor)}</strong>
+      <strong className={className}>{valorComSinalSemCentavos(valor)}</strong>
     </div>
   );
 }
