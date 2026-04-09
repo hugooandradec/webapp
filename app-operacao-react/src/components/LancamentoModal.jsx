@@ -177,10 +177,10 @@ function ResumoCaixa({
           ) : (
             <div className="card-mobile card-mobile-compacto lancamento-mobile-lista-card">
               <div className="lancamento-mobile-tabela-cabecalho">
-                <span>Ponto</span>
-                <span>Entrada</span>
-                <span>Saída</span>
-                <span>Total</span>
+                <span className="lancamento-mobile-col-ponto">Ponto</span>
+                <span className="lancamento-mobile-col-valor">Entrada</span>
+                <span className="lancamento-mobile-col-valor">Saída</span>
+                <span className="lancamento-mobile-col-valor">Total</span>
               </div>
 
               {listaLancamentos.map((item, index) => {

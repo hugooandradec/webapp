@@ -244,6 +244,14 @@
   white-space: nowrap;
 }
 
+.lancamento-mobile-tabela-cabecalho .lancamento-mobile-col-ponto{
+  text-align: left;
+}
+
+.lancamento-mobile-tabela-cabecalho .lancamento-mobile-col-valor{
+  text-align: right;
+}
+
 .lancamento-mobile-tabela-linha{
   padding: 10px 0;
   border-bottom: 1px dashed #d1d5db;
@@ -268,6 +276,8 @@
   color: #374151;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 @media (max-width: 900px) {
@@ -480,10 +490,14 @@
   }
 
   .lancamento-mobile-tabela-cabecalho span{
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .lancamento-mobile-col{
-    font-size: 11px;
+    font-size: 12px;
+  }
+
+  .lancamento-mobile-col-ponto{
+    font-size: 13px;
   }
 }
