@@ -32,24 +32,24 @@ export default function CalculoSalasTopSection({
         </div>
       </div>
 
-      <div className="periodo-grid salas-periodo">
-        <div className="campo">
-          <label htmlFor="salas-data-de">Data de</label>
+      <div className="campo salas-periodo">
+        <label>Período</label>
+
+        <div className="salas-periodo-linha">
           <input
             id="salas-data-de"
             type="date"
             value={dataDe}
             onChange={(e) => onAtualizarDataDe(e.target.value)}
+            aria-label="Data inicial"
           />
-        </div>
 
-        <div className="campo">
-          <label htmlFor="salas-data-ate">Data até</label>
           <input
             id="salas-data-ate"
             type="date"
             value={dataAte}
             onChange={(e) => onAtualizarDataAte(e.target.value)}
+            aria-label="Data final"
           />
         </div>
       </div>

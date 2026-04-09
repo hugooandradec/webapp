@@ -27,6 +27,12 @@
   margin-top:10px;
 }
 
+.salas-periodo-linha{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:12px;
+}
+
 .salas-atalhos{
   display:grid;
   grid-template-columns:repeat(3, minmax(0, 1fr));
@@ -206,6 +212,11 @@
   .salas-card-total{
     min-width:0;
     width:100%;
+  }
+
+  .salas-periodo-linha{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:10px;
   }
 
   .salas-atalhos{
