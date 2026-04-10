@@ -429,7 +429,7 @@ export default function Fechamento() {
       { label: "Cartao Anterior - 5%", valor: totais.cartaoAnteriorResumo },
       { label: "Cartao Atual", valor: totais.cartaoAtualResumo },
       { label: "Debitos", valor: totais.debitosResumo },
-      { label: "Vales", valor: totais.valesResumo },
+      { label: "Vales da Semana", valor: totais.valesResumo },
       { label: "Vales Pagos", valor: totais.valesPagosResumo },
       {
         label: "Firma (Saldo Final)",
