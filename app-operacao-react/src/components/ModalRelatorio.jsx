@@ -250,19 +250,19 @@ function SecaoVales({ devedoresParaResumo }) {
                   <span className="vale-mobile-ponto">{item.ponto || "-"}</span>
                   <span className="vale-mobile-separador">|</span>
                   <span className={`vale-mobile-item ${classeValor(anterior)}`.trim()}>
-                    Anterior: {valorComSinal(anterior)}
+                    A: {valorComSinal(anterior)}
                   </span>
                   <span className="vale-mobile-separador">|</span>
                   <span className={`vale-mobile-item ${classeValor(pago)}`.trim()}>
-                    Pago: {valorComSinal(pago)}
+                    P: {valorComSinal(pago)}
                   </span>
                   <span className="vale-mobile-separador">|</span>
                   <span className={`vale-mobile-item ${classeValor(semana)}`.trim()}>
-                    Semana: {valorComSinal(semana)}
+                    S: {valorComSinal(semana)}
                   </span>
                   <span className="vale-mobile-separador">|</span>
                   <span className={`vale-mobile-item ${classeValor(total)}`.trim()}>
-                    Total: {valorComSinal(total)}
+                    T: {valorComSinal(total)}
                   </span>
                 </div>
               </div>

@@ -20,6 +20,10 @@ export default function Devedores({
       ) : null}
 
       {devedores.map((item, index) => {
+        const anterior = -Math.abs(numeroDeMoeda(item.valorAnterior));
+        const pago = numeroDeMoeda(item.pago);
+        const semana = -Math.abs(numeroDeMoeda(item.semana));
+        const total = -Math.abs(numeroDeMoeda(item.valorAtual));
         const saldoSemana =
           numeroDeMoeda(item.valorAnterior) - numeroDeMoeda(item.valorAtual);
 
@@ -29,14 +33,24 @@ export default function Devedores({
               <div className="linha-item-texto">
                 <span className="linha-item-ponto">{item.ponto || "-"}</span>
                 <span className="linha-item-separador">|</span>
-                <span className="linha-item-valor">Pago: {valorComSinal(numeroDeMoeda(item.pago))}</span>
+                <span className={`linha-item-valor ${classeValor(anterior)}`.trim()}>
+                  Anterior: {valorComSinal(anterior)}
+                </span>
                 <span className="linha-item-separador">|</span>
-                <span className="linha-item-valor">
-                  Semana: {valorComSinal(numeroDeMoeda(item.semana))}
+                <span className={`linha-item-valor ${classeValor(pago)}`.trim()}>
+                  Pago: {valorComSinal(pago)}
+                </span>
+                <span className="linha-item-separador">|</span>
+                <span className={`linha-item-valor ${classeValor(semana)}`.trim()}>
+                  Semana: {valorComSinal(semana)}
                 </span>
                 <span className="linha-item-separador">|</span>
                 <span className={`linha-item-valor ${classeValor(saldoSemana)}`.trim()}>
                   Saldo: {valorComSinal(saldoSemana)}
+                </span>
+                <span className="linha-item-separador">|</span>
+                <span className={`linha-item-valor ${classeValor(total)}`.trim()}>
+                  Total: {valorComSinal(total)}
                 </span>
               </div>
 
