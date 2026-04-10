@@ -34,14 +34,11 @@ export default function ModalRelatorio({
           <div className="relatorio-topo">
             <h2>Resumo</h2>
             <p>
-            <strong>Período:</strong> {periodoTexto(dados.periodoInicio, dados.periodoFim)}
+              <strong>Período:</strong> {periodoTexto(dados.periodoInicio, dados.periodoFim)}
             </p>
           </div>
 
-          <div className="relatorio-cards relatorio-cards-resumo">
-            <ResumoCard rotulo="Rotas" valor={totais.totalRotasResumo} />
-            <ResumoCard rotulo="Firma" valor={totais.firmaResumo} />
-          </div>
+          <SecaoRotas linhasRotas={linhasRotas} totalRota={totais.totalRota} />
 
           <div className="secao-relatorio secao-resumo-geral">
             <h3>Resumo</h3>
@@ -61,22 +58,11 @@ export default function ModalRelatorio({
             </div>
           </div>
 
-          <SecaoRotas linhasRotas={linhasRotas} totalRota={totais.totalRota} />
-
           <SecaoDebitos debitosParaResumo={debitosParaResumo} />
 
           <SecaoVales devedoresParaResumo={devedoresParaResumo} />
         </div>
       </div>
-    </div>
-  );
-}
-
-function ResumoCard({ rotulo, valor }) {
-  return (
-    <div className="rel-card">
-      <div className="r1">{rotulo}</div>
-      <div className={`r2 ${classeValor(valor)}`}>{valorComSinal(valor)}</div>
     </div>
   );
 }
@@ -179,16 +165,10 @@ function SecaoDebitos({ debitosParaResumo }) {
             const valor = -numeroDeMoeda(item.valor);
 
             return (
-              <div
-                className="card-mobile card-mobile-linha-unica"
-                key={`debito-resumo-mobile-${index}`}
-              >
-                <div className="vale-mobile-resumo-linha">
-                  <span className="vale-mobile-ponto">{item.ponto || "-"}</span>
-                  <span className="vale-mobile-separador">|</span>
-                  <span className={`vale-mobile-item ${classeValor(valor)}`.trim()}>
-                    Valor: {valorComSinal(valor)}
-                  </span>
+              <div className="card-mobile card-mobile-linha-unica" key={`debito-resumo-mobile-${index}`}>
+                <div className="linha-mobile-inline">
+                  <span>{item.ponto || "-"}</span>
+                  <strong className={classeValor(valor)}>{valorComSinal(valor)}</strong>
                 </div>
               </div>
             );
@@ -213,8 +193,7 @@ function SecaoVales({ devedoresParaResumo }) {
               <th>Anterior</th>
               <th>Pago</th>
               <th>Semana</th>
-              <th>Atual</th>
-              <th>Saldo da Semana</th>
+              <th>Total</th>
             </tr>
           </thead>
           <tbody>
@@ -226,22 +205,25 @@ function SecaoVales({ devedoresParaResumo }) {
                 <td>{moedaBR(0)}</td>
                 <td>{moedaBR(0)}</td>
                 <td>{moedaBR(0)}</td>
-                <td>{moedaBR(0)}</td>
               </tr>
             ) : (
-              devedoresParaResumo.map((item, index) => (
-                <tr key={`devedor-resumo-${index}`}>
-                  <td>{index + 1}</td>
-                  <td>{item.ponto || "-"}</td>
-                  <td>{valorComSinal(numeroDeMoeda(item.valorAnterior))}</td>
-                  <td>{valorComSinal(numeroDeMoeda(item.pago))}</td>
-                  <td>{valorComSinal(numeroDeMoeda(item.semana))}</td>
-                  <td>{valorComSinal(numeroDeMoeda(item.valorAtual))}</td>
-                  <td className={classeValor(item.saldoSemana)}>
-                    {valorComSinal(item.saldoSemana)}
-                  </td>
-                </tr>
-              ))
+              devedoresParaResumo.map((item, index) => {
+                const anterior = -Math.abs(numeroDeMoeda(item.valorAnterior));
+                const pago = numeroDeMoeda(item.pago);
+                const semana = -Math.abs(numeroDeMoeda(item.semana));
+                const total = -Math.abs(numeroDeMoeda(item.valorAtual));
+
+                return (
+                  <tr key={`devedor-resumo-${index}`}>
+                    <td>{index + 1}</td>
+                    <td>{item.ponto || "-"}</td>
+                    <td className={classeValor(anterior)}>{valorComSinal(anterior)}</td>
+                    <td className={classeValor(pago)}>{valorComSinal(pago)}</td>
+                    <td className={classeValor(semana)}>{valorComSinal(semana)}</td>
+                    <td className={classeValor(total)}>{valorComSinal(total)}</td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -256,33 +238,36 @@ function SecaoVales({ devedoresParaResumo }) {
             </div>
           </div>
         ) : (
-          devedoresParaResumo.map((item, index) => (
-            <div className="card-mobile card-mobile-linha-unica" key={`devedor-resumo-mobile-${index}`}>
-              <div className="vale-mobile-resumo-linha">
-                <span className="vale-mobile-ponto">{item.ponto || "-"}</span>
-                <span className="vale-mobile-separador">|</span>
-                <span className="vale-mobile-item">
-                  Anterior: {valorComSinal(numeroDeMoeda(item.valorAnterior))}
-                </span>
-                <span className="vale-mobile-separador">|</span>
-                <span className="vale-mobile-item">
-                  Pago: {valorComSinal(numeroDeMoeda(item.pago))}
-                </span>
-                <span className="vale-mobile-separador">|</span>
-                <span className="vale-mobile-item">
-                  Semana: {valorComSinal(numeroDeMoeda(item.semana))}
-                </span>
-                <span className="vale-mobile-separador">|</span>
-                <span className={`vale-mobile-item ${classeValor(numeroDeMoeda(item.valorAtual))}`.trim()}>
-                  Atual: {valorComSinal(numeroDeMoeda(item.valorAtual))}
-                </span>
-                <span className="vale-mobile-separador">|</span>
-                <span className={`vale-mobile-item ${classeValor(item.saldoSemana)}`.trim()}>
-                  Saldo: {valorComSinal(item.saldoSemana)}
-                </span>
+          devedoresParaResumo.map((item, index) => {
+            const anterior = -Math.abs(numeroDeMoeda(item.valorAnterior));
+            const pago = numeroDeMoeda(item.pago);
+            const semana = -Math.abs(numeroDeMoeda(item.semana));
+            const total = -Math.abs(numeroDeMoeda(item.valorAtual));
+
+            return (
+              <div className="card-mobile card-mobile-linha-unica" key={`devedor-resumo-mobile-${index}`}>
+                <div className="vale-mobile-resumo-linha">
+                  <span className="vale-mobile-ponto">{item.ponto || "-"}</span>
+                  <span className="vale-mobile-separador">|</span>
+                  <span className={`vale-mobile-item ${classeValor(anterior)}`.trim()}>
+                    Anterior: {valorComSinal(anterior)}
+                  </span>
+                  <span className="vale-mobile-separador">|</span>
+                  <span className={`vale-mobile-item ${classeValor(pago)}`.trim()}>
+                    Pago: {valorComSinal(pago)}
+                  </span>
+                  <span className="vale-mobile-separador">|</span>
+                  <span className={`vale-mobile-item ${classeValor(semana)}`.trim()}>
+                    Semana: {valorComSinal(semana)}
+                  </span>
+                  <span className="vale-mobile-separador">|</span>
+                  <span className={`vale-mobile-item ${classeValor(total)}`.trim()}>
+                    Total: {valorComSinal(total)}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
