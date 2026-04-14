@@ -302,7 +302,7 @@ function ResumoTotalCaixas({ resumoTotalCaixas }) {
                 <span>{formatarDataCurta(item.data)}</span>
                 <span className="lancamento-separador">|</span>
                 <span className={classeValor(item.valorInicial)}>
-                  Inicial: {valorComSinalSemCentavos(item.valorInicial)}
+                  I: {valorComSinalSemCentavos(item.valorInicial)}
                 </span>
                 <span className="lancamento-separador">|</span>
                 <span className="positivo">
@@ -314,7 +314,7 @@ function ResumoTotalCaixas({ resumoTotalCaixas }) {
                 </span>
                 <span className="lancamento-separador">|</span>
                 <span className={classeValor(item.valorTotal)}>
-                  Total: {valorComSinalSemCentavos(item.valorTotal)}
+                  T: {valorComSinalSemCentavos(item.valorTotal)}
                 </span>
               </div>
             </div>
@@ -325,7 +325,7 @@ function ResumoTotalCaixas({ resumoTotalCaixas }) {
               <span className="lancamento-mobile-ponto">Total Geral</span>
               <span className="lancamento-separador">|</span>
               <span className={classeValor(resumoTotalCaixas.somaInicial)}>
-                Inicial: {valorComSinalSemCentavos(resumoTotalCaixas.somaInicial)}
+                I: {valorComSinalSemCentavos(resumoTotalCaixas.somaInicial)}
               </span>
               <span className="lancamento-separador">|</span>
               <span className="positivo">
@@ -337,7 +337,7 @@ function ResumoTotalCaixas({ resumoTotalCaixas }) {
               </span>
               <span className="lancamento-separador">|</span>
               <span className={classeValor(resumoTotalCaixas.somaTotal)}>
-                Total: {valorComSinalSemCentavos(resumoTotalCaixas.somaTotal)}
+                T: {valorComSinalSemCentavos(resumoTotalCaixas.somaTotal)}
               </span>
             </div>
           </div>
