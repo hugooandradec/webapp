@@ -10,6 +10,14 @@
   margin-bottom: 0;
 }
 
+.campo-data-descricao {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
 .caixa-linha-react {
   display: flex;
   align-items: end;
@@ -315,6 +323,10 @@
   .campo-data-react input,
   .campo-valor-inicial-react input{
     font-size: 14px;
+  }
+
+  .campo-data-descricao{
+    font-size: 11px;
   }
 
   .campo-data-react input[type="date"]::-webkit-datetime-edit{

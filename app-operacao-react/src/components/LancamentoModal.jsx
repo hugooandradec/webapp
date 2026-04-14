@@ -4,6 +4,7 @@ import {
   valorComSinalSemCentavos,
 } from "../utils/money.js";
 import {
+  formatarDataComDiaSemana,
   formatarDataCurta,
   formatarDataHora,
   formatarNomeCaixa,
@@ -88,7 +89,7 @@ function ResumoCaixa({
           <strong>Caixa:</strong> {formatarNomeCaixa(caixaAtiva)}
         </p>
         <p>
-          <strong>Data:</strong> {formatarDataCurta(dadosCaixaAtual.data)}
+          <strong>Data:</strong> {formatarDataComDiaSemana(dadosCaixaAtual.data)}
         </p>
       </div>
 

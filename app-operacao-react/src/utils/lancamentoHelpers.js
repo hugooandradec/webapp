@@ -108,26 +108,30 @@ export function rebuildAgregadoFromRaw(lista = []) {
     const pontoKey = normalizarPonto(item.ponto);
     if (!pontoKey) continue;
 
+    const timestampAtual = Number(item.ts) || 0;
+
     const atual = mapa.get(pontoKey) || {
       ponto: pontoKey,
       dinheiro: 0,
       saida: 0,
       cartao: 0,
       outros: 0,
-      ultimoTimestamp: 0,
+      primeiroTimestamp: timestampAtual,
     };
 
     atual.dinheiro += Number(item.dinheiro) || 0;
     atual.saida += Number(item.saida) || 0;
     atual.cartao += Number(item.cartao) || 0;
     atual.outros += Number(item.outros) || 0;
-    atual.ultimoTimestamp = Math.max(atual.ultimoTimestamp || 0, Number(item.ts) || 0);
+    if (timestampAtual > 0) {
+      atual.primeiroTimestamp = Math.min(atual.primeiroTimestamp || timestampAtual, timestampAtual);
+    }
 
     mapa.set(pontoKey, atual);
   }
 
   return Array.from(mapa.values()).sort((a, b) => {
-    const diferencaTempo = (Number(b.ultimoTimestamp) || 0) - (Number(a.ultimoTimestamp) || 0);
+    const diferencaTempo = (Number(a.primeiroTimestamp) || 0) - (Number(b.primeiroTimestamp) || 0);
     if (diferencaTempo !== 0) return diferencaTempo;
 
     return a.ponto.localeCompare(b.ponto, "pt-BR");
@@ -188,6 +192,24 @@ export function formatarDataCurta(dataIso) {
   if (!ano || !mes || !dia) return dataIso;
 
   return `${dia}/${mes}/${ano}`;
+}
+
+export function formatarDataComDiaSemana(dataIso) {
+  if (!dataIso) return "-";
+
+  const [ano, mes, dia] = String(dataIso).split("-");
+  if (!ano || !mes || !dia) return dataIso;
+
+  const data = new Date(`${ano}-${mes}-${dia}T12:00:00`);
+
+  if (Number.isNaN(data.getTime())) return formatarDataCurta(dataIso);
+
+  const dataFormatada = formatarDataCurta(dataIso);
+  const diaSemana = data.toLocaleDateString("pt-BR", {
+    weekday: "long",
+  });
+
+  return `${dataFormatada} (${diaSemana})`;
 }
 
 export function textoDataExtenso(dataIso) {

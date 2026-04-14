@@ -10,7 +10,11 @@ import {
   formatarMoedaDigitada,
   valorComSinalSemCentavos,
 } from "../utils/money.js";
-import { formatarNomeCaixa, getHojeIso } from "../utils/lancamentoHelpers.js";
+import {
+  formatarDataComDiaSemana,
+  formatarNomeCaixa,
+  getHojeIso,
+} from "../utils/lancamentoHelpers.js";
 
 export default function LancamentoTopSection({
   dadosApp,
@@ -90,6 +94,9 @@ export default function LancamentoTopSection({
             onChange={(e) => onAtualizarDadosCaixaAtual({ data: e.target.value })}
             disabled={!caixaAtiva}
           />
+          <div className="campo-data-descricao">
+            {formatarDataComDiaSemana(dadosCaixaAtual.data || getHojeIso())}
+          </div>
         </div>
 
         <div className="campo campo-valor-inicial-react">
