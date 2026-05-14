@@ -10,6 +10,7 @@ import "../styles/buttons.css";
 import "../styles/retencao.css";
 import { somenteDigitos } from "../utils/money.js";
 import {
+  calcularRetencaoGeral,
   calcularRetencaoMedia,
   carregarRetencaoLocal,
   extrairDataRetencao,
@@ -42,6 +43,7 @@ export default function Retencao() {
   }, [textoFonte, maquinas]);
 
   const retencaoMedia = useMemo(() => calcularRetencaoMedia(maquinas), [maquinas]);
+  const retencaoGeral = useMemo(() => calcularRetencaoGeral(maquinas), [maquinas]);
   const dataRetencao = useMemo(() => extrairDataRetencao(textoFonte), [textoFonte]);
   const pontoRetencao = useMemo(() => extrairPontoRetencao(textoFonte), [textoFonte]);
 
@@ -172,6 +174,7 @@ export default function Retencao() {
         ponto={pontoRetencao}
         maquinas={maquinas}
         retencaoMedia={retencaoMedia}
+        retencaoGeral={retencaoGeral}
         onFechar={() => setModalAberto(false)}
       />
     </PageLayout>

@@ -5,6 +5,7 @@ const MODULES = {
   PRE_FECHO: "pre-fecho",
   RETENCAO: "retencao",
   CALCULO_SALAS: "calculo-salas",
+  ROTAS: "rotas",
 };
 
 const USER_PERMISSIONS = {
@@ -14,6 +15,7 @@ const USER_PERMISSIONS = {
     MODULES.PRE_FECHO,
     MODULES.RETENCAO,
     MODULES.CALCULO_SALAS,
+    MODULES.ROTAS,
   ],
   pipo: [
     MODULES.PRE_FECHO,

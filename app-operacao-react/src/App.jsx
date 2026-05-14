@@ -8,6 +8,7 @@ import CalculoSalas from "./pages/CalculoSalas";
 import Menu from "./pages/Menu";
 import PreFecho from "./pages/PreFecho";
 import Retencao from "./pages/Retencao";
+import Rotas from "./pages/Rotas";
 import { canAccessModule, getCurrentUser, logout } from "./utils/auth";
 
 import "./styles/login.css";
@@ -103,6 +104,17 @@ export default function App() {
         element={protegerModulo(
           "calculo-salas",
           <CalculoSalas
+            usuario={usuario}
+            onLogout={handleLogout}
+          />
+        )}
+      />
+
+      <Route
+        path="/rotas"
+        element={protegerModulo(
+          "rotas",
+          <Rotas
             usuario={usuario}
             onLogout={handleLogout}
           />

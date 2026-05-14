@@ -5,6 +5,7 @@
   FaListUl,
   FaMoneyBillWave,
   FaPercent,
+  FaRoute,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
@@ -45,6 +46,12 @@ export default function Menu({ usuario, onLogout }) {
       nome: "Cálculo Salas",
       icone: <FaCashRegister />,
       acao: () => navigate("/calculo-salas"),
+    },
+    {
+      id: "rotas",
+      nome: "Rotas",
+      icone: <FaRoute />,
+      acao: () => navigate("/rotas"),
     },
   ].filter((item) => canAccessModule(item.id, usuario));
 

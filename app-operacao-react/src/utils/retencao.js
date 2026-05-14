@@ -109,6 +109,19 @@ export function calcularRetencaoMedia(maquinas) {
   return contador ? soma / contador : 0;
 }
 
+export function calcularRetencaoGeral(maquinas) {
+  let totalEntrada = 0;
+  let totalSaida = 0;
+
+  maquinas.forEach((maquina) => {
+    const { entrada, saida } = calcularResumoMaquinaRetencao(maquina);
+    totalEntrada += entrada;
+    totalSaida += saida;
+  });
+
+  return totalEntrada > 0 ? ((totalEntrada - totalSaida) / totalEntrada) * 100 : 0;
+}
+
 export function extrairPontoRetencao(texto) {
   const linhas = String(texto || "")
     .split(/\r?\n/)

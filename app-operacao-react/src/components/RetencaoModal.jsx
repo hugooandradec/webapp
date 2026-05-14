@@ -14,6 +14,7 @@ export default function RetencaoModal({
   ponto,
   maquinas,
   retencaoMedia,
+  retencaoGeral,
   onFechar,
 }) {
   useBodyScrollLock(aberto);
@@ -52,6 +53,11 @@ export default function RetencaoModal({
             <div className="rel-card">
               <div className="r1">Ret. média</div>
               <div className="r2">{formatarPercentual(retencaoMedia)}</div>
+            </div>
+
+            <div className="rel-card">
+              <div className="r1">Ret. geral</div>
+              <div className="r2">{formatarPercentual(retencaoGeral)}</div>
             </div>
           </div>
 

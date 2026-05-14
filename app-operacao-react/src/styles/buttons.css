@@ -104,6 +104,7 @@
   display:inline-flex;
   align-items:center;
   justify-content:center;
+  vertical-align:middle;
   cursor:pointer;
   color:var(--roxo);
   font-size:16px;
@@ -112,6 +113,7 @@
   outline:none;
   box-shadow:none;
   -webkit-tap-highlight-color:transparent;
+  text-decoration:none;
 }
 
 .btn-acao:hover,
@@ -134,8 +136,12 @@
 .btn-acao-icon svg,
 .btn-acao-icon i,
 .btn-acao-icon span{
+  width:16px;
+  height:16px;
   font-size:16px;
   line-height:1;
+  flex-shrink:0;
+  display:block;
 }
 
 .btn-acao-icon svg{

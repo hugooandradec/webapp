@@ -170,7 +170,7 @@ function extrairMaquinasRelatorio(texto) {
 
   while (indice < linhas.length) {
     const linha = (linhas[indice] || "").trim();
-    const cabecalho = linha.match(/^(\d{3})\s*-\s*(.+)$/);
+    const cabecalho = linha.match(/^(\d+)\s*-\s*(.+)$/);
 
     if (!cabecalho) {
       indice += 1;
@@ -187,7 +187,7 @@ function extrairMaquinasRelatorio(texto) {
     for (; cursor < Math.min(indice + 12, linhas.length); cursor += 1) {
       const linhaAtual = (linhas[cursor] || "").trim();
 
-      if (/^\d{3}\s*-\s*/.test(linhaAtual)) {
+      if (/^\d+\s*-\s*/.test(linhaAtual)) {
         break;
       }
 
