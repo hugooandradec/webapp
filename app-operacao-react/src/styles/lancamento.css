@@ -189,6 +189,10 @@
   margin: 0 auto;
 }
 
+.relatorio-topo-acoes-lancamento{
+  margin-bottom:12px;
+}
+
 .lancamento-mobile-only{
   display:none;
 }

@@ -1,3 +1,8 @@
+import { useRef, useState } from "react";
+
+import html2canvas from "html2canvas";
+import { FaWhatsapp } from "react-icons/fa";
+
 import {
   classeValor,
   moedaBRSemCentavos,
@@ -26,9 +31,53 @@ export default function LancamentoModal({
   historicoDoPonto,
   onFechar,
 }) {
+  const relatorioRef = useRef(null);
+  const [compartilhando, setCompartilhando] = useState(false);
   useBodyScrollLock(aberto);
 
   if (!aberto) return null;
+
+  const podeCompartilhar = tipoModal === "resumo-caixa";
+
+  async function compartilharResumo() {
+    if (!relatorioRef.current || compartilhando) return;
+
+    setCompartilhando(true);
+
+    try {
+      await aguardarPintura();
+
+      const canvas = await html2canvas(relatorioRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 3,
+        useCORS: true,
+      });
+      const blob = await canvasParaBlob(canvas);
+      const nomeArquivo = montarNomeArquivoLancamento({
+        caixaAtiva,
+        dadosCaixaAtual,
+      });
+      const legenda = montarLegendaLancamento({
+        caixaAtiva,
+        dadosCaixaAtual,
+        valorTotal,
+      });
+      const arquivo = new File([blob], nomeArquivo, { type: "image/png" });
+
+      if (navigator.canShare?.({ files: [arquivo] })) {
+        await navigator.share({
+          files: [arquivo],
+          title: "Resumo do Lançamento",
+          text: legenda,
+        });
+        return;
+      }
+
+      baixarImagem(blob, nomeArquivo);
+    } finally {
+      setCompartilhando(false);
+    }
+  }
 
   return (
     <div className="modal modal-resumo-full ativo" onClick={onFechar}>
@@ -42,7 +91,21 @@ export default function LancamentoModal({
           </button>
         </div>
 
-        <div className="relatorio relatorio-resumo-full relatorio-lancamento">
+        <div className="relatorio relatorio-resumo-full relatorio-lancamento" ref={relatorioRef}>
+          {podeCompartilhar ? (
+            <div className="relatorio-topo-acoes relatorio-topo-acoes-lancamento" data-html2canvas-ignore>
+              <button
+                className="btn btn-claro btn-whatsapp"
+                type="button"
+                onClick={compartilharResumo}
+                disabled={compartilhando}
+              >
+                <FaWhatsapp />
+                {compartilhando ? "Gerando imagem..." : "Enviar no WhatsApp"}
+              </button>
+            </div>
+          ) : null}
+
           {tipoModal === "resumo-caixa" ? (
             <ResumoCaixa
               caixaAtiva={caixaAtiva}
@@ -70,6 +133,61 @@ export default function LancamentoModal({
       </div>
     </div>
   );
+}
+
+function aguardarPintura() {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(resolve));
+  });
+}
+
+function canvasParaBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("Nao foi possivel gerar a imagem do resumo."));
+      }
+    }, "image/png");
+  });
+}
+
+function montarNomeArquivoLancamento({ caixaAtiva, dadosCaixaAtual }) {
+  const data = formatarDataArquivo(dadosCaixaAtual.data) || "data";
+  const caixa = normalizarNomeArquivo(formatarNomeCaixa(caixaAtiva) || "caixa");
+  return `${data}-${caixa}.png`;
+}
+
+function montarLegendaLancamento({ caixaAtiva, dadosCaixaAtual, valorTotal }) {
+  return `${formatarNomeCaixa(caixaAtiva)} - ${formatarDataCurta(dadosCaixaAtual.data)}\n${moedaBRSemCentavos(valorTotal)}`;
+}
+
+function formatarDataArquivo(dataIso) {
+  if (!dataIso) return "";
+
+  const [ano, mes, dia] = String(dataIso).split("-");
+  if (!ano || !mes || !dia) return "";
+
+  return `${dia}_${mes}_${String(ano).slice(-2)}`;
+}
+
+function normalizarNomeArquivo(valor) {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function baixarImagem(blob, nomeArquivo) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = nomeArquivo;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function ResumoCaixa({

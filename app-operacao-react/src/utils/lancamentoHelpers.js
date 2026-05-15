@@ -30,11 +30,11 @@ export function normalizarPonto(valor = "") {
 }
 
 export function normalizarCaixa(valor = "") {
-  return normalizarTexto(valor).toLowerCase();
+  return normalizarTexto(valor).toLocaleLowerCase("pt-BR");
 }
 
 export function formatarNomeCaixa(valor = "") {
-  const texto = normalizarTexto(valor);
+  const texto = normalizarTexto(valor).toLocaleLowerCase("pt-BR");
   if (!texto) return "";
   return texto.replace(/\b\w/g, (letra) => letra.toUpperCase());
 }
