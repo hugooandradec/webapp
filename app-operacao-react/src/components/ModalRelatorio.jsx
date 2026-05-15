@@ -40,12 +40,14 @@ export default function ModalRelatorio({
       });
       const blob = await canvasParaBlob(canvas);
       const nomeArquivo = montarNomeArquivoResumo(dados);
+      const legenda = montarLegendaResumo(dados, totais);
       const arquivo = new File([blob], nomeArquivo, { type: "image/png" });
 
       if (navigator.canShare?.({ files: [arquivo] })) {
         await navigator.share({
           files: [arquivo],
           title: "Resumo do Fechamento",
+          text: legenda,
         });
         return;
       }
@@ -139,6 +141,27 @@ function montarNomeArquivoResumo(dados) {
   const fim = formatarDataArquivo(dados.periodoFim);
   const periodo = inicio && fim ? `${inicio}-${fim}` : inicio || fim || "periodo";
   return `${periodo}-centro.png`;
+}
+
+function montarLegendaResumo(dados, totais) {
+  return `Centro - ${formatarPeriodoLegenda(dados)}\n${moedaBR(totais.firmaResumo)}`;
+}
+
+function formatarPeriodoLegenda(dados) {
+  const inicio = formatarDataLegenda(dados.periodoInicio);
+  const fim = formatarDataLegenda(dados.periodoFim);
+
+  if (inicio && fim) return `${inicio} até ${fim}`;
+  return inicio || fim || "periodo";
+}
+
+function formatarDataLegenda(dataIso) {
+  if (!dataIso) return "";
+
+  const [, mes, dia] = String(dataIso).split("-");
+  if (!mes || !dia) return "";
+
+  return `${dia}/${mes}`;
 }
 
 function formatarDataArquivo(dataIso) {
