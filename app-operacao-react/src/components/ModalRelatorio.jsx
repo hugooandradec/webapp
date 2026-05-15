@@ -76,17 +76,6 @@ export default function ModalRelatorio({
             <p>
               <strong>Período:</strong> {periodoTexto(dados.periodoInicio, dados.periodoFim)}
             </p>
-            <div className="relatorio-topo-acoes" data-html2canvas-ignore>
-              <button
-                className="btn btn-claro btn-whatsapp"
-                type="button"
-                onClick={enviarResumoWhatsApp}
-                disabled={compartilhando}
-              >
-                <FaWhatsapp />
-                {compartilhando ? "Gerando imagem..." : "Enviar no WhatsApp"}
-              </button>
-            </div>
           </div>
 
           <SecaoRotas linhasRotas={linhasRotas} totalRota={totais.totalRota} />
@@ -115,6 +104,18 @@ export default function ModalRelatorio({
             devedoresParaResumo={devedoresParaResumo}
             totalVales={totais.valesAtualResumo}
           />
+        </div>
+
+        <div className="relatorio-rodape-acoes">
+          <button
+            className="btn btn-claro btn-whatsapp"
+            type="button"
+            onClick={enviarResumoWhatsApp}
+            disabled={compartilhando}
+          >
+            <FaWhatsapp />
+            {compartilhando ? "Gerando imagem..." : "Enviar no WhatsApp"}
+          </button>
         </div>
       </div>
     </div>

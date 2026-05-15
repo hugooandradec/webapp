@@ -92,20 +92,6 @@ export default function LancamentoModal({
         </div>
 
         <div className="relatorio relatorio-resumo-full relatorio-lancamento" ref={relatorioRef}>
-          {podeCompartilhar ? (
-            <div className="relatorio-topo-acoes relatorio-topo-acoes-lancamento" data-html2canvas-ignore>
-              <button
-                className="btn btn-claro btn-whatsapp"
-                type="button"
-                onClick={compartilharResumo}
-                disabled={compartilhando}
-              >
-                <FaWhatsapp />
-                {compartilhando ? "Gerando imagem..." : "Enviar no WhatsApp"}
-              </button>
-            </div>
-          ) : null}
-
           {tipoModal === "resumo-caixa" ? (
             <ResumoCaixa
               caixaAtiva={caixaAtiva}
@@ -130,6 +116,20 @@ export default function LancamentoModal({
             />
           ) : null}
         </div>
+
+        {podeCompartilhar ? (
+          <div className="relatorio-rodape-acoes relatorio-rodape-acoes-lancamento">
+            <button
+              className="btn btn-claro btn-whatsapp"
+              type="button"
+              onClick={compartilharResumo}
+              disabled={compartilhando}
+            >
+              <FaWhatsapp />
+              {compartilhando ? "Gerando imagem..." : "Enviar no WhatsApp"}
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

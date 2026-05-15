@@ -346,10 +346,15 @@ main{
   font-size:15px;
 }
 
-.relatorio-topo-acoes{
+.relatorio-rodape-acoes{
   display:flex;
   justify-content:center;
-  margin-top:12px;
+  margin:18px auto 0;
+  max-width:1100px;
+}
+
+.relatorio-rodape-acoes .btn{
+  width:100%;
 }
 
 .btn-whatsapp{
