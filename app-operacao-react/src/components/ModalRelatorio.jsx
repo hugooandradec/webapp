@@ -35,7 +35,7 @@ export default function ModalRelatorio({
 
       const canvas = await html2canvas(relatorioRef.current, {
         backgroundColor: "#ffffff",
-        scale: Math.min(window.devicePixelRatio || 1, 2),
+        scale: 3,
         useCORS: true,
       });
       const blob = await canvasParaBlob(canvas);
