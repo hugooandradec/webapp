@@ -19,6 +19,7 @@ import {
   criarCaixaVazia,
   garantirEstrutura,
   gerarId,
+  getHojeIso,
   normalizarCaixa,
   normalizarPonto,
   parseEstruturaSalva,
@@ -456,7 +457,7 @@ export default function Lancamento() {
 
     atualizarDadosCaixaAtual({
       historicoRaw: [],
-      data: dadosCaixaAtual.data,
+      data: getHojeIso(),
       valorInicial: "",
     });
 
