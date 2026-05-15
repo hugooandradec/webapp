@@ -111,7 +111,10 @@ export default function ModalRelatorio({
 
           <SecaoDebitos debitosParaResumo={debitosParaResumo} />
 
-          <SecaoVales devedoresParaResumo={devedoresParaResumo} />
+          <SecaoVales
+            devedoresParaResumo={devedoresParaResumo}
+            totalVales={totais.valesAtualResumo}
+          />
         </div>
       </div>
     </div>
@@ -294,7 +297,7 @@ function SecaoDebitos({ debitosParaResumo }) {
   );
 }
 
-function SecaoVales({ devedoresParaResumo }) {
+function SecaoVales({ devedoresParaResumo, totalVales }) {
   return (
     <div className="secao-relatorio">
       <h3>Vales</h3>
@@ -384,6 +387,13 @@ function SecaoVales({ devedoresParaResumo }) {
             );
           })
         )}
+      </div>
+
+      <div className="resumo-geral-lista resumo-total-vales">
+        <div className="resumo-geral-linha total">
+          <span>Valor Total dos Vales</span>
+          <strong className={classeValor(totalVales)}>{valorComSinal(totalVales)}</strong>
+        </div>
       </div>
     </div>
   );

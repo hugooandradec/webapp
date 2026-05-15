@@ -99,6 +99,7 @@ export function calcularResumoDevedores(devedores) {
 
       acc.totalPago += pago;
       acc.totalSemana += semana;
+      acc.totalValorAtual += atual;
 
       if (saldoSemana > 0) {
         acc.devAntReceb += saldoSemana;
@@ -118,6 +119,7 @@ export function calcularResumoDevedores(devedores) {
       devedores: 0,
       totalPago: 0,
       totalSemana: 0,
+      totalValorAtual: 0,
       lista: [],
     }
   );
@@ -139,6 +141,7 @@ export function calcularTotaisFechamento({ dados, debitos, resumoDevedores }) {
 
   const totalValesPagos = resumoDevedores.totalPago;
   const totalValesSemana = resumoDevedores.totalSemana;
+  const totalValesAtual = resumoDevedores.totalValorAtual;
   const debitosMaisVales = totalDebitos + totalValesSemana;
 
   const firma =
@@ -156,6 +159,7 @@ export function calcularTotaisFechamento({ dados, debitos, resumoDevedores }) {
     totalDebitos,
     totalValesPagos,
     totalValesSemana,
+    totalValesAtual,
     debitosMaisVales,
     firma,
     totalRotasResumo: totalRota,
@@ -164,6 +168,7 @@ export function calcularTotaisFechamento({ dados, debitos, resumoDevedores }) {
     debitosResumo: -totalDebitos,
     valesResumo: -totalValesSemana,
     valesPagosResumo: totalValesPagos,
+    valesAtualResumo: -totalValesAtual,
     firmaResumo: firma,
   };
 }
