@@ -1,3 +1,8 @@
+import { useRef, useState } from "react";
+
+import html2canvas from "html2canvas";
+import { FaWhatsapp } from "react-icons/fa";
+
 import { classeValor, moedaBR, numeroDeMoeda, valorComSinal } from "../utils/money.js";
 import { periodoTexto } from "../utils/calculos.js";
 import useBodyScrollLock from "../hooks/useBodyScrollLock.js";
@@ -12,10 +17,43 @@ export default function ModalRelatorio({
   debitosParaResumo,
   devedoresParaResumo,
 }) {
+  const relatorioRef = useRef(null);
+  const [compartilhando, setCompartilhando] = useState(false);
   useBodyScrollLock(aberto);
 
   if (!aberto) {
     return null;
+  }
+
+  async function enviarResumoWhatsApp() {
+    if (!relatorioRef.current || compartilhando) return;
+
+    setCompartilhando(true);
+
+    try {
+      await aguardarPintura();
+
+      const canvas = await html2canvas(relatorioRef.current, {
+        backgroundColor: "#ffffff",
+        scale: Math.min(window.devicePixelRatio || 1, 2),
+        useCORS: true,
+      });
+      const blob = await canvasParaBlob(canvas);
+      const nomeArquivo = montarNomeArquivoResumo(dados);
+      const arquivo = new File([blob], nomeArquivo, { type: "image/png" });
+
+      if (navigator.canShare?.({ files: [arquivo] })) {
+        await navigator.share({
+          files: [arquivo],
+          title: "Resumo do Fechamento",
+        });
+        return;
+      }
+
+      baixarImagem(blob, nomeArquivo);
+    } finally {
+      setCompartilhando(false);
+    }
   }
 
   return (
@@ -30,12 +68,23 @@ export default function ModalRelatorio({
           </button>
         </div>
 
-        <div className="relatorio relatorio-resumo-full">
+        <div className="relatorio relatorio-resumo-full" ref={relatorioRef}>
           <div className="relatorio-topo">
             <h2>Resumo</h2>
             <p>
               <strong>Período:</strong> {periodoTexto(dados.periodoInicio, dados.periodoFim)}
             </p>
+            <div className="relatorio-topo-acoes" data-html2canvas-ignore>
+              <button
+                className="btn btn-claro btn-whatsapp"
+                type="button"
+                onClick={enviarResumoWhatsApp}
+                disabled={compartilhando}
+              >
+                <FaWhatsapp />
+                {compartilhando ? "Gerando imagem..." : "Enviar no WhatsApp"}
+              </button>
+            </div>
           </div>
 
           <SecaoRotas linhasRotas={linhasRotas} totalRota={totais.totalRota} />
@@ -65,6 +114,49 @@ export default function ModalRelatorio({
       </div>
     </div>
   );
+}
+
+function aguardarPintura() {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => window.requestAnimationFrame(resolve));
+  });
+}
+
+function canvasParaBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error("Nao foi possivel gerar a imagem do resumo."));
+      }
+    }, "image/png");
+  });
+}
+
+function montarNomeArquivoResumo(dados) {
+  const inicio = formatarDataArquivo(dados.periodoInicio);
+  const fim = formatarDataArquivo(dados.periodoFim);
+  const periodo = inicio && fim ? `${inicio}-${fim}` : inicio || fim || "periodo";
+  return `${periodo}-centro.png`;
+}
+
+function formatarDataArquivo(dataIso) {
+  if (!dataIso) return "";
+
+  const [ano, mes, dia] = String(dataIso).split("-");
+  if (!ano || !mes || !dia) return "";
+
+  return `${dia}_${mes}_${String(ano).slice(-2)}`;
+}
+
+function baixarImagem(blob, nomeArquivo) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = nomeArquivo;
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 function SecaoRotas({ linhasRotas, totalRota }) {

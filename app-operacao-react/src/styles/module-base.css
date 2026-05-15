@@ -346,6 +346,21 @@ main{
   font-size:15px;
 }
 
+.relatorio-topo-acoes{
+  display:flex;
+  justify-content:center;
+  margin-top:12px;
+}
+
+.btn-whatsapp{
+  color:#128c7e;
+  background:#e7f7f1;
+}
+
+.btn-whatsapp:hover{
+  background:#d6f0e7;
+}
+
 .relatorio-cards{
   gap:12px;
   margin-bottom:18px;
