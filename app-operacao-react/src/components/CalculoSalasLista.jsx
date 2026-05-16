@@ -69,15 +69,10 @@ function CardSala({ sala, index, inputRef, onAtualizar, onRemover }) {
         <small>({status})</small>
       </div>
 
-      <div className="salas-divisao">
+      <div className="salas-divisao salas-divisao-pipo">
         <div className="salas-divisao-item">
           <span>Pipo</span>
           <strong className={classeValor(resumo.pipo)}>{moedaBR(resumo.pipo)}</strong>
-        </div>
-
-        <div className="salas-divisao-item">
-          <span>Pass</span>
-          <strong className={classeValor(resumo.pass)}>{moedaBR(resumo.pass)}</strong>
         </div>
       </div>
     </article>

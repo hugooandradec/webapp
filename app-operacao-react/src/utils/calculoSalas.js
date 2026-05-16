@@ -129,10 +129,9 @@ export function calcularResultadoSala(sala) {
 }
 
 export function calcularPipoPass(resultado) {
-  const terco = resultado / 3;
   return {
-    pipo: terco * 2,
-    pass: terco,
+    pipo: resultado,
+    pass: 0,
   };
 }
 
